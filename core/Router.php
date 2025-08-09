@@ -12,15 +12,13 @@ class Router {
         $this->routes['POST'][$path] = $callback;
     }
 
-    public function run() {
+    public function run()
+    {
         $method = $_SERVER['REQUEST_METHOD'];
         $path = $_GET['url'] ?? '/';
 
-        if (isset($this->routes[$method][$path])) {
-            call_user_func($this->routes[$method][$path]);
-        } else {
-            http_response_code(404);
-            echo "Página não encontrada";
-        }
+        var_dump($method, $path);
+        exit;
     }
+
 }

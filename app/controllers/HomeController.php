@@ -7,7 +7,10 @@ use Config\Database;
 class HomeController extends Controller {
     public function index() {
         $db = new Database();
-        $conn = $db->connect(); // Testa conexão
-        $this->setView('home', ['message' => 'Conexão OK!']);
+        $conn = $db->connect();
+        $this->setView('Home/home', [
+            'title' => 'Página Inicial - SwiftlyPark',
+            'message' => 'Conexão OK!'
+        ]);
     }
 }

@@ -2,15 +2,19 @@
 namespace App\Controllers;
 
 use Core\Controller;
-use Config\Database;
+use App\Models\HomeDashModel;
 
 class HomeController extends Controller {
-    public function index() {
-        $db = new Database();
-        $conn = $db->connect();
-        $this->setView('Home/home', [
-            'title' => 'Página Inicial - SwiftlyPark',
-            'message' => 'Conexão OK!'
-        ]);
+    public function index()
+    {
+        $model = new HomeDashModel();
+        $dailyIncome = $model->getDailyIncome();
+        $logEntry = $model->getLogEntry();
+
+        $this->setView('HomeDash/homedash', [
+            'title' => 'Dashboard SwiftlyPark',
+            'dailyIncome' => $dailyIncome,
+            'logEntry' => $logEntry,
+            ]);
     }
 }

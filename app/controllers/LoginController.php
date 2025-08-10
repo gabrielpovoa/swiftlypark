@@ -9,7 +9,7 @@ class LoginController extends Controller
         $this->setView('Login/login', [
             'title' => 'Login - SwiftlyPark',
             'message' => 'Por favor, faça login'
-        ]);
+        ], false); // false = sem layout, só a view pura
     }
 
 }

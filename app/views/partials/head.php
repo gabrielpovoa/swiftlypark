@@ -10,6 +10,11 @@
             lucide.createIcons();
         });
     </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mozilla+Headline:wght@200..700&display=swap" rel="stylesheet">
+
     <title><?= isset($title) ? $title : 'SwiftlyPark' ?></title>
 </head>
-<body>
+<body style='font-family: "Mozilla Headline", sans-serif;'>

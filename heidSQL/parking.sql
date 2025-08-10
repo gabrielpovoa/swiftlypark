@@ -35,10 +35,11 @@ CREATE TABLE IF NOT EXISTS `transacoes` (
   `id_transacao` int NOT NULL AUTO_INCREMENT,
   `id_vaga_preenchida` int NOT NULL,
   `valor` decimal(10,2) NOT NULL,
+  `data_transacao` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_transacao`),
   KEY `fk_transacoes_vaga_preenchida` (`id_vaga_preenchida`),
   CONSTRAINT `fk_transacoes_vaga_preenchida` FOREIGN KEY (`id_vaga_preenchida`) REFERENCES `vagas_preenchidas` (`id_vaga_preenchida`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -61,10 +62,10 @@ CREATE TABLE IF NOT EXISTS `usuario` (
 -- Copiando estrutura para tabela parking.vagas_disponiveis
 CREATE TABLE IF NOT EXISTS `vagas_disponiveis` (
   `id_vaga` int NOT NULL AUTO_INCREMENT,
-  `categoria` enum('carro','moto','caminhao','app') NOT NULL,
-  `status` enum('livre','reservada') NOT NULL DEFAULT 'livre',
-  PRIMARY KEY (`id_vaga`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `categoria` enum('carro','moto','caminhao','app') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `status` enum('livre','reservada') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'livre',
+  PRIMARY KEY (`id_vaga`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -75,10 +76,14 @@ CREATE TABLE IF NOT EXISTS `vagas_preenchidas` (
   `hora_entrada` datetime NOT NULL,
   `hora_saida` datetime DEFAULT NULL,
   `tempo_total` time DEFAULT NULL,
+  `nome_cliente` varchar(100) NOT NULL,
+  `telefone` varchar(50) NOT NULL DEFAULT '0',
+  `placa` varchar(10) NOT NULL,
+  `valor_pago` decimal(10,2) DEFAULT '0.00',
   PRIMARY KEY (`id_vaga_preenchida`),
   KEY `fk_vagas_preenchidas_vaga` (`id_vaga`),
   CONSTRAINT `fk_vagas_preenchidas_vaga` FOREIGN KEY (`id_vaga`) REFERENCES `vagas_disponiveis` (`id_vaga`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 

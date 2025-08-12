@@ -3,6 +3,7 @@ use Core\Router;
 use App\Controllers\HomeController;
 use App\Controllers\LoginController;
 use App\Controllers\VacancyController;
+use App\controllers\LogsController;
 
 $router = new Router();
 
@@ -32,5 +33,16 @@ $router->post('vacancy/apply', function() {
     $controller = new VacancyController();
     $controller->apply();
 });
+
+$router->get('logs/options', function () {
+    $controller = new LogsController();
+    $controller->options();
+});
+
+$router->get('logs/print', function () {
+    $controller = new LogsController();
+    $controller->print();
+});
+
 
 return $router;

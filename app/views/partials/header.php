@@ -37,6 +37,14 @@
             </span>
         </a>
 
+        <a href="" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
+            <i data-lucide="printer" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                Relatório de Log
+            </span>
+        </a>
+
+
         <!-- Espaço automático para empurrar o user para baixo -->
         <div class="mt-auto">
             <a href="/contato" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">

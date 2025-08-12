@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Config\Database;
 use PDO;
-use PDOException;
 
 
 class HomeDashModel
@@ -26,8 +25,15 @@ class HomeDashModel
 
     public function getLogEntry()
     {
-        $sql = "SELECT DATE_FORMAT(hora_entrada, '%H:%i') as hora_entrada, nome_cliente, placa FROM vagas_preenchidas";
+        $sql = "SELECT 
+                DATE_FORMAT(hora_entrada, '%H:%i') AS hora_entrada, 
+                nome_cliente, 
+                placa 
+            FROM vagas_preenchidas 
+            WHERE DATE(hora_entrada) = CURDATE()";
+
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 }

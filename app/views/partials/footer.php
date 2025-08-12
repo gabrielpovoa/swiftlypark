@@ -22,11 +22,12 @@
 </footer>
 
 
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        lucide.createIcons();
-    });
-</script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+        });
+    </script>
+    <script src="/js/ReportLog.js"></script>
 
 </body>
 </html>

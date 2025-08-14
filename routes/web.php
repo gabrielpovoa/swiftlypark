@@ -3,7 +3,9 @@ use Core\Router;
 use App\Controllers\HomeController;
 use App\Controllers\LoginController;
 use App\Controllers\VacancyController;
-use App\controllers\LogsController;
+use App\Controllers\LogsController;
+use App\Controllers\ContactController;
+use App\Controllers\AboutController;
 
 $router = new Router();
 
@@ -34,6 +36,11 @@ $router->post('vacancy/apply', function() {
     $controller->apply();
 });
 
+$router->get('vacancy/manage', function() {
+    $controller = new VacancyController();
+    $controller->manage();
+});
+
 $router->get('logs/options', function () {
     $controller = new LogsController();
     $controller->options();
@@ -44,5 +51,19 @@ $router->get('logs/print', function () {
     $controller->print();
 });
 
+$router->get('Contact', function () {
+    $controller = new ContactController();
+    $controller->index();
+});
+
+$router->post('Contact/SendSMTP', function () {
+    $controller = new ContactController();
+    $controller->SendSMTP();
+});
+
+$router->get('About', function () {
+    $controller = new AboutController();
+    $controller->index();
+});
 
 return $router;

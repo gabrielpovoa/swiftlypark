@@ -144,4 +144,30 @@ class VacancyModel
             throw $e;
         }
     }
+
+    public function getVagasFiltradas($categoria = null, $placa = null)
+    {
+        $sql = "SELECT * FROM vagas_disponiveis v
+            LEFT JOIN vagas_preenchidas p ON v.id_vaga = p.id_vaga
+            WHERE 1=1";
+        $params = [];
+
+        // Filtrar por categoria
+        if ($categoria && $categoria !== 'all') {
+            $sql .= " AND v.categoria = :categoria";
+            $params['categoria'] = $categoria;
+        }
+
+        // Filtrar por placa (parcial)
+        if ($placa) {
+            $sql .= " AND p.placa LIKE :placa";
+            $params['placa'] = "%{$placa}%";
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 }

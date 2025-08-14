@@ -21,7 +21,7 @@
                 type="text"
                 name="owner_name"
                 required
-                class="mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
+                class="text-white mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
                 placeholder="Seu nome completo"
             />
         </label>
@@ -32,7 +32,7 @@
                 type="tel"
                 name="phone"
                 required
-                class="mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
+                class="text-white mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
                 placeholder="(99) 99999-9999"
             />
         </label>
@@ -43,7 +43,7 @@
                 type="text"
                 name="plate"
                 required
-                class="mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black uppercase transition"
+                class="text-white mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black uppercase transition"
                 placeholder="ABC-1234"
                 maxlength="8"
             />
@@ -57,7 +57,7 @@
                 required
                 step="0.01"
                 min="0"
-                class="mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
+                class="text-white mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
                 placeholder="Ex: 25.00"
             />
         </label>
@@ -68,17 +68,17 @@
                 type="time"
                 name="entry_time"
                 required
-                class="mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
+                class="text-white mt-2 p-4 rounded border border-blue-400 focus:border-blue-600 text-black transition"
             />
         </label>
 
-        <label class="flex flex-col opacity-70 cursor-not-allowed">
+        <label class="text-white flex flex-col opacity-70 cursor-not-allowed">
             Horário de saída:
             <input
                 type="time"
                 name="exit_time"
                 disabled
-                class="mt-2 p-4 rounded border border-blue-400 bg-transparent text-black transition"
+                class="text-white mt-2 p-4 rounded border border-blue-400 bg-transparent text-black transition"
                 placeholder="Somente ao sair"
             />
         </label>

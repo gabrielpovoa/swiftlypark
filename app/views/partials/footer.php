@@ -28,6 +28,8 @@
         });
     </script>
     <script src="/js/ReportLog.js"></script>
+    <script src="/js/GetFilterVacancy.js"></script>
+    <script src="/js/LeftParking.js"></script>
 
 </body>
 </html>

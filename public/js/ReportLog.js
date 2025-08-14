@@ -1,21 +1,23 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const btnPrint = document.getElementById('btn-print-logs');
+    // Seleciona todos os elementos com a classe 'js-print-logs'
+    const btnPrintElements = document.querySelectorAll('.js-print-logs');
 
-    if (!btnPrint) return;
+    if (btnPrintElements.length === 0) return;
 
-    btnPrint.addEventListener('click', async () => {
+    // Função que contém a lógica de impressão
+    const handlePrintClick = async (event) => {
+        // Previne o comportamento padrão do link, que é navegar para '#'
+        event.preventDefault();
+
         try {
-            // Busca os filtros (datas) via fetch
             const response = await fetch('/logs/options');
             const filters = await response.json();
 
-            // Adiciona opção "Todos"
             const inputOptions = { '': 'Todos' };
             filters.forEach(item => {
                 inputOptions[item.value] = item.label;
             });
 
-            // Mostra SweetAlert com select
             const { value: selectedDate } = await Swal.fire({
                 title: 'Selecione a data para imprimir',
                 input: 'select',
@@ -26,9 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 cancelButtonText: 'Cancelar',
             });
 
-            if (selectedDate !== undefined) {  // permite '' (todos)
-                // Redireciona para a página de logs com o filtro escolhido
-                // Se for '', envia sem filtro
+            if (selectedDate !== undefined) {
                 const query = selectedDate ? `?filter=${selectedDate}` : '';
                 window.location.href = `/logs/print${query}`;
             }
@@ -37,5 +37,10 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Erro ao carregar filtros:', error);
             Swal.fire('Erro', 'Não foi possível carregar as datas para filtro.', 'error');
         }
+    };
+
+    // Itera sobre a lista de elementos e adiciona o 'event listener' a cada um
+    btnPrintElements.forEach(element => {
+        element.addEventListener('click', handlePrintClick);
     });
 });

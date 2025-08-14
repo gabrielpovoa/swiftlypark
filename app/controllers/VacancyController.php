@@ -99,4 +99,25 @@ class VacancyController extends Controller
             'id_vaga' => $vagaLivre['id_vaga'],
         ]);
     }
+
+    public function manage()
+    {
+        $model = new VacancyModel();
+
+        // Recebe filtros via GET
+        $categoria = $_GET['categoria'] ?? null;
+        $placa = $_GET['placa'] ?? null;
+
+        $vagas = $model->getVagasFiltradas($categoria, $placa);
+
+        $this->setview('Vacancy/manage', [
+            'title'  => 'Gerenciamento de Vagas',
+            'vagas'  => $vagas,
+            'filtros' => [
+                'categoria' => $categoria,
+                'placa' => $placa
+            ]
+        ]);
+    }
+
 }

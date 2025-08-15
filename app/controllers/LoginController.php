@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use Core\Controller;
+use App\models\LoginModel;
 
 class LoginController extends Controller
 {
@@ -10,6 +11,12 @@ class LoginController extends Controller
             'title' => 'Login - SwiftlyPark',
             'message' => 'Por favor, faça login'
         ], false); // false = sem layout, só a view pura
+    }
+    public function authenticate()
+    {
+        $model = new LoginModel();
+        $user = $model->getUserLogged();
+        var_dump($user);
     }
 
 }

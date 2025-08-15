@@ -6,6 +6,8 @@ use App\Controllers\VacancyController;
 use App\Controllers\LogsController;
 use App\Controllers\ContactController;
 use App\Controllers\AboutController;
+use App\Controllers\CreateAccController;
+use App\Controllers\ProfileController;
 
 $router = new Router();
 
@@ -16,6 +18,21 @@ $router->get('', function() {
 
 $router->get('login', function() {
     $controller = new LoginController();
+    $controller->index();
+});
+
+$router->get('login/authenticate', function() {
+    $controller = new LoginController();
+    $controller->authenticate();
+});
+
+$router->get('CreateAcc', function () {
+  $controller = new CreateAccController();
+  $controller->index();
+});
+
+$router->get('Profile', function () {
+    $controller = new ProfileController();
     $controller->index();
 });
 

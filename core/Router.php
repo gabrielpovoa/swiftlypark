@@ -1,26 +1,34 @@
 <?php
-namespace Core;
+    namespace Core;
 
-class Router {
-    private $routes = [];
+    use Core\Controller;
 
-    public function get($path, $callback) {
-        $this->routes['GET'][$path] = $callback;
-    }
+    class Router {
+        private $routes = [];
 
-    public function post($path, $callback) {
-        $this->routes['POST'][$path] = $callback;
-    }
+        public function get($path, $callback) {
+            $this->routes['GET'][$path] = $callback;
+        }
 
-    public function run() {
-        $method = $_SERVER['REQUEST_METHOD'];
-        $path = $_GET['url'] ?? '/';
+        public function post($path, $callback) {
+            $this->routes['POST'][$path] = $callback;
+        }
 
-        if (isset($this->routes[$method][$path])) {
-            call_user_func($this->routes[$method][$path]);
-        } else {
-            http_response_code(404);
-            echo "Página não encontrada";
+        public function run()
+        {
+            $method = $_SERVER['REQUEST_METHOD'];
+            $path = $_GET['url'] ?? '';
+
+            // Remove barras extras no começo/fim
+            $path = trim($path, '/');
+
+            if (isset($this->routes[$method][$path])) {
+                call_user_func($this->routes[$method][$path]);
+            } else {
+                // Resposta 404 com página personalizada
+                http_response_code(404);
+                $controller = new Controller();
+                $controller->render404();
+            }
         }
     }
-}

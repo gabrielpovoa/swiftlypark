@@ -35,6 +35,7 @@
             <input type="text" name="placa" id="search-plate" placeholder="Buscar por placa..."
                    value="<?= htmlspecialchars($filtros['placa'] ?? '') ?>"
                    class="bg-gray-700 text-white rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto"/>
+
         </div>
 
         <!-- Botão -->

@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `login` (
   `senha` varchar(255) NOT NULL,
   PRIMARY KEY (`id_login`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `transacoes` (
   PRIMARY KEY (`id_transacao`),
   KEY `fk_transacoes_vaga_preenchida` (`id_vaga_preenchida`),
   CONSTRAINT `fk_transacoes_vaga_preenchida` FOREIGN KEY (`id_vaga_preenchida`) REFERENCES `vagas_preenchidas` (`id_vaga_preenchida`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -48,14 +48,13 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `id_usuario` int NOT NULL AUTO_INCREMENT,
   `id_login` int NOT NULL,
   `nome` varchar(100) NOT NULL,
-  `foto_perfil` varchar(255) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `senha_hash` varchar(255) NOT NULL,
   PRIMARY KEY (`id_usuario`),
   UNIQUE KEY `email` (`email`),
   KEY `fk_usuario_login` (`id_login`),
   CONSTRAINT `fk_usuario_login` FOREIGN KEY (`id_login`) REFERENCES `login` (`id_login`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -83,7 +82,7 @@ CREATE TABLE IF NOT EXISTS `vagas_preenchidas` (
   PRIMARY KEY (`id_vaga_preenchida`),
   KEY `fk_vagas_preenchidas_vaga` (`id_vaga`),
   CONSTRAINT `fk_vagas_preenchidas_vaga` FOREIGN KEY (`id_vaga`) REFERENCES `vagas_disponiveis` (`id_vaga`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 

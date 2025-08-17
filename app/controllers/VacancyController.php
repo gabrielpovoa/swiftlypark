@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use Core\Controller;
 use App\Models\VacancyModel;
+use http\Header;
 
 class VacancyController extends Controller
 {
@@ -34,6 +35,7 @@ class VacancyController extends Controller
             $entryTime = $_POST['entry_time'] ?? '';
             $exitTime = $_POST['exit_time'] ?? null;
 
+            // Validação básica
             if (!$ownerName || !$phone || !$plate || !$paidAmount || !$entryTime) {
                 echo "<h1>Erro: Campos obrigatórios não preenchidos.</h1>";
                 exit;
@@ -41,7 +43,6 @@ class VacancyController extends Controller
 
             // Busca vaga livre pela categoria
             $vagaLivre = $model->getFreeVagaByCategory($type);
-
             if (!$vagaLivre) {
                 echo "<h1>Desculpe, não há vagas livres para essa categoria no momento.</h1>";
                 exit;
@@ -66,20 +67,13 @@ class VacancyController extends Controller
                     (float)$paidAmount
                 );
 
-                // Confirmação para o usuário
-                echo "<h1>Inscrição confirmada!</h1>";
-                echo "<p><strong>Nome:</strong> " . htmlspecialchars($ownerName) . "</p>";
-                echo "<p><strong>Telefone:</strong> " . htmlspecialchars($phone) . "</p>";
-                echo "<p><strong>Placa:</strong> " . htmlspecialchars(strtoupper($plate)) . "</p>";
-                echo "<p><strong>Vaga ID:</strong> " . $idVaga . "</p>";
-                echo "<p><strong>Valor pago pela vaga:</strong> R$ " . number_format($paidAmount, 2, ',', '.') . "</p>";
-                echo "<p><strong>Horário de entrada:</strong> " . date('H:i', strtotime($horaEntrada)) . "</p>";
-                echo "<p><strong>Horário de saída:</strong> " . ($exitTime ? date('H:i', strtotime($horaSaida)) : 'Não informado') . "</p>";
+                // Redireciona para manage já preenchendo filtro de placa
+                header('Location: /vacancy/manage?placa=' . urlencode($plate));
+                exit();
             } catch (\Exception $e) {
                 echo "<h1>Erro ao reservar a vaga: " . htmlspecialchars($e->getMessage()) . "</h1>";
+                exit;
             }
-
-            exit;
         }
 
         // Se for GET, exibe o formulário com uma vaga livre
@@ -118,6 +112,10 @@ class VacancyController extends Controller
                 'placa' => $placa
             ]
         ]);
+    }
+    public function finishVacancy()
+    {
+        var_dump("Finishing vacancy");
     }
 
 }

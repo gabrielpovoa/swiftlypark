@@ -1,3 +1,10 @@
+<?php
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $userName = $_SESSION['user_name'] ?? 'Visitante';
+?>
+
 <div class="group relative">
 
     <aside class="group fixed top-0 left-0 h-full bg-blue-600 text-white flex flex-col w-14 hover:w-64 transition-all duration-300 z-50">
@@ -54,13 +61,13 @@
 
         <!-- Espaço automático para empurrar o user para baixo -->
         <div class="mt-auto">
-            <a href="Profile" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
+            <a href="/Profile" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
                 <i data-lucide="user" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    User Logged
+                <span class="uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                   <?= htmlspecialchars($userName) ?>
                 </span>
             </a>
-            <a href="/contato" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
+            <a href="/login/logout" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
                 <i data-lucide="log-out" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
                 <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                     Sair

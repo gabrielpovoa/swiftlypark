@@ -46,7 +46,7 @@
         </a>
     </div>
 
-    <div class="flex justify-start mt-12">
+    <div class="flex justify-start mt-12 gap-4">
         <a href="vacancy/manage"
            class="px-6 py-3 cursor-pointer text-white px-3 py-1
                   rounded hover:text-[#2B4570] bg-[#2B4570]
@@ -56,6 +56,16 @@
                   transform hover:shadow-xl gap-2">
             <i data-lucide="layout-grid" class="w-5 h-5"></i>
             Gerenciar Vagas
+        </a>
+        <a href="vacancy/newVacancy"
+           class="px-6 py-3 cursor-pointer text-white px-3 py-1
+                  rounded hover:text-[#2B4570] bg-[#2B4570]
+                  hover:bg-white transition-colors
+                  duration-500 font-semibold
+                  flex items-center gap-1 text-sm
+                  transform hover:shadow-xl gap-2">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            Adicionar Novas Vagas
         </a>
     </div>
 

@@ -28,13 +28,14 @@
             $model = new LoginModel();
             $user = $model->getUserByEmail($email); // Busca login + usuário
 
-            if ($user && password_verify($password, $user['senha'])) {
-                // Login válido: salva informações do usuário na sessão
-                $_SESSION['user_id']    = $user['id_login']; // Ajustado conforme banco
-                $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_name']  = $user['nome'];     // Nome do usuário
+            if ($user && password_verify($password, $user['senha_hash'])) {
+                session_regenerate_id(true);
 
-                header('Location: /'); // Redireciona para home ou dashboard
+                $_SESSION['user_id']    = $user['id_usuario'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_name']  = $user['nome'];
+
+                header('Location: /');
                 exit;
             } else {
                 // Login inválido

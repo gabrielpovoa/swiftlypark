@@ -64,8 +64,14 @@
             <a href="/Profile" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
                 <i data-lucide="user" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
                 <span class="uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                   <?= htmlspecialchars($userName) ?>
+                    <?php
+                        // Limita a exibição às duas primeiras palavras
+                        $nameParts = explode(' ', $userName);
+                        $displayName = implode(' ', array_slice($nameParts, 0, 2));
+                        echo htmlspecialchars($displayName);
+                    ?>
                 </span>
+
             </a>
             <a href="/login/logout" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
                 <i data-lucide="log-out" class="min-w-[24px] mx-auto group-hover:mx-0"></i>

@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `login` (
   `senha` varchar(255) NOT NULL,
   PRIMARY KEY (`id_login`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `transacoes` (
   PRIMARY KEY (`id_transacao`),
   KEY `fk_transacoes_vaga_preenchida` (`id_vaga_preenchida`),
   CONSTRAINT `fk_transacoes_vaga_preenchida` FOREIGN KEY (`id_vaga_preenchida`) REFERENCES `vagas_preenchidas` (`id_vaga_preenchida`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   UNIQUE KEY `email` (`email`),
   KEY `fk_usuario_login` (`id_login`),
   CONSTRAINT `fk_usuario_login` FOREIGN KEY (`id_login`) REFERENCES `login` (`id_login`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS `vagas_preenchidas` (
   `id_vaga` int NOT NULL,
   `hora_entrada` datetime NOT NULL,
   `hora_saida` datetime DEFAULT NULL,
-  `tempo_total` time DEFAULT NULL,
+  `tempo_total` varchar(50) DEFAULT NULL,
   `nome_cliente` varchar(100) NOT NULL,
   `telefone` varchar(50) NOT NULL DEFAULT '0',
   `placa` varchar(10) NOT NULL,
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS `vagas_preenchidas` (
   PRIMARY KEY (`id_vaga_preenchida`),
   KEY `fk_vagas_preenchidas_vaga` (`id_vaga`),
   CONSTRAINT `fk_vagas_preenchidas_vaga` FOREIGN KEY (`id_vaga`) REFERENCES `vagas_disponiveis` (`id_vaga`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Exportação de dados foi desmarcado.
 

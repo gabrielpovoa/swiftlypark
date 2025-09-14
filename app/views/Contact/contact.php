@@ -11,7 +11,7 @@
                 <p class="text-red-400 mb-6 text-center"><?= htmlspecialchars($errorMessage) ?></p>
             <?php endif; ?>
 
-            <form action="Contact/SendSMTP" method="POST" class="space-y-6">
+            <form action="/Contact/SendSMTP" method="POST" class="space-y-6">
                 <div>
                     <label for="name" class="block text-white font-medium mb-2">Nome</label>
                     <input type="text" id="name" name="name" required

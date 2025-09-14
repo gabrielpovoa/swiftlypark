@@ -64,6 +64,15 @@
         $controller = new ProfileController();
         $controller->index();
     }));
+    $router->get('Profile/changePassword', authRequired(function () {
+        $controller = new ProfileController();
+        $controller->changePassword();
+    }));
+
+    $router->post('Profile/changePassword', authRequired(function () {
+        $controller = new ProfileController();
+        $controller->changePassword();
+    }));
 
 // Vagas
     $router->get('vacancy', function() {
@@ -81,6 +90,10 @@
     $router->get('vacancy/manage', authRequired(function() {
         $controller = new VacancyController();
         $controller->manage();
+    }));
+    $router->post('vacancy/finish', authRequired(function () {
+        $controller = new \App\Controllers\VacancyController();
+        $controller->finishVacancy();
     }));
 
 // Logs (somente logado)

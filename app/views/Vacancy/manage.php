@@ -90,7 +90,7 @@
                     <?php if ($vaga['status'] !== 'livre'): ?>
                         <p class="text-sm text-gray-200">Entrada: <?= date('H:i', strtotime($vaga['hora_entrada'])) ?></p>
                         <div class="mt-4">
-                            <button class="bg-gray-900 text-white px-3 py-1 rounded text-sm hover:bg-gray-800">
+                            <button class="finalizar bg-gray-900 text-white px-3 py-1 rounded text-sm hover:bg-gray-800" data-id="<?= $vaga['id_vaga'] ?>">
                                 Finalizar
                             </button>
                         </div>

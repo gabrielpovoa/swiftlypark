@@ -36,7 +36,7 @@
     </div>
 
     <div class="flex items-center justify-center mt-6">
-        <p class="text-white text-md">Não possui uma Conta? <a href="CreateAcc" class="hover:bg-[#008BF8] p-3 text-white transition-colors durantion-400 rounded-md">Crie uma!</a></p>
+        <p class="text-white text-md">Não possui uma Conta? <a href="/CreateAcc" class="hover:bg-[#008BF8] p-3 text-white transition-colors durantion-400 rounded-md">Crie uma!</a></p>
     </div>
 
 

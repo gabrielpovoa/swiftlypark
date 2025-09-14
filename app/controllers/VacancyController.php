@@ -115,7 +115,64 @@ class VacancyController extends Controller
     }
     public function finishVacancy()
     {
-        var_dump("Finishing vacancy");
+        // Sempre responder JSON
+        header('Content-Type: application/json; charset=UTF-8');
+
+        // 1) Tenta ler de $_POST (FormData)
+        $idVaga    = $_POST['id_vaga']   ?? null;
+        $horaSaida = $_POST['hora_saida'] ?? null;
+
+        // 2) Se não veio em $_POST, tenta JSON cru
+        if (!$idVaga || !$horaSaida) {
+            $raw = file_get_contents('php://input');
+            if ($raw) {
+                $data = json_decode($raw, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                    $idVaga    = $idVaga    ?: ($data['id_vaga']    ?? null);
+                    $horaSaida = $horaSaida ?: ($data['hora_saida'] ?? null);
+                }
+            }
+        }
+
+        // Debug opcional
+        // file_put_contents(__DIR__ . '/../../../storage/debug_finish.log', json_encode([
+        //     '_POST' => $_POST,
+        //     'idVaga' => $idVaga,
+        //     'horaSaida' => $horaSaida
+        // ], JSON_PRETTY_PRINT));
+
+        if (!$idVaga || !$horaSaida) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dados inválidos (id ou hora faltando).']);
+            return;
+        }
+
+        try {
+            $model = new \App\Models\VacancyModel();
+
+            $vaga = $model->getVagaById($idVaga);
+            if (!$vaga) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Vaga não encontrada.']);
+                return;
+            }
+            if ($vaga['status'] === 'livre') {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Vaga já está livre.']);
+                return;
+            }
+
+            // Importante: aqui esperamos "HH:mm". A model monta a data completa.
+            $model->finalizarVaga($idVaga, $horaSaida);
+
+            echo json_encode(['success' => true]);
+        } catch (\Throwable $e) {
+            // Nunca vaze HTML; sempre JSON
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Exceção: ' . $e->getMessage()]);
+        }
     }
+
+
 
 }

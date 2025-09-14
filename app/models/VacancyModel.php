@@ -169,5 +169,63 @@ class VacancyModel
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function finalizarVaga($idVaga, $horaSaida)
+    {
+        // Buscar dados da vaga preenchida que ainda não foi finalizada
+        $sql = "SELECT * FROM vagas_preenchidas 
+            WHERE id_vaga = :id AND hora_saida IS NULL 
+            ORDER BY id_vaga_preenchida DESC LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $idVaga]);
+        $vagaPreenchida = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$vagaPreenchida) {
+            throw new \Exception("Não foi encontrada uma vaga ativa para finalizar.");
+        }
+
+        $horaEntrada = new \DateTime($vagaPreenchida['hora_entrada']);
+
+        // Agora usa o dia atual para montar a hora de saída
+        $horaSaidaInput = new \DateTime(date('Y-m-d')); // hoje
+        [$hora, $minuto] = explode(':', $horaSaida);
+        $horaSaidaInput->setTime((int)$hora, (int)$minuto, 0);
+
+        // Se a hora de saída for menor que a entrada, assume que passou para o próximo dia
+        if ($horaSaidaInput < $horaEntrada) {
+            $horaSaidaInput->modify('+1 day');
+        }
+
+        $intervalo = $horaEntrada->diff($horaSaidaInput);
+
+        $tempoTotalTexto = "Ficou por ";
+        if ($intervalo->d > 0) $tempoTotalTexto .= $intervalo->d . " dias, ";
+        if ($intervalo->h > 0) $tempoTotalTexto .= $intervalo->h . " horas e ";
+        $tempoTotalTexto .= $intervalo->i . " minutos";
+
+        try {
+            $this->db->beginTransaction();
+
+            // Atualiza vaga preenchida
+            $sqlUpdate = "UPDATE vagas_preenchidas 
+                      SET hora_saida = :hora_saida, tempo_total = :tempo_total
+                      WHERE id_vaga_preenchida = :id";
+            $stmtUpdate = $this->db->prepare($sqlUpdate);
+            $stmtUpdate->execute([
+                'hora_saida' => $horaSaidaInput->format('Y-m-d H:i:s'),
+                'tempo_total' => $tempoTotalTexto,
+                'id' => $vagaPreenchida['id_vaga_preenchida']
+            ]);
+
+            // Libera a vaga
+            $this->updateVagaStatus($idVaga, 'livre');
+
+            $this->db->commit();
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+
 
 }

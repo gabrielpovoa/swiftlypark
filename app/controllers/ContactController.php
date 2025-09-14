@@ -16,8 +16,8 @@
 
         public function SendSMTP()
         {
-            $nome = $_POST['name'] ?? '';
-            $email = $_POST['email'] ?? '';
+            $nome     = $_POST['name'] ?? '';
+            $email    = $_POST['email'] ?? '';
             $mensagem = $_POST['message'] ?? '';
 
             if (!$this->validateField($nome, $email, $mensagem)) {
@@ -28,7 +28,6 @@
                 return;
             }
 
-            // Gera ticket único
             $ticketNumber = strtoupper(uniqid('TK-'));
             $subject = "Novo Ticket SwiftlyPark: $ticketNumber";
             $body = $this->getEmailTemplate(
@@ -37,7 +36,6 @@
                 $ticketNumber
             );
 
-            // Envia o email
             if ($this->sendEmail($email, $subject, $body)) {
                 $this->setView('Contact/contact', [
                     'title' => 'Ticket - SwiftlyPark',
@@ -52,69 +50,59 @@
             }
         }
 
-        // Valida e sanitiza campos
         private function validateField($name, $email, $msg)
         {
-            $name = filter_var($name, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $name  = filter_var($name, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $email = filter_var($email, FILTER_SANITIZE_EMAIL);
-            $msg = filter_var($msg, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $msg   = filter_var($msg, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             return $name && $email && $msg;
         }
 
-        // Template HTML padrão para emails
         private function getEmailTemplate($title, $message, $ticketNumber = null)
         {
             $ticketHtml = $ticketNumber ? "<p>Seu ticket: <strong>{$ticketNumber}</strong></p>" : '';
-            return "
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; color: #333; }
-                .header { background: #364574; color: #fff; padding: 10px; text-align: center; }
-                .content { padding: 20px; background: #f5f5f5; }
-                .footer { padding: 10px; font-size: 12px; color: #888; text-align: center; }
-            </style>
-        </head>
-        <body>
-            <div class='header'><h2>{$title}</h2></div>
-            <div class='content'>
-                <p>{$message}</p>
-                {$ticketHtml}
-            </div>
-            <div class='footer'>
-                SwiftlyPark &copy; ".date('Y')."
-            </div>
-        </body>
-        </html>
-        ";
+            ob_start();
+            include __DIR__ . '/../Views/Contact/ticket.php';
+            return ob_get_clean();
         }
 
-        // Função para envio de email via SMTP
-        private function sendEmail($to, $subject, $body, $fromName = 'SwiftlyPark', $fromEmail = 'no-reply@swiftlypark.com')
+        private function sendEmail($to, $subject, $body, $fromName = 'SwiftlyPark')
         {
             $mail = new PHPMailer(true);
 
             try {
+                // Configurações básicas SMTP
                 $mail->isSMTP();
-                $mail->Host       = 'smtp.gmail.com'; // Ex.: smtp.gmail.com
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'condeleau@gmail.com'; // Usuário SMTP
-                $mail->Password   = 'dmvk jreg pvqz egey ';           // Senha ou token
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = 465;                   // 465 para SMTPS
+                $mail->SMTPDebug = 0; // 0 = silencioso, 2 = debug detalhado
+                $mail->Host = 'smtp.gmail.com';
+                $mail->SMTPAuth = true;
+                $mail->Username = 'condedeleau@gmail.com'; // seu Gmail
+                $mail->Password = 'jrhltcbvvbpjbomp';     // senha de app correta, sem espaços
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // STARTTLS
+                $mail->Port = 587;
 
-                $mail->setFrom($fromEmail, $fromName);
-                $mail->addAddress($to);
+                // Mantém conexão aberta (útil para múltiplos envios)
+                $mail->SMTPKeepAlive = true;
 
-                $mail->isHTML(true);
+                // Remetente e destinatário
+                $mail->setFrom('condedeleau@gmail.com', 'SwiftlyPark Test');
+                $mail->addAddress($to, $fromName);
+
+                // Conteúdo do email
                 $mail->Subject = $subject;
-                $mail->Body    = $body;
+                $mail->Body = $body;
+                $mail->isHTML(true);
 
+                // Envia
                 $mail->send();
+
+                // Fecha a conexão SMTP
+                $mail->smtpClose();
+
                 return true;
             } catch (Exception $e) {
-                error_log("Erro ao enviar email: " . $mail->ErrorInfo);
+                echo "<pre>Erro PHPMailer: {$mail->ErrorInfo}</pre>";
                 return false;
             }
         }

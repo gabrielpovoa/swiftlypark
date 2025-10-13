@@ -4,7 +4,6 @@ namespace App\Controllers;
 
 use Core\Controller;
 use App\Models\VacancyModel;
-use http\Header;
 
 class VacancyController extends Controller
 {
@@ -64,8 +63,10 @@ class VacancyController extends Controller
                     $ownerName,
                     $phone,
                     $plate,
-                    (float)$paidAmount
+                    (float)$paidAmount,
+                    $type
                 );
+
 
                 // Redireciona para manage já preenchendo filtro de placa
                 header('Location: /vacancy/manage?placa=' . urlencode($plate));

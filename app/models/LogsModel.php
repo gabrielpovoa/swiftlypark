@@ -25,28 +25,39 @@
 
         public function getLogsByFilter($filter)
         {
-            $sql = "SELECT DATE_FORMAT(hora_entrada, '%d/%m/%Y') as data,
-            DATE_FORMAT(hora_entrada, '%H:%i') as hora_entrada,
+            $sql = "
+        SELECT 
+            DATE_FORMAT(hora_entrada, '%d/%m/%Y') AS data,
+            DATE_FORMAT(hora_entrada, '%H:%i') AS hora_entrada,
+            DATE_FORMAT(hora_saida, '%H:%i') AS hora_saida,
             nome_cliente,
             placa,
             valor_pago
         FROM vagas_preenchidas
-        WHERE DATE(hora_entrada) = ?";
-
+        WHERE DATE(hora_entrada) = ?
+           OR (hora_saida IS NOT NULL AND DATE(hora_saida) = ?)
+        ORDER BY hora_entrada ASC, hora_saida ASC
+    ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$filter]);
+            $stmt->execute([$filter, $filter]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         public function getAllLogs()
         {
-            $sql = "SELECT DATE_FORMAT(hora_entrada, '%d/%m/%Y') as data,
-                       DATE_FORMAT(hora_entrada, '%H:%i') as hora_entrada,
-                       nome_cliente,
-                       placa,
-                       valor_pago
-                FROM vagas_preenchidas
-                ORDER BY hora_entrada DESC";
+            $sql = "
+        SELECT 
+            DATE_FORMAT(hora_entrada, '%d/%m/%Y') AS data,
+            DATE_FORMAT(hora_entrada, '%H:%i') AS hora_entrada,
+            DATE_FORMAT(hora_saida, '%H:%i') AS hora_saida,
+            nome_cliente,
+            placa,
+            valor_pago
+        FROM vagas_preenchidas
+        WHERE DATE(hora_entrada) = CURDATE()
+           OR (hora_saida IS NOT NULL AND DATE(hora_saida) = CURDATE())
+        ORDER BY hora_entrada ASC, hora_saida ASC
+    ";
             $stmt = $this->db->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }

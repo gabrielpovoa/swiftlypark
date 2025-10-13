@@ -3,6 +3,7 @@
     use App\Controllers\HomeController;
     use App\Controllers\LoginController;
     use App\Controllers\VacancyController;
+    use App\Controllers\CreateVacancy;
     use App\Controllers\LogsController;
     use App\Controllers\ContactController;
     use App\Controllers\AboutController;
@@ -75,36 +76,47 @@
     }));
 
 // Vagas
-    $router->get('vacancy', function() {
+    $router->get('vacancy', authRequired(function() {
         $controller = new VacancyController();
         $controller->index();
-    });
-    $router->get('vacancy/apply', function() {
+    }));
+    $router->get('vacancy/apply', authRequired(function() {
         $controller = new VacancyController();
         $controller->apply();
-    });
-    $router->post('vacancy/apply', function() {
+    }));
+    $router->post('vacancy/apply',  authRequired(function() {
         $controller = new VacancyController();
         $controller->apply();
-    });
+    }));
     $router->get('vacancy/manage', authRequired(function() {
         $controller = new VacancyController();
         $controller->manage();
     }));
     $router->post('vacancy/finish', authRequired(function () {
-        $controller = new \App\Controllers\VacancyController();
+        $controller = new VacancyController();
         $controller->finishVacancy();
     }));
+    // CreateVacancy
+    $router->get('CreateVacancy', authRequired(function () {
+        $controller = new CreateVacancy();
+        $controller->index();
+    }));
+    $router->post('CreateVacancy/store', authRequired(function () {
+        $controller = new CreateVacancy();
+        $controller->store();
+    }));
 
-// Logs (somente logado)
+
     $router->get('logs/options', authRequired(function () {
         $controller = new LogsController();
         $controller->options();
     }));
+
     $router->get('logs/print', authRequired(function () {
         $controller = new LogsController();
         $controller->print();
     }));
+
 
 // Contato
     $router->get('Contact', authRequired(function ()  {

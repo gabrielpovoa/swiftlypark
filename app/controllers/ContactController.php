@@ -16,6 +16,8 @@
 
         public function SendSMTP()
         {
+            header('Content-Type: text/html; charset=UTF-8');
+
             $nome     = $_POST['name'] ?? '';
             $email    = $_POST['email'] ?? '';
             $mensagem = $_POST['message'] ?? '';
@@ -52,9 +54,11 @@
 
         private function validateField($name, $email, $msg)
         {
-            $name  = filter_var($name, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $name  = filter_var($name, FILTER_SANITIZE_SPECIAL_CHARS); // mantém acentos e caracteres normais
             $email = filter_var($email, FILTER_SANITIZE_EMAIL);
-            $msg   = filter_var($msg, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // Apenas remove tags maliciosas do texto, mas preserva <br>, <strong> etc
+            $msg = strip_tags($msg, '<br><strong><b><i><u><p>');
 
             return $name && $email && $msg;
         }
@@ -67,37 +71,34 @@
             return ob_get_clean();
         }
 
-        private function sendEmail($to, $subject, $body, $fromName = 'SwiftlyPark')
+        private function sendEmail($to, $subject, $body, $fromName = null)
         {
             $mail = new PHPMailer(true);
 
-            try {
-                // Configurações básicas SMTP
-                $mail->isSMTP();
-                $mail->SMTPDebug = 0; // 0 = silencioso, 2 = debug detalhado
-                $mail->Host = 'smtp.gmail.com';
-                $mail->SMTPAuth = true;
-                $mail->Username = 'condedeleau@gmail.com'; // seu Gmail
-                $mail->Password = 'jrhltcbvvbpjbomp';     // senha de app correta, sem espaços
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // STARTTLS
-                $mail->Port = 587;
+            $mail->CharSet  = 'UTF-8';
+            $mail->Encoding = 'base64';
+            $mail->isHTML(true);
+            $mail->ContentType = 'text/html; charset=UTF-8';
 
-                // Mantém conexão aberta (útil para múltiplos envios)
+            try {
+                $mail->isSMTP();
+                $mail->Host       = getenv('MAIL_HOST');
+                $mail->SMTPAuth   = true;
+                $mail->Username   = getenv('MAIL_USERNAME');
+                $mail->Password   = getenv('MAIL_PASSWORD');
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = getenv('MAIL_PORT');
                 $mail->SMTPKeepAlive = true;
 
-                // Remetente e destinatário
-                $mail->setFrom('condedeleau@gmail.com', 'SwiftlyPark Test');
+                $fromName = $fromName ?? getenv('MAIL_FROM_NAME');
+                $mail->setFrom(getenv('MAIL_USERNAME'), $fromName);
                 $mail->addAddress($to, $fromName);
 
-                // Conteúdo do email
-                $mail->Subject = $subject;
-                $mail->Body = $body;
                 $mail->isHTML(true);
+                $mail->Subject = $subject;
+                $mail->Body    = $body;
 
-                // Envia
                 $mail->send();
-
-                // Fecha a conexão SMTP
                 $mail->smtpClose();
 
                 return true;
@@ -106,4 +107,5 @@
                 return false;
             }
         }
+
     }

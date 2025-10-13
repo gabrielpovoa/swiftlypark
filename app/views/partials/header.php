@@ -1,86 +1,101 @@
 <?php
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    $userName = $_SESSION['user_name'] ?? 'Visitante';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$userName = $_SESSION['user_name'] ?? 'Visitante';
 ?>
 
-<div class="group relative">
+<!-- Sidebar moderna -->
+<aside class="group fixed top-0 left-0 h-full
+    bg-gradient-to-b from-blue-600 via-blue-700 to-blue-900
+    text-white flex flex-col w-20 hover:w-64
+    transition-all duration-500 z-50 shadow-lg border-r border-blue-400/20 overflow-hidden">
 
-    <aside class="group fixed top-0 left-0 h-full bg-blue-600 text-white flex flex-col w-14 hover:w-64 transition-all duration-300 z-50">
-
-        <!-- Logo P + Nome lado a lado -->
-        <a href="/" class="cursor-pointer flex items-center gap-2 px-4 py-4 border-b border-blue-500 cursor-default select-none">
-
-            <!-- Letra P -->
-            <div class="text-5xl font-bold font-mono transition-all duration-300 group-hover:text-7xl">
-                P
-            </div>
-
-            <!-- Nome SwiftlyPark, aparece só no hover -->
-            <span class="text-sm font-semibold opacity-0 pointer-events-none transition-opacity duration-300 group-hover:opacity-100 group-hover:pointer-events-auto select-none whitespace-nowrap">
-                SwiftlyPark
-            </span>
-        </a>
-
-        <a href="/" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
-            <i data-lucide="home" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-            <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                Início
-            </span>
-        </a>
-
-        <a href="/vacancy/manage" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
-            <i data-lucide="layout-grid" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-            <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                Gerenciamento de Vagas
-            </span>
-        </a>
-
-        <a href="/About" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
-            <i data-lucide="info" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-            <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                Sobre
-            </span>
-        </a>
-
-        <a href="/Contact" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
-            <i data-lucide="mail" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-            <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                Contato
-            </span>
-        </a>
-
-        <a href="#" id="btn-print-logs" class="js-print-logs flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
-            <i data-lucide="printer" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-            <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                Relatório de Log
-            </span>
-        </a>
-
-
-        <!-- Espaço automático para empurrar o user para baixo -->
-        <div class="mt-auto">
-            <a href="/Profile" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
-                <i data-lucide="user" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-                <span class="uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    <?php
-                        // Limita a exibição às duas primeiras palavras
-                        $nameParts = explode(' ', $userName);
-                        $displayName = implode(' ', array_slice($nameParts, 0, 2));
-                        echo htmlspecialchars($displayName);
-                    ?>
-                </span>
-
-            </a>
-            <a href="/login/logout" class="flex items-center gap-3 px-4 group-hover:px-4 py-3 hover:bg-blue-700 transition-all duration-300">
-                <i data-lucide="log-out" class="min-w-[24px] mx-auto group-hover:mx-0"></i>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    Sair
-                </span>
-            </a>
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-3 px-5 py-6 border-b border-blue-400/20 select-none">
+        <div class="text-3xl font-extrabold font-mono tracking-tight
+                    bg-gradient-to-r from-blue-300 to-cyan-400 bg-clip-text text-transparent
+                    transition-all duration-500 group-hover:scale-110">
+            P
         </div>
+        <span class="text-base font-semibold opacity-0 group-hover:opacity-100
+                     transition-opacity duration-500 whitespace-nowrap tracking-wide">
+            SwiftlyPark
+        </span>
+    </a>
 
-    </aside>
+    <!-- Links principais -->
+    <nav class="flex flex-col flex-grow mt-2">
+        <?php
+        $links = [
+            ['/', 'home', 'Início'],
+            ['/vacancy/manage', 'layout-grid', 'Gerenciamento de Vagas'],
+            ['/About', 'info', 'Sobre'],
+            ['/Contact', 'mail', 'Contato'],
+            ['#', 'printer', 'Relatório de Log', 'js-print-logs', 'btn-print-logs'],
+        ];
 
-</div>
+        foreach ($links as $link) {
+            [$href, $icon, $label] = $link;
+            $extraClass = $link[3] ?? '';
+            $id = $link[4] ?? '';
+            echo "
+            <a href='{$href}' id='{$id}' 
+               class='{$extraClass} flex items-center gap-4 px-5 py-3
+               hover:bg-blue-500/40 transition-all duration-300 relative group/item'>
+
+                <i data-lucide='{$icon}' 
+                   class='w-5 h-5 flex-shrink-0 transition-transform duration-300 
+                          group-hover/item:scale-110'></i>
+
+                <span class='opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap'>
+                    {$label}
+                </span>
+
+                <!-- Tooltip quando recolhido -->
+                <span class='absolute left-20 top-1/2 -translate-y-1/2 bg-gray-900/90 text-white text-xs 
+                             px-2 py-1 rounded-md shadow-lg ml-2 pointer-events-none opacity-0 
+                             group-hover:hidden group-hover/item:opacity-100 transition-opacity duration-300'>
+                    {$label}
+                </span>
+            </a>";
+        }
+        ?>
+    </nav>
+
+    <!-- Separador -->
+    <div class="border-t border-blue-400/20 my-3"></div>
+
+    <!-- Perfil / Logout -->
+    <div class="flex flex-col pb-5">
+        <a href="/Profile"
+           class="flex items-center gap-4 px-5 py-3 hover:bg-blue-500/40 transition-all duration-300 group/item">
+            <i data-lucide="user" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover/item:scale-110"></i>
+            <span class="uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                <?php
+                $nameParts = explode(' ', $userName);
+                $displayName = implode(' ', array_slice($nameParts, 0, 2));
+                echo htmlspecialchars($displayName);
+                ?>
+            </span>
+            <span class="absolute left-20 bg-gray-900/90 text-white text-xs px-2 py-1 rounded-md shadow-lg ml-2 pointer-events-none opacity-0 group-hover:hidden group-hover/item:opacity-100 transition-opacity duration-300">
+                Perfil
+            </span>
+        </a>
+
+        <a href="/login/logout"
+           class="flex items-center gap-4 px-5 py-3 hover:bg-red-600/70 transition-all duration-300 group/item">
+            <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover/item:scale-110"></i>
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                Sair
+            </span>
+            <span class="absolute left-20 bg-gray-900/90 text-white text-xs px-2 py-1 rounded-md shadow-lg ml-2 pointer-events-none opacity-0 group-hover:hidden group-hover/item:opacity-100 transition-opacity duration-300">
+                Sair
+            </span>
+        </a>
+    </div>
+</aside>
+
+<script>
+    lucide.createIcons();
+</script>

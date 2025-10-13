@@ -1,5 +1,5 @@
 <?php
-        namespace App\controllers;
+        namespace App\Controllers;
 
         use App\models\LogsModel;
         use Core\Controller;

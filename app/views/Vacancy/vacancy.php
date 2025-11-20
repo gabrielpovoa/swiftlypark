@@ -1,77 +1,101 @@
-<?php $this->partial('head', ['title' => $title]); ?>
+<section class="p-10 flex flex-col items-center w-full">
 
-<section class="min-h-screen p-8 bg-gradient-to-br from-[#1e2a47] to-[#121826] flex flex-col items-center">
+    <!-- Título -->
+    <h1 class="text-4xl font-bold text-white mb-12 text-center">
+        Vagas Disponíveis
+    </h1>
 
-    <h1 class="text-3xl md:text-4xl font-bold text-white mb-10 text-center">Vagas Disponíveis</h1>
-
+    <!-- GRID RESPONSIVO -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-6xl">
 
-        <!-- Card Carro -->
-        <a href="/vacancy/apply?type=carro"
-           class="relative block bg-[#1f2b4a] rounded-2xl p-6 shadow-lg flex flex-col items-center
-                  hover:bg-[#27457a] transition duration-500 transform hover:scale-105 hover:-translate-y-1
-                  hover:shadow-2xl group">
-            <div class="bg-gradient-to-tr from-[#2a3a5a] to-[#1e2b4a] p-4 rounded-full mb-4">
-                <img src="/images/car.png" alt="Carros" class="w-20 h-20 object-contain" />
-            </div>
-            <h2 class="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors text-center"><?= "Carros" ?></h2>
-            <p class="text-4xl font-bold text-white"><?= $counts['carro'] ?? 0 ?></p>
-            <p class="mt-1 text-gray-300">vagas disponíveis</p>
-        </a>
+        <!-- CARD BASE -->
+        <?php
+        $items = [
+            [
+                'label' => 'CARROS',
+                'count' => $counts['carro'] ?? 0,
+                'type' => 'carro',
+                'image' => '/images/car.png'
+            ],
+            [
+                'label' => 'MOTOS',
+                'count' => $counts['moto'] ?? 0,
+                'type' => 'moto',
+                'image' => '/images/moto.png'
+            ],
+            [
+                'label' => 'CAMINHÃO',
+                'count' => $counts['caminhao'] ?? 0,
+                'type' => 'caminhao',
+                'image' => '/images/truck.png'
+            ],
+            [
+                'label' => 'APPS (Uber, 99Pop)',
+                'count' => $counts['app'] ?? 0,
+                'type' => 'app',
+                'popular' => true,
+                'image' => '/images/uber.png'
+            ],
+        ];
 
-        <!-- Card Moto -->
-        <a href="/vacancy/apply?type=moto"
-           class="relative block bg-[#1f2b4a] rounded-2xl p-6 shadow-lg flex flex-col items-center
-                  hover:bg-[#27457a] transition duration-500 transform hover:scale-105 hover:-translate-y-1
-                  hover:shadow-2xl group">
-            <div class="bg-gradient-to-tr from-[#2a3a5a] to-[#1e2b4a] p-4 rounded-full mb-4">
-                <img src="/images/moto.png" alt="Motos" class="w-20 h-20 object-contain" />
-            </div>
-            <h2 class="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors text-center">Motos</h2>
-            <p class="text-4xl font-bold text-white"><?= $counts['moto'] ?? 0 ?></p>
-            <p class="mt-1 text-gray-300">vagas disponíveis</p>
-        </a>
+        foreach ($items as $item):
+        ?>
 
-        <!-- Card Caminhão -->
-        <a href="/vacancy/apply?type=caminhao"
-           class="relative block bg-[#1f2b4a] rounded-2xl p-6 shadow-lg flex flex-col items-center
-                  hover:bg-[#27457a] transition duration-500 transform hover:scale-105 hover:-translate-y-1
-                  hover:shadow-2xl group">
-            <div class="bg-gradient-to-tr from-[#2a3a5a] to-[#1e2b4a] p-4 rounded-full mb-4">
-                <img src="/images/truck.png" alt="Caminhão" class="w-20 h-20 object-contain" />
-            </div>
-            <h2 class="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors text-center">Caminhão</h2>
-            <p class="text-4xl font-bold text-white"><?= $counts['caminhao'] ?? 0 ?></p>
-            <p class="mt-1 text-gray-300">vagas disponíveis</p>
-        </a>
+            <a href="/vacancy/apply?type=<?= $item['type'] ?>"
+               class="relative rounded-3xl bg-gradient-to-b from-[#1c2947] to-[#0f1625]
+                      shadow-xl hover:shadow-2xl transition-all duration-300 
+                      hover:scale-[1.03] p-6 flex flex-col items-center text-white">
 
-        <!-- Card Apps -->
-        <a href="/vacancy/apply?type=app"
-           class="relative block bg-[#1f2b4a] rounded-2xl p-6 shadow-lg flex flex-col items-center
-                  hover:bg-[#27457a] transition duration-500 transform hover:scale-105 hover:-translate-y-1
-                  hover:shadow-2xl group">
-            <div class="bg-gradient-to-tr from-[#2a3a5a] to-[#1e2b4a] p-4 rounded-full mb-4">
-                <img src="/images/uber.png" alt="Apps" class="w-20 h-20 object-contain" />
-            </div>
-            <h2 class="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors text-center">Apps (Uber, 99Pop)</h2>
-            <p class="text-4xl font-bold text-white"><?= $counts['app'] ?? 0 ?></p>
-            <p class="mt-1 text-gray-300">vagas disponíveis</p>
-        </a>
+                <!-- BADGE POPULAR -->
+                <?php if (!empty($item['popular'])): ?>
+                    <div class="absolute -top-3 right-3 bg-green-500 text-black font-bold text-xs px-3 py-1 rounded-full shadow-md">
+                        POPULAR ★★★
+                    </div>
+                <?php endif; ?>
+
+                <!-- IMAGEM -->
+                <div class="mb-4 w-24 h-24 flex items-center justify-center">
+                    <img src="<?= $item['image'] ?>"
+                         alt="<?= $item['label'] ?>"
+                         class="w-20 h-20 object-contain drop-shadow-lg opacity-90">
+                </div>
+
+                <!-- Título -->
+                <h2 class="text-xl font-extrabold tracking-wide text-center">
+                    <?= $item['label'] ?>
+                </h2>
+
+                <!-- Número -->
+                <p class="text-6xl font-black mt-4 mb-1 drop-shadow-lg">
+                    <?= $item['count'] ?>
+                </p>
+
+                <!-- Subtexto -->
+                <p class="text-sm text-gray-300">vagas disponíveis</p>
+
+                <!-- “Ano” -->
+            </a>
+
+        <?php endforeach; ?>
     </div>
 
-    <!-- Ações -->
-    <div class="flex flex-wrap justify-center mt-12 gap-4 w-full max-w-3xl">
+    <!-- Botões -->
+    <div class="flex flex-wrap justify-center gap-6 mt-14">
+
         <a href="vacancy/manage"
-           class="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2B4570] hover:bg-white hover:text-[#2B4570]
-                  text-white font-semibold transition-colors duration-500 shadow-lg hover:shadow-xl">
+           class="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2B4570] 
+                  hover:bg-white hover:text-[#2B4570] text-white font-semibold 
+                  transition-all duration-500 shadow-lg hover:shadow-xl">
             <i data-lucide="layout-grid" class="w-5 h-5"></i> Gerenciar Vagas
         </a>
 
         <a href="/CreateVacancy"
-           class="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2B4570] hover:bg-white hover:text-[#2B4570]
-                  text-white font-semibold transition-colors duration-500 shadow-lg hover:shadow-xl">
+           class="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2B4570] 
+                  hover:bg-white hover:text-[#2B4570] text-white font-semibold 
+                  transition-all duration-500 shadow-lg hover:shadow-xl">
             <i data-lucide="plus" class="w-5 h-5"></i> Adicionar Novas Vagas
         </a>
+
     </div>
 
 </section>

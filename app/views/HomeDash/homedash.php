@@ -95,12 +95,12 @@
 
     </div>
 
-    <!-- Faturamento -->
+    <!-- Entradas -->
     <div class="bg-gradient-to-br from-blue-700/80 to-blue-900/80 p-6 rounded-xl shadow-lg 
                 flex flex-col md:flex-row justify-between items-center gap-4 mt-4">
 
         <div>
-            <h1 class="text-white text-2xl font-bold uppercase mb-2 tracking-wide">Faturamento - Dia</h1>
+            <h1 class="text-white text-2xl font-bold uppercase mb-2 tracking-wide">Entradas - Dia</h1>
             <span class="text-white text-2xl font-mono">
                 R$ <?= number_format(floatval($dailyIncome), 2, ',', '.') ?>
             </span>

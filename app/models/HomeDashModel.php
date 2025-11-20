@@ -1,36 +1,36 @@
 <?php
 
-    namespace App\Models;
+namespace App\Models;
 
-    use Config\Database;
-    use PDO;
+use Config\Database;
+use PDO;
 
-    class HomeDashModel
+class HomeDashModel
+{
+    private $db;
+
+    public function __construct()
     {
-        private $db;
+        $this->db = (new Database())->connect();
+    }
 
-        public function __construct()
-        {
-            $this->db = (new Database())->connect();
-        }
-
-        public function getDailyIncome()
-        {
-            $sql = "
+    public function getDailyIncome()
+    {
+        $sql = "
         SELECT SUM(valor) AS total_pago
         FROM transacoes t
         INNER JOIN vagas_preenchidas v ON t.id_vaga_preenchida = v.id_vaga_preenchida
         WHERE DATE(v.hora_entrada) = CURDATE()
            OR (v.hora_saida IS NOT NULL AND DATE(v.hora_saida) = CURDATE())
     ";
-            $stmt = $this->db->query($sql);
-            return $stmt->fetchColumn() ?: 0; // Retorna 0 se não houver transações
-        }
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchColumn() ?: 0; // Retorna 0 se não houver transações
+    }
 
 
-        public function getLogEntry()
-        {
-            $sql = "
+    public function getLogEntry()
+    {
+        $sql = "
         SELECT 
             'entrada' AS tipo,
             DATE_FORMAT(hora_entrada, '%H:%i') AS hora,
@@ -54,7 +54,7 @@
         ORDER BY hora DESC
     ";
 
-            $stmt = $this->db->query($sql);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+}

@@ -1,6 +1,7 @@
 <?php $this->partial('head', ['title' => $title]); ?>
 
-<section class="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-950 to-gray-900 text-white p-8">
+<section
+    class="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-950 to-gray-900 text-white p-8">
 
     <div class="w-full max-w-4xl text-center bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl 
                 rounded-md p-16 flex flex-col items-center">
@@ -21,8 +22,8 @@
 
         <!-- Subtítulo -->
         <p class="mt-6 text-gray-300 text-lg leading-relaxed max-w-2xl">
-            Todas as vagas da categoria 
-            <span class="text-blue-400 font-semibold"><?= htmlspecialchars($type) ?></span> 
+            Todas as vagas da categoria
+            <span class="text-blue-400 font-semibold"><?= htmlspecialchars($type) ?></span>
             estão ocupadas no momento.
         </p>
 
@@ -31,13 +32,18 @@
         </p>
 
         <!-- Botão robusto -->
-        <a href="/CreateVacancy"
-           class="mt-12 inline-block px-12 py-4 rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 
+        <a href="/CreateVacancy" class="mt-12 inline-block px-12 py-4 rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 
                   hover:from-blue-700 hover:to-indigo-700 text-lg font-semibold shadow-xl 
                   transition-all hover:scale-105 tracking-wide">
-            Crei Novas Vagas
+            Crie Novas Vagas
         </a>
-
+        <!-- Texto de alternativa -->
+        <p class="mt-6 text-sm text-gray-500">
+            Precisa de ajuda? <a href="/Contact"
+                class="text-blue-400 hover:text-blue-300 underline decoration-blue-600/30">
+                Fale com o suporte
+            </a>.
+        </p>
     </div>
 
 </section>

@@ -75,6 +75,11 @@
         $controller->changePassword();
     }));
 
+    $router->post('Profile/uploadPhoto', authRequired(function () {
+        $controller = new ProfileController();
+        $controller->uploadPhoto();
+    }));
+
 // Vagas
     $router->get('vacancy', authRequired(function() {
         $controller = new VacancyController();

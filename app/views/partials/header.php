@@ -2,7 +2,13 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-$userName = $_SESSION['user_name'] ?? 'Visitante';
+
+$userName  = $_SESSION['user_name']  ?? 'Visitante';
+$userPhoto = $_SESSION['user_photo'] ?? null;
+
+// Caminho real no servidor
+$photoPath = $_SERVER['DOCUMENT_ROOT'] . "/uploads/" . $userPhoto;
+$photoUrl  = "/uploads/" . $userPhoto;
 ?>
 
 <!-- Sidebar moderna -->
@@ -39,6 +45,7 @@ $userName = $_SESSION['user_name'] ?? 'Visitante';
             [$href, $icon, $label] = $link;
             $extraClass = $link[3] ?? '';
             $id = $link[4] ?? '';
+
             echo "
             <a href='{$href}' id='{$id}' 
                class='{$extraClass} flex items-center gap-4 px-5 py-3
@@ -52,7 +59,6 @@ $userName = $_SESSION['user_name'] ?? 'Visitante';
                     {$label}
                 </span>
 
-                <!-- Tooltip quando recolhido -->
                 <span class='absolute left-20 top-1/2 -translate-y-1/2 bg-gray-900/90 text-white text-xs 
                              px-2 py-1 rounded-md shadow-lg ml-2 pointer-events-none opacity-0 
                              group-hover:hidden group-hover/item:opacity-100 transition-opacity duration-300'>
@@ -68,23 +74,36 @@ $userName = $_SESSION['user_name'] ?? 'Visitante';
 
     <!-- Perfil / Logout -->
     <div class="flex flex-col pb-5">
+
+        <!-- Perfil -->
         <a href="/Profile"
-           class="flex items-center gap-4 px-5 py-3 hover:bg-blue-500/40 transition-all duration-300 group/item">
-            <i data-lucide="user" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover/item:scale-110"></i>
+           class="flex items-center gap-4 px-5 py-3 hover:bg-blue-500/40 transition-all duration-300 group/item relative">
+
+            <?php if ($userPhoto && file_exists($photoPath)): ?>
+                <!-- Foto do usuário -->
+                <img src="<?= htmlspecialchars($photoUrl) ?>"
+                     class="w-8 h-8 rounded-full object-cover shadow-md flex-shrink-0 transition-transform duration-300 group-hover/item:scale-110">
+            <?php else: ?>
+                <!-- Ícone padrão -->
+                <i data-lucide="user"
+                   class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover/item:scale-110"></i>
+            <?php endif; ?>
+
             <span class="uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                 <?php
                 $nameParts = explode(' ', $userName);
-                $displayName = implode(' ', array_slice($nameParts, 0, 2));
-                echo htmlspecialchars($displayName);
+                echo htmlspecialchars(implode(' ', array_slice($nameParts, 0, 2)));
                 ?>
             </span>
+
             <span class="absolute left-20 bg-gray-900/90 text-white text-xs px-2 py-1 rounded-md shadow-lg ml-2 pointer-events-none opacity-0 group-hover:hidden group-hover/item:opacity-100 transition-opacity duration-300">
                 Perfil
             </span>
         </a>
 
+        <!-- Logout -->
         <a href="/login/logout"
-           class="flex items-center gap-4 px-5 py-3 hover:bg-red-600/70 transition-all duration-300 group/item">
+           class="flex items-center gap-4 px-5 py-3 hover:bg-red-600/70 transition-all duration-300 group/item relative">
             <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover/item:scale-110"></i>
             <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                 Sair
@@ -93,6 +112,7 @@ $userName = $_SESSION['user_name'] ?? 'Visitante';
                 Sair
             </span>
         </a>
+
     </div>
 </aside>
 

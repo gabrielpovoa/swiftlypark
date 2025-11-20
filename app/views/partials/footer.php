@@ -32,5 +32,6 @@
 <script src="/js/ReportLog.js"></script>
 <script src="/js/GetFilterVacancy.js"></script>
 <script src="/js/FinishVacancy.js"></script>
+<script src="/js/changePassword.js"></script>
 </body>
 </html>

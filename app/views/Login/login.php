@@ -33,11 +33,17 @@
         </form>
     </div>
 
-    <div class="flex items-center justify-center mt-6">
+    <div class="flex flex-col gap-5 items-center justify-center mt-6">
         <p class="text-white text-md">
             Não possui uma conta?
             <a href="/CreateAcc" class="ml-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-500/80 rounded-xl text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300">
                 Crie uma!
+            </a>
+        </p>
+        <p class="text-white text-xs">
+            Se esqueceu sua senha
+            <a href="#" class=" py-2 text-white font-semibold">
+                Clique aqui
             </a>
         </p>
     </div>

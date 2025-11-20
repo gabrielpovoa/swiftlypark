@@ -28,7 +28,7 @@
 
             <!-- Call-to-Action -->
             <div class="mt-6 flex justify-center">
-                <a href="/dashboard"
+                <a href="/landingPage"
                    class="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold text-white shadow-lg transition-all duration-300 text-lg flex items-center gap-2">
                     <i data-lucide="info"></i> Conheça o Sistema
                 </a>

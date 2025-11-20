@@ -16,7 +16,7 @@ class VacancyController extends Controller
         $counts = $model->getAvailableCounts();
 
         $this->setview('Vacancy/vacancy', [
-            'title'  => 'Vagas Disponíveis',
+            'title' => 'Vagas Disponíveis',
             'counts' => $counts
         ]);
     }
@@ -43,8 +43,10 @@ class VacancyController extends Controller
             // Busca vaga livre pela categoria
             $vagaLivre = $model->getFreeVagaByCategory($type);
             if (!$vagaLivre) {
-                echo "<h1>Desculpe, não há vagas livres para essa categoria no momento.</h1>";
-                exit;
+                return $this->setview('Vacancy/noVacancy', [
+                    'title' => 'Sem Vagas Disponíveis',
+                    'type' => $type
+                ]);
             }
 
             $idVaga = $vagaLivre['id_vaga'];
@@ -63,7 +65,7 @@ class VacancyController extends Controller
                     $ownerName,
                     $phone,
                     $plate,
-                    (float)$paidAmount,
+                    (float) $paidAmount,
                     $type
                 );
 
@@ -82,8 +84,10 @@ class VacancyController extends Controller
         $vagaLivre = $model->getFreeVagaByCategory($type);
 
         if (!$vagaLivre) {
-            echo "<h1>Desculpe, não há vagas livres para essa categoria no momento.</h1>";
-            exit;
+            return $this->setview('Vacancy/noVacancy', [
+                'title' => 'Sem Vagas Disponíveis',
+                'type' => $type
+            ]);
         }
 
         $vacancyDetails = $model->getVacancyByType($type);
@@ -106,8 +110,8 @@ class VacancyController extends Controller
         $vagas = $model->getVagasFiltradas($categoria, $placa);
 
         $this->setview('Vacancy/manage', [
-            'title'  => 'Gerenciamento de Vagas',
-            'vagas'  => $vagas,
+            'title' => 'Gerenciamento de Vagas',
+            'vagas' => $vagas,
             'filtros' => [
                 'categoria' => $categoria,
                 'placa' => $placa
@@ -120,7 +124,7 @@ class VacancyController extends Controller
         header('Content-Type: application/json; charset=UTF-8');
 
         // 1) Tenta ler de $_POST (FormData)
-        $idVaga    = $_POST['id_vaga']   ?? null;
+        $idVaga = $_POST['id_vaga'] ?? null;
         $horaSaida = $_POST['hora_saida'] ?? null;
 
         // 2) Se não veio em $_POST, tenta JSON cru
@@ -129,18 +133,12 @@ class VacancyController extends Controller
             if ($raw) {
                 $data = json_decode($raw, true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
-                    $idVaga    = $idVaga    ?: ($data['id_vaga']    ?? null);
+                    $idVaga = $idVaga ?: ($data['id_vaga'] ?? null);
                     $horaSaida = $horaSaida ?: ($data['hora_saida'] ?? null);
                 }
             }
         }
 
-        // Debug opcional
-        // file_put_contents(__DIR__ . '/../../../storage/debug_finish.log', json_encode([
-        //     '_POST' => $_POST,
-        //     'idVaga' => $idVaga,
-        //     'horaSaida' => $horaSaida
-        // ], JSON_PRETTY_PRINT));
 
         if (!$idVaga || !$horaSaida) {
             http_response_code(400);

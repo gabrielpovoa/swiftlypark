@@ -42,7 +42,7 @@
         </p>
         <p class="text-white text-xs">
             Se esqueceu sua senha
-            <a href="#" class=" py-2 text-white font-semibold">
+            <a href="/login/recovery" class=" py-2 text-white font-semibold">
                 Clique aqui
             </a>
         </p>

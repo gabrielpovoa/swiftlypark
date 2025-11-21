@@ -3,12 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$userName  = $_SESSION['user_name']  ?? 'Visitante';
+$userName  = $_SESSION['user_name'] ?? 'Visitante';
 $userPhoto = $_SESSION['user_photo'] ?? null;
 
-// Caminho real no servidor
-$photoPath = $_SERVER['DOCUMENT_ROOT'] . "/uploads/" . $userPhoto;
-$photoUrl  = "/uploads/" . $userPhoto;
+// Caminho real do arquivo no servidor
+$photoPath = __DIR__ . '/../../public/uploads/' . $userPhoto;
+$photoUrl  = '/uploads/' . $userPhoto;
 ?>
 
 <!-- Sidebar moderna -->
@@ -45,7 +45,6 @@ $photoUrl  = "/uploads/" . $userPhoto;
             [$href, $icon, $label] = $link;
             $extraClass = $link[3] ?? '';
             $id = $link[4] ?? '';
-
             echo "
             <a href='{$href}' id='{$id}' 
                class='{$extraClass} flex items-center gap-4 px-5 py-3
@@ -59,6 +58,7 @@ $photoUrl  = "/uploads/" . $userPhoto;
                     {$label}
                 </span>
 
+                <!-- Tooltip quando recolhido -->
                 <span class='absolute left-20 top-1/2 -translate-y-1/2 bg-gray-900/90 text-white text-xs 
                              px-2 py-1 rounded-md shadow-lg ml-2 pointer-events-none opacity-0 
                              group-hover:hidden group-hover/item:opacity-100 transition-opacity duration-300'>
@@ -92,7 +92,8 @@ $photoUrl  = "/uploads/" . $userPhoto;
             <span class="uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                 <?php
                 $nameParts = explode(' ', $userName);
-                echo htmlspecialchars(implode(' ', array_slice($nameParts, 0, 2)));
+                $displayName = implode(' ', array_slice($nameParts, 0, 2));
+                echo htmlspecialchars($displayName);
                 ?>
             </span>
 
@@ -103,7 +104,7 @@ $photoUrl  = "/uploads/" . $userPhoto;
 
         <!-- Logout -->
         <a href="/login/logout"
-           class="flex items-center gap-4 px-5 py-3 hover:bg-red-600/70 transition-all duration-300 group/item relative">
+           class="flex items-center gap-4 px-5 py-3 hover:bg-red-600/70 transition-all duration-300 group/item">
             <i data-lucide="log-out" class="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover/item:scale-110"></i>
             <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                 Sair
@@ -112,7 +113,6 @@ $photoUrl  = "/uploads/" . $userPhoto;
                 Sair
             </span>
         </a>
-
     </div>
 </aside>
 

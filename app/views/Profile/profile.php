@@ -5,9 +5,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$userName = $_SESSION['user_name'] ?? 'Visitante';
-$userEmail = $_SESSION['user_email'] ?? 'não informado';
-$userPhoto = $_SESSION['user_photo'] ?? null;
+$userName = $user['nome'] ?? 'Visitante';
+$userEmail = $user['email'] ?? 'não informado';
+$userPhoto = $user['photo'] ?? null;
 ?>
 
 <section class="min-h-screen w-full bg-gradient-to-b from-gray-950 to-gray-900 text-white p-8">

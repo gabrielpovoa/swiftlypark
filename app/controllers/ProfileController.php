@@ -9,45 +9,70 @@ class ProfileController extends Controller
 {
     public function index()
     {
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: /login");
+            exit;
+        }
+
+        $userModel = new User();
+        $user = $userModel->getUserById($_SESSION['user_id']);
+
         $this->setView('Profile/profile', [
-            'title' => 'Perfil - SwiftlyPark'
+            'title' => 'Perfil - SwiftlyPark',
+            'user' => $user
         ]);
     }
 
+
     public function changePassword()
-    {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-            $senhaAtual = $_POST['current_password'] ?? null;
-            $novaSenha = $_POST['new_password'] ?? null;
+        $senhaAtual = $_POST['current_password'] ?? null;
+        $novaSenha = $_POST['new_password'] ?? null;
 
-            if (!$senhaAtual || !$novaSenha) {
-                $this->setView('Profile/profile', [
-                    'title' => 'Perfil - SwiftlyPark',
-                    'message' => 'Preencha todos os campos.'
-                ]);
-                return;
-            }
+        if (!$senhaAtual || !$novaSenha) {
 
             $userModel = new User();
-            $resultado = $userModel->changePassword($_SESSION['user_id'], $senhaAtual, $novaSenha);
+            $user = $userModel->getUserById($_SESSION['user_id']);
 
             $this->setView('Profile/profile', [
                 'title' => 'Perfil - SwiftlyPark',
-                'message' => $resultado['message']
+                'message' => 'Preencha todos os campos.',
+                'user' => $user
             ]);
             return;
         }
 
+        $userModel = new User();
+        $resultado = $userModel->changePassword($_SESSION['user_id'], $senhaAtual, $novaSenha);
+
+        // 🔥 Buscar novamente o usuário aqui
+        $user = $userModel->getUserById($_SESSION['user_id']);
+
         $this->setView('Profile/profile', [
-            'title' => 'Perfil - SwiftlyPark'
+            'title' => 'Perfil - SwiftlyPark',
+            'message' => $resultado['message'],
+            'user' => $user
         ]);
+        return;
     }
+
+    // GET - também precisa enviar o usuário
+    $userModel = new User();
+    $user = $userModel->getUserById($_SESSION['user_id']);
+
+    $this->setView('Profile/profile', [
+        'title' => 'Perfil - SwiftlyPark',
+        'user' => $user
+    ]);
+}
+
 
 
     public function uploadPhoto()
     {
-     
+
         session_start();
 
         if (!isset($_SESSION['user_id'])) {

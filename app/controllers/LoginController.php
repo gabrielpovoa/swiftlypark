@@ -1,65 +1,65 @@
 <?php
-    namespace App\Controllers;
+namespace App\Controllers;
 
-    use Core\Controller;
-    use App\models\LoginModel;
+use Core\Controller;
+use App\models\LoginModel;
 
-    class LoginController extends Controller
+class LoginController extends Controller
+{
+    // Mostra a página de login
+    public function index() {
+        $this->setView('Login/login', [
+            'title' => 'Login - SwiftlyPark',
+            'message' => 'Por favor, faça login'
+        ], false);
+    }
+
+    // Autentica o usuário
+    public function authenticate()
     {
-        // Mostra a página de login
-        public function index() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        $model = new LoginModel();
+        $user = $model->getUserByEmail($email); // Busca login + usuário
+
+        if ($user && password_verify($password, $user['senha_hash'])) {
+            // Login bem-sucedido
+            session_regenerate_id(true);
+
+            $_SESSION['user_id']    = $user['id_usuario'];
+            $_SESSION['user_email'] = $user['email'];
+            $_SESSION['user_name']  = $user['nome'];
+            $_SESSION['user_photo'] = $user['photo'] ?? null;
+
+            header('Location: /');
+            exit;
+        } else {
+            // Login inválido
+            $error = $user ? 'Senha incorreta.' : 'Email não encontrado.';
             $this->setView('Login/login', [
                 'title' => 'Login - SwiftlyPark',
-                'message' => 'Por favor, faça login'
-            ], false); // false = sem layout, só a view pura
-        }
-
-        // Autentica o usuário
-        public function authenticate()
-        {
-            // Inicia a sessão se ainda não foi iniciada
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
-
-            $email = $_POST['email'] ?? '';
-            $password = $_POST['password'] ?? '';
-
-            $model = new LoginModel();
-            $user = $model->getUserByEmail($email); // Busca login + usuário
-
-            if ($user && password_verify($password, $user['senha_hash'])) {
-                session_regenerate_id(true);
-
-                $_SESSION['user_id']    = $user['id_usuario'];
-                $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_name']  = $user['nome'];
-
-                header('Location: /');
-                exit;
-            } else {
-                // Login inválido
-                $error = $user ? 'Senha incorreta.' : 'Email não encontrado.';
-                $this->setView('Login/login', [
-                    'title' => 'Login - SwiftlyPark',
-                    'error' => $error
-                ], false);
-            }
-        }
-
-        // Logout do usuário
-        public function logout()
-        {
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
-
-            // Limpa todas as variáveis de sessão
-            $_SESSION = [];
-            session_destroy();
-
-            // Redireciona para a página de login
-            header('Location: /login');
-            exit;
+                'error' => $error
+            ], false);
         }
     }
+
+    // Logout do usuário
+    public function logout()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Limpa todas as variáveis de sessão
+        $_SESSION = [];
+        session_destroy();
+
+        header('Location: /login');
+        exit;
+    }
+}

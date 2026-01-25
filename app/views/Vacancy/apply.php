@@ -1,112 +1,284 @@
 <?php $this->partial('head', ['title' => $title]); ?>
 
 <?php
-// Mapear tipo para imagem e título
 $vehicleTypes = [
-    'moto' => ['img' => '/images/moto.png', 'title' => 'Moto'],
-    'carro' => ['img' => '/images/car.png', 'title' => 'Carro'],
-    'caminhao' => ['img' => '/images/truck.png', 'title' => 'Caminhão'],
+        'moto' => ['icon' => 'bike', 'title' => 'Moto', 'color' => 'text-amber-400', 'bg' => 'bg-amber-400/10'],
+        'carro' => ['icon' => 'car', 'title' => 'Carro', 'color' => 'text-blue-400', 'bg' => 'bg-blue-400/10'],
+        'caminhao' => ['icon' => 'truck', 'title' => 'Caminhão', 'color' => 'text-emerald-400', 'bg' => 'bg-emerald-400/10'],
 ];
 
-// Pegar tipo da URL, default para carro
 $type = $_GET['type'] ?? 'carro';
 $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
 ?>
 
-<section class="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#1e2a47] to-[#121826] px-6 py-10">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-10 w-full max-w-5xl">
+<section class="min-h-screen w-full bg-[#0b0e14] flex items-center justify-center p-4 md:p-10 relative overflow-hidden">
 
-        <!-- Card pequeno do veículo selecionado -->
-        <div
-            class="w-62 h-40 flex flex-col items-center justify-center bg-gradient-to-br from-blue-700/80 to-blue-900/80 rounded-2xl shadow-lg p-4 md:p-6">
-            <img src="<?= $vehicle['img'] ?>" alt="<?= $vehicle['title'] ?>" class="w-24 h-24 object-contain mb-2" />
-            <span class="text-white text-lg font-semibold"><?= $vehicle['title'] ?></span>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 w-full max-w-6xl relative z-10">
+
+        <div class="lg:col-span-1 flex flex-col gap-6">
+            <div class="bg-white/[0.02] backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center justify-center shadow-2xl transition-all duration-500 hover:border-blue-500/30">
+                <div class="p-6 rounded-3xl <?= $vehicle['bg'] ?> mb-4">
+                    <i data-lucide="<?= $vehicle['icon'] ?>" class="w-16 h-16 <?= $vehicle['color'] ?>"></i>
+                </div>
+                <h3 class="text-white text-2xl font-black italic tracking-tighter"><?= $vehicle['title'] ?></h3>
+                <span class="text-slate-500 text-[10px] uppercase font-black tracking-[0.2em] mt-2">Vaga Selecionada</span>
+            </div>
+
+            <div class="hidden lg:flex flex-col bg-blue-600/10 border border-blue-500/20 rounded-[2rem] p-6">
+                <div class="flex items-center gap-3 text-blue-400 mb-2">
+                    <i data-lucide="info" class="w-5 h-5"></i>
+                    <span class="font-bold text-xs uppercase tracking-widest">Dica de UX</span>
+                </div>
+                <p class="text-slate-400 text-xs leading-relaxed">Verifique a placa e o horário de entrada antes de confirmar para evitar erros no relatório.</p>
+            </div>
         </div>
 
-        <!-- Formulário ocupa maior espaço -->
-        <div class="md:col-span-3 bg-[#1f2b4a] shadow-lg rounded-2xl px-8 py-10 relative overflow-hidden">
-            <h2 class="text-white text-3xl mb-8 font-semibold text-center">🚗 Estacionar <?= $vehicle['title'] ?></h2>
+        <div class="lg:col-span-3 bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+
+            <header class="mb-10 text-center md:text-left">
+                <h2 class="text-3xl md:text-4xl font-black text-white tracking-tighter italic">
+                    Check-in de <span class="text-blue-500 italic uppercase">Entrada</span>
+                </h2>
+                <div class="h-1 w-20 bg-blue-600 mt-2 mx-auto md:ml-0 rounded-full"></div>
+            </header>
 
             <?php if (!empty($errorMessage)): ?>
-                <p class="text-red-400 mb-6 text-center"><?= htmlspecialchars($errorMessage) ?></p>
+                <div class="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 px-5 py-4 rounded-2xl mb-8 text-sm font-bold animate-pulse">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    <?= htmlspecialchars($errorMessage) ?>
+                </div>
             <?php endif; ?>
 
-            <form action="/vacancy/apply" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form action="/vacancy/apply" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <input type="hidden" name="type" value="<?= htmlspecialchars($type) ?>" />
                 <input type="hidden" name="id_vaga" value="<?= htmlspecialchars($id_vaga) ?>">
 
-                <!-- Nome completo -->
-                <label class="col-span-2 flex flex-col text-white">
-                    Nome completo:
-                    <div class="relative mt-2">
-                        <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
-                        <input type="text" name="owner_name" required class="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2d3a5c] text-white placeholder-gray-300
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                            placeholder="Seu nome completo">
+                <div class="md:col-span-2 space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Proprietário / Condutor</label>
+                    <div class="relative group">
+                        <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                        <input type="text" name="owner_name" required
+                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                               placeholder="Digite o nome completo">
                     </div>
-                </label>
+                </div>
 
-                <!-- Telefone -->
-                <label class="flex flex-col text-white">
-                    Telefone:
-                    <div class="relative mt-2">
-                        <i data-lucide="phone" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
-                        <input type="tel" name="phone" required class="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2d3a5c] text-white placeholder-gray-300
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                            placeholder="(99) 99999-9999">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Contato</label>
+                    <div class="relative group">
+                        <i data-lucide="phone" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                        <input type="tel" name="phone" required
+                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                               placeholder="(00) 00000-0000">
                     </div>
-                </label>
+                </div>
 
-                <!-- Placa -->
-                <label class="flex flex-col text-white">
-                    Placa do veículo:
-                    <div class="relative mt-2">
-                        <i data-lucide="hash" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
-                        <input type="text" name="plate" required maxlength="8" class="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2d3a5c] text-white placeholder-gray-300 uppercase
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="ABC-1234">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Identificação (Placa)</label>
+                    <div class="relative group">
+                        <i data-lucide="hash" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                        <input type="text" name="plate" required maxlength="8"
+                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm uppercase font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                               placeholder="BRA-2E19">
                     </div>
-                </label>
+                </div>
 
-                <!-- Valor pago -->
-                <label class="flex flex-col text-white">
-                    Valor pago (R$):
-                    <div class="relative mt-2">
-                        <i data-lucide="dollar-sign" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
-                        <input type="number" name="paid_amount" required step="0.01" min="0" class="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2d3a5c] text-white placeholder-gray-300
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Ex: 25.00">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Pagamento Antecipado (R$)</label>
+                    <div class="relative group">
+                        <i data-lucide="dollar-sign" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-500 transition-colors w-5 h-5"></i>
+                        <input type="number" name="paid_amount" required step="0.01"
+                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                               placeholder="0,00">
                     </div>
-                </label>
+                </div>
 
-                <!-- Horário de entrada -->
-                <label class="flex flex-col text-white">
-                    Horário de entrada:
-                    <div class="relative mt-2">
-                        <i data-lucide="clock" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
-                        <input type="time" name="entry_time" required step="60" class="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2d3a5c] text-white placeholder-gray-300
-              focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Hora de Início</label>
+                    <div class="relative group">
+                        <i data-lucide="clock" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                        <input type="time" name="entry_time" required
+                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
                     </div>
-                </label>
+                </div>
 
-                <!-- Horário de saída (desabilitado) -->
-                <label class="flex flex-col text-white opacity-70 cursor-not-allowed">
-                    Horário de saída:
-                    <div class="relative mt-2">
-                        <i data-lucide="clock" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
-                        <input type="time" name="exit_time" disabled class="w-full pl-10 pr-4 py-3 rounded-lg bg-[#2d3a5c] text-white placeholder-gray-300
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                            placeholder="Somente ao sair">
-                    </div>
-                </label>
-
-                <!-- Botão ocupa as duas colunas -->
-                <button type="submit"
-                    class="col-span-2 w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transition-colors duration-300">
-                    <i data-lucide="check-circle" class="w-5 h-5"></i> Estacionar
+                <button type="button" onclick="openConfirmationModal()"
+                        class="md:col-span-2 w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all duration-300 shadow-xl shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-3">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    Confirmar Estacionamento
                 </button>
             </form>
-
         </div>
+    </div>
 
+
+    <div id="confirmModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0b0e14]/80 backdrop-blur-sm">
+        <div class="bg-[#1f2b4a] border border-white/10 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
+                    <i data-lucide="search" class="w-8 h-8 text-yellow-500"></i>
+                </div>
+                <h3 class="text-white text-xl font-black italic tracking-tighter uppercase">Conferência de Dados</h3>
+                <p class="text-slate-400 text-xs mt-1 font-bold">Revise as informações antes de salvar</p>
+            </div>
+
+            <div class="space-y-4 bg-white/[0.03] p-6 rounded-3xl border border-white/5 mb-8">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Placa:</span>
+                    <span id="reviewPlate" class="text-blue-400 font-black tracking-widest uppercase"></span>
+                </div>
+                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Entrada:</span>
+                    <span id="reviewTime" class="text-white font-mono italic"></span>
+                </div>
+                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Valor:</span>
+                    <span id="reviewPrice" class="text-emerald-400 font-black"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="closeConfirmationModal()" class="py-4 rounded-2xl bg-white/5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
+                    Corrigir
+                </button>
+                <button onclick="submitRealForm()" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openConfirmationModal() {
+            // Pegar os valores dos inputs
+            const plate = document.getElementsByName('plate')[0].value;
+            const time = document.getElementsByName('entry_time')[0].value;
+            const price = document.getElementsByName('paid_amount')[0].value;
+
+            // Validar se não estão vazios antes de abrir
+            if(!plate || !time || !price) {
+                alert("Por favor, preencha todos os campos obrigatórios.");
+                return;
+            }
+
+            // Injetar no Modal
+            document.getElementById('reviewPlate').innerText = plate;
+            document.getElementById('reviewTime').innerText = time;
+            document.getElementById('reviewPrice').innerText = 'R$ ' + parseFloat(price).toLocaleString('pt-br', {minimumFractionDigits: 2});
+
+            // Mostrar modal
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmationModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        function submitRealForm() {
+            // Pegar o formulário real pelo ID ou Nome e enviar
+            document.querySelector('form').submit();
+        }
+    </script><div id="confirmModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0b0e14]/80 backdrop-blur-sm">
+        <div class="bg-[#1f2b4a] border border-white/10 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
+                    <i data-lucide="search" class="w-8 h-8 text-yellow-500"></i>
+                </div>
+                <h3 class="text-white text-xl font-black italic tracking-tighter uppercase">Conferência de Dados</h3>
+                <p class="text-slate-400 text-xs mt-1 font-bold">Revise as informações antes de salvar</p>
+            </div>
+
+            <div class="space-y-4 bg-white/[0.03] p-6 rounded-3xl border border-white/5 mb-8">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Placa:</span>
+                    <span id="reviewPlate" class="text-blue-400 font-black tracking-widest uppercase"></span>
+                </div>
+                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Entrada:</span>
+                    <span id="reviewTime" class="text-white font-mono italic"></span>
+                </div>
+                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Valor:</span>
+                    <span id="reviewPrice" class="text-emerald-400 font-black"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="closeConfirmationModal()" class="py-4 rounded-2xl bg-white/5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
+                    Corrigir
+                </button>
+                <button onclick="submitRealForm()" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openConfirmationModal() {
+            // Pegar os valores dos inputs
+            const plate = document.getElementsByName('plate')[0].value;
+            const time = document.getElementsByName('entry_time')[0].value;
+            const price = document.getElementsByName('paid_amount')[0].value;
+
+            // Validar se não estão vazios antes de abrir
+            if(!plate || !time || !price) {
+                alert("Por favor, preencha todos os campos obrigatórios.");
+                return;
+            }
+
+            // Injetar no Modal
+            document.getElementById('reviewPlate').innerText = plate;
+            document.getElementById('reviewTime').innerText = time;
+            document.getElementById('reviewPrice').innerText = 'R$ ' + parseFloat(price).toLocaleString('pt-br', {minimumFractionDigits: 2});
+
+            // Mostrar modal
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmationModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        function submitRealForm() {
+            // Pegar o formulário real pelo ID ou Nome e enviar
+            document.querySelector('form').submit();
+        }
+    </script><div id="confirmModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0b0e14]/80 backdrop-blur-sm">
+        <div class="bg-[#1f2b4a] border border-white/10 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
+                    <i data-lucide="search" class="w-8 h-8 text-yellow-500"></i>
+                </div>
+                <h3 class="text-white text-xl font-black italic tracking-tighter uppercase">Conferência de Dados</h3>
+                <p class="text-slate-400 text-xs mt-1 font-bold">Revise as informações antes de salvar</p>
+            </div>
+
+            <div class="space-y-4 bg-white/[0.03] p-6 rounded-3xl border border-white/5 mb-8">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Placa:</span>
+                    <span id="reviewPlate" class="text-blue-400 font-black tracking-widest uppercase"></span>
+                </div>
+                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Entrada:</span>
+                    <span id="reviewTime" class="text-white font-mono italic"></span>
+                </div>
+                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Valor:</span>
+                    <span id="reviewPrice" class="text-emerald-400 font-black"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="closeConfirmationModal()" class="py-4 rounded-2xl bg-white/5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
+                    Corrigir
+                </button>
+                <button onclick="submitRealForm()" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">
+                    Confirmar
+                </button>
+            </div>
+        </div>
     </div>
 </section>

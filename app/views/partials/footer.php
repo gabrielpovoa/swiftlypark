@@ -68,6 +68,7 @@
 
 <script src="/js/ReportLog.js"></script>
 <script src="/js/GetFilterVacancy.js"></script>
+<sript src="/js/modalApplyVacancy.js"></sript>
 <script src="/js/FinishVacancy.js"></script>
 <script src="/js/changePassword.js"></script>
 </body>

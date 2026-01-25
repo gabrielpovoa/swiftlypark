@@ -73,7 +73,9 @@ class ProfileController extends Controller
     public function uploadPhoto()
     {
 
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
         if (!isset($_SESSION['user_id'])) {
             header("Location: /login");

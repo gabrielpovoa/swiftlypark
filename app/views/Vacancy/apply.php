@@ -99,8 +99,15 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                     <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Hora de Início</label>
                     <div class="relative group">
                         <i data-lucide="clock" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
-                        <input type="time" name="entry_time" required
-                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
+                        <input
+                               type="time"
+                               lang="pt-BR"
+                               name="entry_time"
+                               id="entry_time"
+                               required
+                               value="<?php echo date('H:i'); ?>"
+                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                        />
                     </div>
                 </div>
 

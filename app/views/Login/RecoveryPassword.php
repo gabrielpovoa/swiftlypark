@@ -69,12 +69,12 @@
                         </div>
                     <?php endif; ?>
 
-                    <a href="/login"
+                    <button type="submit"
                             class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[0.2em] text-xs
                            transition-all duration-300 shadow-lg shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-2">
                         <i data-lucide="<?= !empty($showNewPassword) ? 'save' : 'send' ?>" class="w-4 h-4"></i>
-                        <?= !empty($showNewPassword) ? 'Atualizar Senha' : 'Ir para Login' ?>
-                    </a>
+                        <?= !empty($showNewPassword) ? 'Atualizar Senha' : 'Enviar Instruções' ?>
+                    </button>
                 </form>
             </div>
 

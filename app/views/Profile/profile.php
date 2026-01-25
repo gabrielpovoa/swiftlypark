@@ -62,9 +62,6 @@ $userPhoto = $user['photo'] ?? null;
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Ativo
                         </span>
                     </div>
-                    <div class="text-left">
-                        <span class="text-sm font-medium text-slate-200">Jan 2024</span>
-                    </div>
                 </div>
             </div>
 
@@ -132,7 +129,7 @@ $userPhoto = $user['photo'] ?? null;
                     </div>
 
                     <div class="flex items-center justify-end gap-4 pt-6">
-                        <button type="button"
+                        <button type="button" onclick="location.reload()"
                                 class="px-6 py-4 rounded-2xl text-sm font-bold text-slate-400 hover:text-white transition-colors">
                             Descartar
                         </button>

@@ -62,19 +62,27 @@ $photoUrl  = '/uploads/' . $userPhoto;
 
         <a href="/Profile" class="group/user flex items-center h-14 rounded-2xl hover:bg-white/[0.05] transition-all duration-300 mb-2">
             <div class="w-14 flex-shrink-0 flex justify-center">
-                <?php if ($userPhoto && file_exists($photoPath)): ?>
-                    <img src="<?= htmlspecialchars($photoUrl) ?>" class="w-8 h-8 rounded-full object-cover border-2 border-blue-500/20 group-hover/user:border-blue-500 transition-colors">
+                <?php
+                // 1. Caminho absoluto no disco para checagem real do arquivo
+                $photoDiskPath = $_SERVER['DOCUMENT_ROOT'] . '/uploads/' . $userPhoto;
+
+                // 2. Só exibe a imagem se o nome existir no banco E o arquivo existir na pasta
+                if ($userPhoto && file_exists($photoDiskPath)): ?>
+                    <div class="w-9 h-9 rounded-full overflow-hidden border-2 border-blue-500/20 group-hover/user:border-blue-500 transition-all duration-300 p-0.5">
+                        <img src="/uploads/<?= htmlspecialchars($userPhoto) ?>"
+                             class="w-full h-full rounded-full object-cover">
+                    </div>
                 <?php else: ?>
-                    <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                    <div class="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 group-hover/user:bg-blue-500/20 transition-all">
                         <i data-lucide="user" class="w-4 h-4"></i>
                     </div>
                 <?php endif; ?>
             </div>
 
-            <div class="opacity-0 group-hover:opacity-100 transition-all duration-300 overflow-hidden">
-                <span class="block text-xs font-black text-white truncate uppercase tracking-tighter">
-                    <?= htmlspecialchars(implode(' ', array_slice(explode(' ', $userName), 0, 2))) ?>
-                </span>
+            <div class="opacity-0 group-hover:opacity-100 transition-all duration-300 overflow-hidden ml-1">
+            <span class="block text-[11px] font-black text-white truncate uppercase tracking-tighter">
+                <?= htmlspecialchars(implode(' ', array_slice(explode(' ', $userName), 0, 2))) ?>
+            </span>
                 <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-widest">Ver Perfil</span>
             </div>
         </a>

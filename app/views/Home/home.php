@@ -1,9 +1,19 @@
 <?php $this->partial('head', ['title' => $title]); ?>
 <?php $this->partial('header'); ?>
 
-<main class="overflow-hidden flex items-start justify-start w-5/6 shadow-md bg-[#1F2937] px-8 py-8 ml-auto min-h-screen">
-    <?= $content ?? '' ?>
+<main class="relative flex-1 min-h-screen bg-[#0b0e14] transition-all duration-500 ease-in-out ml-20 group-hover:ml-72 overflow-x-hidden">
+
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -right-[5%] w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full"></div>
+        <div class="absolute -bottom-[10%] -left-[5%] w-[400px] h-[400px] bg-indigo-600/5 blur-[120px] rounded-full"></div>
+    </div>
+
+    <div class="relative z-10 p-4 md:p-8 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <?= $content ?? '' ?>
+    </div>
+
 </main>
+
 
 <div style="position: fixed; bottom: 30px; right: 30px; z-index: 99999; font-family: sans-serif;">
 
@@ -28,6 +38,24 @@
 <?php $this->partial('footer'); ?>
 
 <style>
+
+    main {
+        transition: margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Garante que o conteúdo interno não quebre o layout */
+    .content-wrapper {
+        max-width: 1600px;
+        margin: 0 auto;
+    }main {
+         transition: margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+     }
+
+    /* Garante que o conteúdo interno não quebre o layout */
+    .content-wrapper {
+        max-width: 1600px;
+        margin: 0 auto;
+    }
     /* Interação manual para garantir que funcione sem Tailwind */
     .whatsapp-btn:hover .ws-tooltip {
         opacity: 1 !important;

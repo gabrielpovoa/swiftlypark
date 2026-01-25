@@ -34,6 +34,18 @@ class VacancyController extends Controller
             $entryTime = $_POST['entry_time'] ?? '';
             $exitTime = $_POST['exit_time'] ?? null;
 
+            if($model->checkIfVehicleIsParked($plate)) {
+                $vacancyDetails = $model->getVacancyByType($type);
+                $freeVacancy = $model->getFreeVagaByCategory($type);
+
+                return $this->setview('Vacancy/apply', [
+                    'title' => $vacancyDetails['title'],
+                    'details' => $vacancyDetails,
+                    'id_vaga' => $freeVacancy['id_vaga'] ?? null,
+                    'errorMessage' => "O veículo de placa $plate já está estacionado no pátio."
+                ]);
+            }
+
             // Validação básica
             if (!$ownerName || !$phone || !$plate || !$paidAmount || !$entryTime) {
                 echo "<h1>Erro: Campos obrigatórios não preenchidos.</h1>";

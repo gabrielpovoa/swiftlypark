@@ -105,6 +105,16 @@
             }
         }
 
+        public function checkIfVehicleIsParked(string $plate)
+        {
+            $sql = "SELECT id_vaga FROM vagas_preenchidas WHERE placa = :plate AND hora_saida IS NULL LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':plate', strtoupper(trim($plate)));
+            $stmt->execute();
+
+            return $stmt->fetch();
+        }
+
 
         public function insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $paidAmount, $tipoVeiculo)
         {

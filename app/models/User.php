@@ -39,7 +39,7 @@ class User
         try {
             $this->db->beginTransaction();
 
-            // 1) Buscar senha atual (e id_login)
+            // 1) Buscar senha atual
             $stmt = $this->db->prepare("SELECT senha_hash, id_login FROM usuario WHERE id_usuario = :id");
             $stmt->execute([':id' => $id_usuario]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -49,28 +49,32 @@ class User
                 return ['success' => false, 'message' => 'Usuário não encontrado.'];
             }
 
-            // 2) Verificar senha atual
+            // 2) Verificar se a senha ATUAL fornecida está correta
             if (!password_verify($senhaAtual, $usuario['senha_hash'])) {
                 $this->db->rollBack();
                 return ['success' => false, 'message' => 'Senha atual incorreta.'];
             }
 
-            // 3) Gerar hash da nova senha
+            // --- NOVA TRAVA DE SEGURANÇA ---
+            // 3) Verificar se a NOVA senha é igual à atual
+            if (password_verify($novaSenha, $usuario['senha_hash'])) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'A nova senha não pode ser igual à senha atual.'];
+            }
+            // ------------------------------
+
+            // 4) Gerar hash da nova senha
             $novaSenhaHash = password_hash($novaSenha, PASSWORD_DEFAULT);
 
-            // 4) Atualizar usuario
-            $updateUsuario = $this->db->prepare("
-                UPDATE usuario SET senha_hash = :novaSenha WHERE id_usuario = :id
-            ");
+            // 5) Atualizar usuario
+            $updateUsuario = $this->db->prepare("UPDATE usuario SET senha_hash = :novaSenha WHERE id_usuario = :id");
             $updateUsuario->execute([
                 ':novaSenha' => $novaSenhaHash,
                 ':id' => $id_usuario
             ]);
 
-            // 5) Atualizar login também com HASH (mantém consistência)
-            $updateLogin = $this->db->prepare("
-                UPDATE login SET senha = :novaSenha WHERE id_login = :idLogin
-            ");
+            // 6) Atualizar login também com HASH (mantém consistência)
+            $updateLogin = $this->db->prepare("UPDATE login SET senha = :novaSenha WHERE id_login = :idLogin");
             $updateLogin->execute([
                 ':novaSenha' => $novaSenhaHash,
                 ':idLogin' => $usuario['id_login']

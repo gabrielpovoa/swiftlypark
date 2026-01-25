@@ -100,7 +100,7 @@ $userPhoto = $user['photo'] ?? null;
                                    placeholder="••••••••">
                         </div>
 
-                        <div class="space-y-3">
+                        <div class="space-y-3 relative">
                             <label for="new_password"
                                    class="text-sm font-semibold text-slate-300 ml-1 flex items-center gap-2">
                                 <i data-lucide="key-round" class="w-4 h-4 opacity-50"></i>

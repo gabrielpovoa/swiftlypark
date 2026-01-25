@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # Servidor Web (Apache + PHP)
+  app:
+    build: .
+    container_name: swiftlypark-app
+    restart: always
+    ports:
+      - "8080:80" # Acesse em localhost:8080
+    volumes:
+      - .:/var/www/html
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=parking
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+    networks:
+      - swiftly-network
+    depends_on:
+      - db
+
+  # Banco de Dados (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: swiftlypark-db
+    restart: always
+    environment:
+      - MYSQL_DATABASE=parking
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+    ports:
+      - "3306:3306" # Permite que você conecte via HeidiSQL ou DBeaver no host
+    volumes:
+      - swiftly-db-data:/var/lib/mysql
+    networks:
+      - swiftly-network
+
+  # phpMyAdmin (Gerenciador visual igual ao Laragon)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: swiftlypark-pma
+    restart: always
+    ports:
+      - "8081:80" # Acesse em localhost:8081
+    environment:
+      - PMA_HOST=db
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - swiftly-network
+    depends_on:
+      - db
+
+networks:
+  swiftly-network:
+    driver: bridge
+
+volumes:
+  swiftly-db-data:

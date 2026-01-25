@@ -16,7 +16,7 @@ class VacancyController extends Controller
         $counts = $model->getAvailableCounts();
 
         $this->setview('Vacancy/vacancy', [
-            'title'  => 'Vagas Disponíveis',
+            'title' => 'Vagas Disponíveis',
             'counts' => $counts
         ]);
     }
@@ -34,6 +34,19 @@ class VacancyController extends Controller
             $entryTime = $_POST['entry_time'] ?? '';
             $exitTime = $_POST['exit_time'] ?? null;
 
+            if($model->checkIfVehicleIsParked($plate)) {
+                $vacancyDetails = $model->getVacancyByType($type);
+                $freeVacancy = $model->getFreeVagaByCategory($type);
+
+                return $this->setview('Vacancy/apply', [
+                    'title' => $vacancyDetails['title'],
+                    'details' => $vacancyDetails,
+                    'id_vaga' => $freeVacancy['id_vaga'] ?? null,
+                    'errorMessage' => "O veículo de placa $plate já está estacionado no pátio."
+                ]);
+            }
+
+            // Validação básica
             if (!$ownerName || !$phone || !$plate || !$paidAmount || !$entryTime) {
                 echo "<h1>Erro: Campos obrigatórios não preenchidos.</h1>";
                 exit;
@@ -41,10 +54,11 @@ class VacancyController extends Controller
 
             // Busca vaga livre pela categoria
             $vagaLivre = $model->getFreeVagaByCategory($type);
-
             if (!$vagaLivre) {
-                echo "<h1>Desculpe, não há vagas livres para essa categoria no momento.</h1>";
-                exit;
+                return $this->setview('Vacancy/noVacancy', [
+                    'title' => 'Sem Vagas Disponíveis',
+                    'type' => $type
+                ]);
             }
 
             $idVaga = $vagaLivre['id_vaga'];
@@ -63,23 +77,18 @@ class VacancyController extends Controller
                     $ownerName,
                     $phone,
                     $plate,
-                    (float)$paidAmount
+                    (float) $paidAmount,
+                    $type
                 );
 
-                // Confirmação para o usuário
-                echo "<h1>Inscrição confirmada!</h1>";
-                echo "<p><strong>Nome:</strong> " . htmlspecialchars($ownerName) . "</p>";
-                echo "<p><strong>Telefone:</strong> " . htmlspecialchars($phone) . "</p>";
-                echo "<p><strong>Placa:</strong> " . htmlspecialchars(strtoupper($plate)) . "</p>";
-                echo "<p><strong>Vaga ID:</strong> " . $idVaga . "</p>";
-                echo "<p><strong>Valor pago pela vaga:</strong> R$ " . number_format($paidAmount, 2, ',', '.') . "</p>";
-                echo "<p><strong>Horário de entrada:</strong> " . date('H:i', strtotime($horaEntrada)) . "</p>";
-                echo "<p><strong>Horário de saída:</strong> " . ($exitTime ? date('H:i', strtotime($horaSaida)) : 'Não informado') . "</p>";
+
+                // Redireciona para manage já preenchendo filtro de placa
+                header('Location: /vacancy/manage?placa=' . urlencode($plate));
+                exit();
             } catch (\Exception $e) {
                 echo "<h1>Erro ao reservar a vaga: " . htmlspecialchars($e->getMessage()) . "</h1>";
+                exit;
             }
-
-            exit;
         }
 
         // Se for GET, exibe o formulário com uma vaga livre
@@ -87,8 +96,10 @@ class VacancyController extends Controller
         $vagaLivre = $model->getFreeVagaByCategory($type);
 
         if (!$vagaLivre) {
-            echo "<h1>Desculpe, não há vagas livres para essa categoria no momento.</h1>";
-            exit;
+            return $this->setview('Vacancy/noVacancy', [
+                'title' => 'Sem Vagas Disponíveis',
+                'type' => $type
+            ]);
         }
 
         $vacancyDetails = $model->getVacancyByType($type);
@@ -111,13 +122,68 @@ class VacancyController extends Controller
         $vagas = $model->getVagasFiltradas($categoria, $placa);
 
         $this->setview('Vacancy/manage', [
-            'title'  => 'Gerenciamento de Vagas',
-            'vagas'  => $vagas,
+            'title' => 'Gerenciamento de Vagas',
+            'vagas' => $vagas,
             'filtros' => [
                 'categoria' => $categoria,
                 'placa' => $placa
             ]
         ]);
     }
+    public function finishVacancy()
+    {
+        // Sempre responder JSON
+        header('Content-Type: application/json; charset=UTF-8');
+
+        // 1) Tenta ler de $_POST (FormData)
+        $idVaga = $_POST['id_vaga'] ?? null;
+        $horaSaida = $_POST['hora_saida'] ?? null;
+
+        // 2) Se não veio em $_POST, tenta JSON cru
+        if (!$idVaga || !$horaSaida) {
+            $raw = file_get_contents('php://input');
+            if ($raw) {
+                $data = json_decode($raw, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                    $idVaga = $idVaga ?: ($data['id_vaga'] ?? null);
+                    $horaSaida = $horaSaida ?: ($data['hora_saida'] ?? null);
+                }
+            }
+        }
+
+
+        if (!$idVaga || !$horaSaida) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dados inválidos (id ou hora faltando).']);
+            return;
+        }
+
+        try {
+            $model = new \App\Models\VacancyModel();
+
+            $vaga = $model->getVagaById($idVaga);
+            if (!$vaga) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Vaga não encontrada.']);
+                return;
+            }
+            if ($vaga['status'] === 'livre') {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Vaga já está livre.']);
+                return;
+            }
+
+            // Importante: aqui esperamos "HH:mm". A model monta a data completa.
+            $model->finalizarVaga($idVaga, $horaSaida);
+
+            echo json_encode(['success' => true]);
+        } catch (\Throwable $e) {
+            // Nunca vaze HTML; sempre JSON
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Exceção: ' . $e->getMessage()]);
+        }
+    }
+
+
 
 }

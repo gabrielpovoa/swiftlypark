@@ -1,97 +1,111 @@
-### 1. 📌 **Página principal do projeto**
+# 🏎️ SwiftlyPark - Estacionamento Inteligente
 
-- Nome do projeto: **SwiftlyPark**
-- Link para o GitHub: *https://github.com/gabrielpovoa/swiftlypark*
-- Descrição resumida: objetivo, linguagem, arquitetura (MVC em PHP + MySQL), e breve visão geral.
+![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Architecture](https://img.shields.io/badge/Architecture-MVC-green?style=for-the-badge)
 
----
+O **SwiftlyPark** é um sistema de gestão de estacionamentos focado em agilidade e controle financeiro. Desenvolvido com arquitetura MVC, o projeto oferece uma interface moderna para controle de vagas, entradas, saídas e métricas de faturamento em tempo real.
 
-### 2. ✅ **Requisitos e Funcionalidades**
-
-Crie uma tabela (database no Notion) com colunas:
-
-- **ID** (Ex: RQ-01, RQ-02)
-- **Título** (Ex: "Login de usuário", "Cadastro de conta")
-- **Descrição**
-- **Status** (Pendente, Em desenvolvimento, Concluído)
-- **Prioridade** (Alta, Média, Baixa)
+🔗 **Repositório:** [github.com/gabrielpovoa/swiftlypark](https://github.com/gabrielpovoa/swiftlypark)
 
 ---
 
-| ID | TITLE | DESCRIPTION | STATUS | PRIORITY |
-| --- | --- | --- | --- | --- |
-| RQ-01 | Login de usuário | Login com e-mail e senha | Pendente | Alta |
-| RQ-02 | Cadastro de conta | Criação de conta vinculada à tabela de login | Pendente | Alta |
-| RQ-03 | Gerenciar vagas | Controlar vagas disponíveis e preenchidas | Pendente | Alta |
-|  | Dashboard | Mostrar faturamento diário, média de veículos e tempo médio de estadia | Pendente | Média |
+## 🚀 Funcionalidades Implementadas
+
+| ID | Funcionalidade | Descrição | Status | Prioridade |
+| :--- | :--- | :--- | :--- | :--- |
+| **RQ-01** | Login de Usuário | Autenticação segura com e-mail e senha. | ✅ Concluído | Alta |
+| **RQ-02** | Cadastro de Conta | Criação de novos perfis vinculados ao sistema. | ✅ Concluído | Alta |
+| **RQ-03** | Gerenciar Vagas | Controle de disponibilidade (Carro, Moto, Caminhão, App). | ✅ Concluído | Alta |
+| **RQ-04** | Dashboard | Métricas de faturamento, tempo médio e ocupação. | 🔄 Em Dev | Média |
 
 ---
 
-3. 🗄 **Modelagem do Banco de Dados**
+## 🛠️ Tecnologias e Infraestrutura
 
-Crie um **diagrama visual** (pode ser no Whimsical, Draw.io, Excalidraw, ou até dentro do Notion usando embed) mostrando:
+O projeto foi migrado de um ambiente local (Laragon) para uma infraestrutura robusta baseada em **Docker**, garantindo que o sistema rode exatamente da mesma forma em qualquer máquina.
 
-- **Tabela `login`**
-    - id_login (PK)
-    - email
-    - senha
-- **Tabela `usuario`**
-    - id_usuario (PK)
-    - id_login (FK → login.id_login)
-    - nome
-    - foto_perfil
-    - e-mail
-    - senha (hash)
-- **Tabela `vagas_disponiveis`**
-    - id_vaga (PK)
-    - categoria (carro, moto, caminhão, app)
-    - status (livre, reservada)
-- **Tabela `vagas_preenchidas`**
-    - id_vaga_preenchida (PK)
-    - id_vaga (FK → vagas_disponiveis.id_vaga)
-    - hora_entrada
-    - hora_saida
-    - tempo_total
-- **Tabela `transacoes`**
-    - id_transacao (PK)
-    - id_vaga_preenchida (FK)
-    - valor
----
-
-### 4. 📂 **Arquitetura e Estrutura do Código**
-
-- **MVC (Model–View–Controller)**
-    - **/app**
-        - /controllers
-        - /models
-        - /views
-    - **/config** (conexão com banco)
-    - **/public** (arquivos acessíveis ao navegador)
-    - **/routes** (caso queira separar)
-- Descrever **como as partes se comunicam**
-- Indicar onde ficarão as regras de negócio (Models) e a camada de apresentação (Views)
+- **Backend:** PHP 8.2 (MVC)
+- **Banco de Dados:** MySQL 8.0
+- **Servidor Web:** Apache (configurado para `public/`)
+- **Containerização:** Docker & Docker Compose
+- **Interface DB:** phpMyAdmin incluído no ambiente
 
 ---
 
-### 5. 🔄 **Fluxos do sistema**
+## 📂 Estrutura do Projeto
 
-No Notion, crie **fluxogramas** para:
+```text
+swiftlypark/
+├── app/                # Core do sistema (Models, Views, Controllers)
+├── config/             # Configurações de banco de dados e ambiente
+├── core/               # Motor do Framework (Roteamento e Base)
+├── public/             # Ponto de entrada (index.php) e assets (CSS/JS)
+├── routes/             # Definição de rotas do sistema
+├── Dockerfile          # Configuração da imagem PHP/Apache
+└── docker-compose.yml  # Orquestração dos serviços (App, DB, phpMyAdmin)
+```
 
-- **Login**
-- **Cadastro de conta**
-- **Entrada/Saída de veículo**
-- **Cálculo de faturamento**
-- **Dashboard**
+---
+## 🐳 Como Rodar o Projeto com Docker
+
+Para iniciar o ambiente de desenvolvimento, certifique-se de ter o **Docker Desktop** instalado em sua máquina.
+
+### 1️⃣ Clonar o Repositório
+Abra o seu terminal e execute os comandos abaixo para baixar o projeto e acessar a pasta raiz:
+``` bash
+    git clone [https://github.com/gabrielpovoa/swiftlypark.git](https://github.com/gabrielpovoa/swiftlypark.git)
+cd swiftlypark
+```
 
 ---
 
-### 6. 📊 **Métricas e Dashboard**
+## 2️⃣ Subir os Containers
+Utilize o Docker Compose para construir as imagens e iniciar os serviços (PHP, MySQL e phpMyAdmin):
 
-Página para listar quais métricas o backend precisa fornecer:
-
-- Faturamento diário
-- Média de veículos estacionados
-- Tempo médio de permanência
-- Quantidade de vagas ocupadas/livres por categoria
+``` bash
+    docker-compose up -d --build
+```
 
 ---
+
+## 3️⃣ Acessar o Sistema
+Após o carregamento, os serviços estarão disponíveis nos seguintes endereços:
+
+- 🌐 Aplicação: http://localhost:8080
+- 🗄️ phpMyAdmin: http://localhost:8081
+
+``` mysql
+    Usuário: root
+    Senha: root
+```
+
+💡 Dica: No primeiro acesso, utilize o phpMyAdmin para importar o arquivo .sql que acompanha o projeto para criar as tabelas e popular os dados iniciais.
+
+---
+
+## 🗄️ Modelagem do Banco de Dados
+- A arquitetura do banco de dados foi projetada com foco em integridade referencial e automação de processos via deleção em cascata (ON DELETE CASCADE):
+
+- Login & Usuário: Estrutura normalizada com separação entre credenciais de acesso e informações de perfil.
+
+- Gestão de Vagas: Sistema dinâmico que sincroniza a disponibilidade em tempo real entre vagas livres e registros de ocupação.
+
+- Transações: Módulo financeiro integrado, registrando valores e métricas no momento exato da saída dos veículos.
+
+---
+
+## 🔄 Próximos Passos
+
+Acompanhe o que ainda está por vir no desenvolvimento do **SwiftlyPark**:
+
+- [ ] **Dashboard Analytics:** Implementação de gráficos interativos para visualização de performance.
+- [ ] **Relatórios PDF:** Exportação de fechamento de caixa e histórico de movimentações.
+- [ ] **Sistema de Auditoria (Logs):** Registro de logs de atividades (quem alterou valores, horários ou excluiu registros) para maior transparência e segurança.
+
+---
+
+<p align="center">
+  Developed with ❤️ by <strong>Gabriel Povoa</strong>
+</p>

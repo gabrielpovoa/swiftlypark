@@ -1,68 +1,97 @@
 <?php $this->partial('head', ['title' => $title]); ?>
 
-<section
-    class="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-700/80 to-blue-900/90 px-4">
+    <section class="min-h-screen w-full bg-[#0b0e14] flex flex-col items-center justify-center p-6 relative overflow-hidden">
 
-    <div class="w-full max-w-md bg-gradient-to-br from-blue-800/80 to-blue-900/95 shadow-xl rounded-2xl px-8 py-10">
-        <h2 class="text-white text-3xl mb-8 font-bold text-center tracking-wide">Recuperar Senha</h2>
+        <div class="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-        <?php if (!empty($success)): ?>
-            <p class="text-green-400 mb-6 text-center font-medium"><?= htmlspecialchars($success) ?></p>
-        <?php elseif (!empty($error)): ?>
-            <p class="text-red-400 mb-6 text-center font-medium"><?= htmlspecialchars($error) ?></p>
-        <?php endif; ?>
+        <div class="w-full max-w-md relative z-10">
 
-        <form action="/login/recovery/send" method="POST" class="space-y-6">
-
-            <div class="flex flex-col">
-                <label for="email" class="text-white font-semibold mb-2">Email cadastrado</label>
-                <input type="email" id="email" name="email" required
-                    value="<?= isset($email) ? htmlspecialchars($email) : '' ?>"
-                    class="w-full px-4 py-3 rounded-xl bg-blue-700/70 text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300"
-                    placeholder="seu@email.com">
+            <div class="text-center mb-8">
+                <div class="inline-flex p-4 rounded-3xl bg-white/[0.03] border border-white/10 mb-4 shadow-2xl transition-transform hover:scale-110 duration-500">
+                    <i data-lucide="key-round" class="w-10 h-10 text-blue-500"></i>
+                </div>
+                <h1 class="text-3xl font-black text-white tracking-tighter italic">
+                    Recuperar <span class="text-blue-500">Acesso</span>
+                </h1>
+                <p class="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Segurança SwiftlyPark</p>
             </div>
 
-            <?php if (!empty($showNewPassword)): ?>
-                <div class="flex flex-col">
-                    <label for="new_password" class="text-white font-semibold mb-2">Nova Senha</label>
-                    <input type="password" id="new_password" name="new_password" required
-                        class="w-full px-4 py-3 rounded-xl bg-blue-700/70 text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300"
-                        placeholder="••••••••">
+            <div class="bg-white/[0.02] backdrop-blur-2xl border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2.5rem] p-8 md:p-10">
+
+                <?php if (!empty($success)): ?>
+                    <div role="status" aria-live="polite" class="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-3 rounded-2xl mb-8 text-sm font-bold">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        <?= htmlspecialchars($success) ?>
+                    </div>
+                <?php elseif (!empty($error)): ?>
+                    <div role="alert" aria-live="assertive" class="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-2xl mb-8 text-sm font-bold animate-shake">
+                        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                        <?= htmlspecialchars($error) ?>
+                    </div>
+                <?php endif; ?>
+
+                <form action="/login/recovery/send" method="POST" class="space-y-6" aria-label="Formulário de recuperação de senha">
+
+                    <div class="space-y-2">
+                        <label for="email" class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">E-mail Cadastrado</label>
+                        <div class="relative group">
+                            <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                            <input type="email" id="email" name="email" required aria-required="true"
+                                   value="<?= isset($email) ? htmlspecialchars($email) : '' ?>"
+                                   class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all"
+                                   placeholder="seu@email.com">
+                        </div>
+                    </div>
+
+                    <?php if (!empty($showNewPassword)): ?>
+                        <div class="space-y-2">
+                            <label for="new_password" class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nova Senha</label>
+                            <div class="relative group">
+                                <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                                <input type="password" id="new_password" name="new_password" required aria-required="true"
+                                       class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all"
+                                       placeholder="••••••••">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="confirm_password" class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Confirmar Nova Senha</label>
+                            <div class="relative group">
+                                <i data-lucide="shield-check" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                                <input type="password" id="confirm_password" name="confirm_password" required aria-required="true"
+                                       class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all"
+                                       placeholder="••••••••">
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <a href="/login"
+                            class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[0.2em] text-xs
+                           transition-all duration-300 shadow-lg shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i data-lucide="<?= !empty($showNewPassword) ? 'save' : 'send' ?>" class="w-4 h-4"></i>
+                        <?= !empty($showNewPassword) ? 'Atualizar Senha' : 'Ir para Login' ?>
+                    </a>
+                </form>
+            </div>
+
+            <footer class="mt-8 text-center space-y-6">
+                <p class="text-slate-500 text-sm font-medium">
+                    Lembrou a senha?
+                    <a href="/login" class="text-white font-bold hover:text-blue-400 transition-colors ml-1 underline-offset-4 hover:underline">
+                        Fazer Login
+                    </a>
+                </p>
+                <div class="pt-4 border-t border-white/5">
+                    <a href="/CreateAcc" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 hover:text-blue-500 transition-colors">
+                        Não tem conta? Registre-se aqui
+                    </a>
                 </div>
-
-                <div class="flex flex-col">
-                    <label for="confirm_password" class="text-white font-semibold mb-2">Confirme a Nova Senha</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required
-                        class="w-full px-4 py-3 rounded-xl bg-blue-700/70 text-white placeholder-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300"
-                        placeholder="••••••••">
-                </div>
-            <?php endif; ?>
-
-            <button type="submit"
-                class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-2xl font-bold text-white shadow-lg hover:shadow-2xl transition-all duration-300">
-                <?= !empty($showNewPassword) ? 'Atualizar Senha' : 'Enviar' ?>
-            </button>
-
-        </form>
-
-    </div>
-
-    <div class="flex flex-col gap-5 items-center justify-center mt-6">
-        <p class="text-white text-md">
-            Lembrou sua senha?
-            <a href="/login"
-                class="ml-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-500/80 rounded-xl text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300">
-                Faça login
-            </a>
-        </p>
-        <p class="text-white text-xs">
-            Não possui uma conta?
-            <a href="/CreateAcc" class=" py-2 text-white font-semibold">
-                Crie uma!
-            </a>
-        </p>
-    </div>
-
-</section>
+            </footer>
+        </div>
+    </section>
 
 <?php $this->partial('footer'); ?>

@@ -9,7 +9,7 @@
 
         public function __construct()
         {
-            $this->viewsPath = dirname(__DIR__) . '/app/views/';
+            $this->viewsPath = dirname(__DIR__) . '/app/Views/';
         }
 
         protected function setView($view, $data = [], $useLayout = true)

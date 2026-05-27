@@ -1,7 +1,11 @@
-# Usamos a imagem oficial do PHP com Apache
+# --------------------------------------------------------
+# PHP + Apache (imagem oficial)
+# --------------------------------------------------------
 FROM php:8.2-apache
 
-# 1. Instala dependências do sistema e extensões do PHP
+# --------------------------------------------------------
+# 1. Dependências do sistema + extensões PHP
+# --------------------------------------------------------
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -10,38 +14,65 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
+    curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install gd pdo pdo_mysql
 
-# 2. Habilita o mod_rewrite do Apache
+# --------------------------------------------------------
+# 2. Composer (IMPORTANTE para seu erro do vendor/)
+# --------------------------------------------------------
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# --------------------------------------------------------
+# 3. Apache mod_rewrite
+# --------------------------------------------------------
 RUN a2enmod rewrite
 
-# --- AJUSTE AQUI: Mudar o DocumentRoot para a pasta public ---
+# --------------------------------------------------------
+# 4. DocumentRoot apontando para /public
+# --------------------------------------------------------
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+ && sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
-# Garantir que o diretório public tenha permissão de sobrescrita (AllowOverride)
+# Permitir .htaccess
 RUN echo '<Directory "/var/www/html/public">\n\
     AllowOverride All\n\
     Require all granted\n\
-</Directory>' >> /etc/apache2/apache2.conf
-# -----------------------------------------------------------
+</Directory>' > /etc/apache2/conf-available/public.conf \
+ && a2enconf public
 
-# 3. Configura o diretório de trabalho
+# --------------------------------------------------------
+# 5. Diretório de trabalho
+# --------------------------------------------------------
 WORKDIR /var/www/html
 
-# 4. Copia os arquivos do projeto para dentro do container
+# --------------------------------------------------------
+# 6. Copiar projeto
+# --------------------------------------------------------
 COPY . /var/www/html
 
-# 5. Ajusta as permissões
-# www-data precisa ser dono de TUDO para o Apache ler o index e gravar uploads
+# --------------------------------------------------------
+# 7. Permissões corretas
+# --------------------------------------------------------
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/public
 
-# Habilita o Output Buffering para evitar erros de headers already sent por causa de Notices
-RUN echo "output_buffering = On" >> /usr/local/etc/php/conf.d/docker-php-config.ini
+# --------------------------------------------------------
+# 8. PHP settings úteis (evita bugs chatos)
+# --------------------------------------------------------
+RUN echo "output_buffering = On" > /usr/local/etc/php/conf.d/docker.ini \
+ && echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/docker.ini \
+ && echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/docker.ini \
+ && echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/docker.ini
 
-# 6. Expõe a porta 80
+# --------------------------------------------------------
+# 9. Porta Apache
+# --------------------------------------------------------
 EXPOSE 80
+
+# --------------------------------------------------------
+# 10. Start do Apache
+# --------------------------------------------------------
+CMD ["apache2-foreground"]

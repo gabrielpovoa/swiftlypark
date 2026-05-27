@@ -1,59 +1,83 @@
 version: '3.8'
 
 services:
-  # Servidor Web (Apache + PHP)
+  # --------------------------------------------------------
+  # APP (Apache + PHP + Composer)
+  # --------------------------------------------------------
   app:
     build: .
     container_name: swiftlypark-app
     restart: always
     ports:
-      - "8080:80" # Acesse em localhost:8080
+      - "8080:80"
     volumes:
       - .:/var/www/html
+    working_dir: /var/www/html
+
+    # 🔥 resolve problema do vendor automaticamente
+    command: bash -c "composer install && apache2-foreground"
+
     environment:
       - DB_HOST=db
       - DB_DATABASE=parking
       - DB_USERNAME=root
       - DB_PASSWORD=root
+
     networks:
       - swiftly-network
     depends_on:
       - db
 
-  # Banco de Dados (MySQL)
+  # --------------------------------------------------------
+  # BANCO DE DADOS (MySQL 8)
+  # --------------------------------------------------------
   db:
     image: mysql:8.0
     container_name: swiftlypark-db
     restart: always
+
     environment:
-      - MYSQL_DATABASE=parking
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+      MYSQL_DATABASE: parking
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+
     ports:
-      - "3306:3306" # Permite que você conecte via HeidiSQL ou DBeaver no host
+      - "3306:3306"
+
     volumes:
       - swiftly-db-data:/var/lib/mysql
+
     networks:
       - swiftly-network
 
-  # phpMyAdmin (Gerenciador visual igual ao Laragon)
+  # --------------------------------------------------------
+  # PHPMYADMIN
+  # --------------------------------------------------------
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: swiftlypark-pma
     restart: always
     ports:
-      - "8081:80" # Acesse em localhost:8081
+      - "8081:80"
+
     environment:
-      - PMA_HOST=db
-      - MYSQL_ROOT_PASSWORD=root
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: root
+
     networks:
       - swiftly-network
     depends_on:
       - db
 
+# --------------------------------------------------------
+# NETWORK
+# --------------------------------------------------------
 networks:
   swiftly-network:
     driver: bridge
 
+# --------------------------------------------------------
+# VOLUME (persistência do MySQL)
+# --------------------------------------------------------
 volumes:
   swiftly-db-data:

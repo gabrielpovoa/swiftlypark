@@ -70,11 +70,15 @@ class ProfileController extends Controller
 
 
 
-    public function uploadPhoto()
+    public function uploadPhoto(): void
     {
-
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            return;
         }
 
         if (!isset($_SESSION['user_id'])) {
@@ -82,48 +86,77 @@ class ProfileController extends Controller
             exit;
         }
 
-        if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== 0) {
-            die("Erro no upload da foto.");
+        $file = $_FILES['photo'] ?? null;
+
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+            error_log('Falha ao receber foto; código de upload: ' . ($file['error'] ?? 'ausente'));
+            http_response_code(400);
+            exit("Não foi possível receber a foto.");
         }
 
-        $file = $_FILES['photo'];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $maxFileSize = 5 * 1024 * 1024;
 
-        // Extensões válidas
-        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
-
-        if (!in_array($ext, $allowed)) {
-            die("Formato inválido. Envie JPG, PNG ou WEBP.");
+        if ($file['size'] <= 0 || $file['size'] > $maxFileSize || !is_uploaded_file($file['tmp_name'])) {
+            http_response_code(400);
+            exit("Arquivo inválido ou maior que 5 MB.");
         }
 
-        // Nome único
-        $fileName = 'user_' . $_SESSION['user_id'] . '_' . time() . '.' . $ext;
+        $allowedMimeTypes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+        $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
 
-        // Caminho correto: /public/uploads/
-        $uploadDir = __DIR__ . '/../../public/uploads/';
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+        if (!isset($allowedMimeTypes[$mimeType])) {
+            http_response_code(415);
+            exit("Formato inválido. Envie JPG, PNG ou WEBP.");
         }
 
-        $destPath = $uploadDir . $fileName;
+        $fileName = sprintf(
+            'user_%d_%s.%s',
+            (int) $_SESSION['user_id'],
+            bin2hex(random_bytes(16)),
+            $allowedMimeTypes[$mimeType]
+        );
 
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            die("Erro ao mover arquivo de upload.");
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads';
+
+        if ((!is_dir($uploadDir) && !mkdir($uploadDir, 0750, true) && !is_dir($uploadDir))
+            || !is_writable($uploadDir)
+        ) {
+            error_log("Diretório de upload indisponível ou sem escrita: {$uploadDir}");
+            http_response_code(500);
+            exit("Não foi possível salvar a foto.");
         }
 
-        // Atualiza banco
+        $destPath = $uploadDir . DIRECTORY_SEPARATOR . $fileName;
+
+        // A validação de escrita acima fornece o diagnóstico esperado. O operador
+        // evita que uma condição de corrida exponha caminhos internos ao usuário.
+        if (!@move_uploaded_file($file['tmp_name'], $destPath)) {
+            $lastError = error_get_last();
+            error_log('Falha ao mover foto: ' . ($lastError['message'] ?? 'erro desconhecido'));
+            http_response_code(500);
+            exit("Não foi possível salvar a foto.");
+        }
+
         $model = new User();
         $update = $model->updatePhoto($_SESSION['user_id'], $fileName);
 
         if ($update['success']) {
-            // Atualiza sessão
             $_SESSION['user_photo'] = $fileName;
 
             header("Location: /Profile");
             exit;
         }
 
-        die("Erro ao atualizar a foto no banco.");
+        if (is_file($destPath) && !unlink($destPath)) {
+            error_log("Não foi possível remover o upload órfão: {$destPath}");
+        }
+
+        error_log('Falha ao atualizar foto no banco: ' . ($update['error'] ?? 'erro desconhecido'));
+        http_response_code(500);
+        exit("Não foi possível atualizar a foto.");
     }
 }

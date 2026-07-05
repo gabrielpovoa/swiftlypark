@@ -12,10 +12,15 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
+      - swiftly-uploads:/var/www/html/public/uploads
     working_dir: /var/www/html
 
-    # 🔥 resolve problema do vendor automaticamente
-    command: bash -c "composer install && apache2-foreground"
+    # O bind mount acima preserva as permissões do host. O volume dedicado
+    # é preparado para o usuário que executa o Apache antes da inicialização.
+    command: >
+      bash -c "install -d -o www-data -g www-data -m 0750 /var/www/html/public/uploads
+      && composer install
+      && apache2-foreground"
 
     environment:
       - DB_HOST=db
@@ -81,3 +86,4 @@ networks:
 # --------------------------------------------------------
 volumes:
   swiftly-db-data:
+  swiftly-uploads:

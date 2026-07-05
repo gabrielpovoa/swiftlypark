@@ -12,7 +12,7 @@
                 <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Check-in Rápido</h2>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-1 gap-4 overflow-y-auto pr-1 custom-scrollbar">
+            <div class="grid grid-cols-2 lg:grid-cols-1 gap-4 overflow-y-auto overflow-x-visible pr-1 custom-scrollbar">
                 <?php
                 $quickActions = [
                         ['moto', 'Moto', 'text-amber-400', 'bg-amber-400/10'],
@@ -24,8 +24,8 @@
                 foreach ($quickActions as $action): ?>
                     <a href="/vacancy/apply?type=<?= $action[0] ?>"
                        class="group relative flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-[2.5rem] p-7 transition-all duration-500
-                          hover:bg-white/[0.08] hover:border-blue-500/30 hover:-translate-y-1 shadow-2xl">
-                        <div class="p-4 rounded-2xl <?= $action[3] ?> mb-3 transition-transform duration-500 group-hover:scale-110">
+                          hover:bg-white/[0.08] hover:border-blue-500/30 hover:-translate-y-1 hover:scale-[1.02] shadow-2xl overflow-visible">
+                        <div class="p-4 rounded-2xl <?= $action[3] ?> mb-3 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
                             <i data-lucide="<?= ($action[0] === 'moto' ? 'bike' : ($action[0] === 'carro' ? 'car' : ($action[0] === 'caminhao' ? 'truck' : 'smartphone'))) ?>"
                                class="w-8 h-8 <?= $action[2] ?>"></i>
                         </div>

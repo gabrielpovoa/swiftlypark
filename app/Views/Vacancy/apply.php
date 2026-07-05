@@ -5,6 +5,7 @@ $vehicleTypes = [
         'moto' => ['icon' => 'bike', 'title' => 'Moto', 'color' => 'text-amber-400', 'bg' => 'bg-amber-400/10'],
         'carro' => ['icon' => 'car', 'title' => 'Carro', 'color' => 'text-blue-400', 'bg' => 'bg-blue-400/10'],
         'caminhao' => ['icon' => 'truck', 'title' => 'Caminhão', 'color' => 'text-emerald-400', 'bg' => 'bg-emerald-400/10'],
+        'app' => ['icon' => 'smartphone', 'title' => 'App', 'color' => 'text-emerald-400', 'bg' => 'bg-emerald-400/10'],
 ];
 
 $type = $_GET['type'] ?? 'carro';
@@ -20,7 +21,7 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
         <div class="lg:col-span-1 flex flex-col gap-6">
             <div class="bg-white/[0.02] backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center justify-center shadow-2xl transition-all duration-500 hover:border-blue-500/30">
                 <div class="p-6 rounded-3xl <?= $vehicle['bg'] ?> mb-4">
-                    <i data-lucide="<?= $vehicle['icon'] ?>" class="w-16 h-16 <?= $vehicle['color'] ?>"></i>
+                    <i data-lucide="<?= $vehicle['icon'] ?? 'car' ?>" class="w-16 h-16 <?= $vehicle['color'] ?? 'text-white' ?>"></i>
                 </div>
                 <h3 class="text-white text-2xl font-black italic tracking-tighter"><?= $vehicle['title'] ?></h3>
                 <span class="text-slate-500 text-[10px] uppercase font-black tracking-[0.2em] mt-2">Vaga Selecionada</span>

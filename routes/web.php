@@ -56,7 +56,19 @@ $router->get('login/recovery', function () {
 });
 $router->post('login/recovery/send', function () {
     $controller = new PasswordRecController();
-    $controller->sendRecoveryLink();
+    $controller->requestOtp();
+});
+$router->post('login/recovery/verify', function () {
+    $controller = new PasswordRecController();
+    $controller->verifyOtp();
+});
+$router->get('login/recovery/reset', function () {
+    $controller = new PasswordRecController();
+    $controller->showResetForm();
+});
+$router->post('login/recovery/reset', function () {
+    $controller = new PasswordRecController();
+    $controller->resetPassword();
 });
 
 // Cadastro de usuário

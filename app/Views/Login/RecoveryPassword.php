@@ -31,8 +31,17 @@
                     </div>
                 <?php endif; ?>
 
-                <form action="/login/recovery/send" method="POST" class="space-y-6" aria-label="Formulário de recuperação de senha">
+                <?php
+                $formAction = match ($step) {
+                    'verify' => '/login/recovery/verify',
+                    'reset' => '/login/recovery/reset',
+                    default => '/login/recovery/send',
+                };
+                ?>
+                <form action="<?= $formAction ?>" method="POST" class="space-y-6" aria-label="Formulário de recuperação de senha">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
+                    <?php if ($step === 'request'): ?>
                     <div class="space-y-2">
                         <label for="email" class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">E-mail Cadastrado</label>
                         <div class="relative group">
@@ -44,13 +53,25 @@
                                    placeholder="seu@email.com">
                         </div>
                     </div>
-
-                    <?php if (!empty($showNewPassword)): ?>
+                    <?php elseif ($step === 'verify'): ?>
+                        <input type="hidden" name="email" value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="space-y-2">
+                            <label for="otp" class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Código de 5 dígitos</label>
+                            <div class="relative group">
+                                <i data-lucide="shield-check" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
+                                <input type="text" id="otp" name="otp" required inputmode="numeric"
+                                       pattern="[0-9]{5}" minlength="5" maxlength="5" autocomplete="one-time-code"
+                                       class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm tracking-[0.5em]
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all"
+                                       placeholder="00000">
+                            </div>
+                        </div>
+                    <?php else: ?>
                         <div class="space-y-2">
                             <label for="new_password" class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nova Senha</label>
                             <div class="relative group">
                                 <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
-                                <input type="password" id="new_password" name="new_password" required aria-required="true"
+                                <input type="password" id="new_password" name="new_password" required minlength="12" autocomplete="new-password" aria-required="true"
                                        class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all"
                                        placeholder="••••••••">
@@ -61,7 +82,7 @@
                             <label for="confirm_password" class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Confirmar Nova Senha</label>
                             <div class="relative group">
                                 <i data-lucide="shield-check" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
-                                <input type="password" id="confirm_password" name="confirm_password" required aria-required="true"
+                                <input type="password" id="confirm_password" name="confirm_password" required minlength="12" autocomplete="new-password" aria-required="true"
                                        class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm
                                        focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all"
                                        placeholder="••••••••">
@@ -72,8 +93,12 @@
                     <button type="submit"
                             class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[0.2em] text-xs
                            transition-all duration-300 shadow-lg shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-2">
-                        <i data-lucide="<?= !empty($showNewPassword) ? 'save' : 'send' ?>" class="w-4 h-4"></i>
-                        <?= !empty($showNewPassword) ? 'Atualizar Senha' : 'Enviar Instruções' ?>
+                        <i data-lucide="<?= $step === 'reset' ? 'save' : 'send' ?>" class="w-4 h-4"></i>
+                        <?= match ($step) {
+                            'verify' => 'Validar Código',
+                            'reset' => 'Atualizar Senha',
+                            default => 'Enviar Código',
+                        } ?>
                     </button>
                 </form>
             </div>

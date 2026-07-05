@@ -13,7 +13,8 @@ final class RequestIdentity
         private string $email,
         private string $ipAddress,
         private string $requestId,
-        private DateTimeImmutable $requestedAt
+        private DateTimeImmutable $requestedAt,
+        private array $permissions = []
     ) {
     }
 
@@ -40,5 +41,10 @@ final class RequestIdentity
     public function requestedAt(): DateTimeImmutable
     {
         return $this->requestedAt;
+    }
+
+    public function permissions(): array
+    {
+        return $this->permissions;
     }
 }

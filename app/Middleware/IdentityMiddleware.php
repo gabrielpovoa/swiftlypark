@@ -42,7 +42,8 @@ final class IdentityMiddleware
             strtolower($email),
             $this->resolveIpAddress(),
             $this->uuid(),
-            new DateTimeImmutable('now', new DateTimeZone('UTC'))
+            new DateTimeImmutable('now', new DateTimeZone('UTC')),
+            $this->permissions()
         );
 
         IdentityContext::set($identity);
@@ -78,5 +79,20 @@ final class IdentityMiddleware
             substr($hex, 16, 4),
             substr($hex, 20)
         );
+    }
+
+    private function permissions(): array
+    {
+        $permissions = $_SESSION['permissions'] ?? [];
+
+        if (!is_array($permissions)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            $permissions,
+            static fn (mixed $permission): bool => is_string($permission)
+                && preg_match('/^[a-z][a-z0-9._-]+$/', $permission) === 1
+        )));
     }
 }

@@ -1,38 +1,80 @@
 <?php
-    namespace App\Models;
 
-    use Config\Database;
-    use PDO;
+declare(strict_types=1);
 
-    class CreateVacancyModel
+namespace App\Models;
+
+use App\Context\IdentityContext;
+use App\Repositories\AuditLogRepository;
+use App\Repositories\Decorators\TransactionalAuditDecorator;
+use App\Services\AuditService;
+use App\Transactions\TransactionManager;
+use Config\Database;
+use PDO;
+use Throwable;
+
+final class CreateVacancyModel
+{
+    private PDO $db;
+    private TransactionalAuditDecorator $audit;
+    private TransactionManager $transactions;
+
+    public function __construct()
     {
-        private $db;
+        $this->db = (new Database())->connect();
+        $this->audit = new TransactionalAuditDecorator(
+            new AuditService(
+                new AuditLogRepository($this->db),
+                IdentityContext::current()
+            )
+        );
+        $this->transactions = new TransactionManager($this->db);
+    }
 
-        public function __construct()
-        {
-            $this->db = (new Database())->connect();
-        }
+    public function createVacancy(string $category, int $amount): bool
+    {
+        try {
+            $this->transactions->run(function () use ($category, $amount) {
+                $statement = $this->db->prepare(
+                    'INSERT INTO vagas_disponiveis (
+                        categoria, created_by, updated_by
+                     ) VALUES (
+                        :categoria, :created_by, :updated_by
+                     )'
+                );
+                $userId = IdentityContext::current()->userId();
 
-        /**
-         * Cria novas vagas de acordo com a categoria e quantidade
-         */
-        public function createVacancy(string $category, int $amount): bool
-        {
-            try {
-                $this->db->beginTransaction();
+                for ($index = 0; $index < $amount; $index++) {
+                    $statement->execute([
+                        'categoria' => $category,
+                        'created_by' => $userId,
+                        'updated_by' => $userId,
+                    ]);
+                    $id = (int) $this->db->lastInsertId();
 
-                $stmt = $this->db->prepare("INSERT INTO vagas_disponiveis (categoria) VALUES (:categoria)");
-
-                for ($i = 0; $i < $amount; $i++) {
-                    $stmt->execute([':categoria' => $category]);
+                    $this->audit->created(
+                        'vagas_disponiveis',
+                        $id,
+                        fn (): array => $this->findVacancy($id)
+                    );
                 }
+            });
 
-                $this->db->commit();
-                return true;
+            return true;
+        } catch (Throwable $throwable) {
+            error_log($throwable->getMessage());
 
-            } catch (\PDOException $e) {
-                $this->db->rollBack();
-                return false;
-            }
+            return false;
         }
     }
+
+    private function findVacancy(int $id): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT * FROM vagas_disponiveis WHERE id_vaga = :id'
+        );
+        $statement->execute(['id' => $id]);
+
+        return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+    }
+}

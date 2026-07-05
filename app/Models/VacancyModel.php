@@ -2,6 +2,11 @@
 
     namespace App\Models;
 
+    use App\Context\IdentityContext;
+    use App\Repositories\AuditLogRepository;
+    use App\Repositories\Decorators\TransactionalAuditDecorator;
+    use App\Services\AuditService;
+    use App\Transactions\TransactionManager;
     use Config\Database;
     use DateTime;
     use Exception;
@@ -10,11 +15,20 @@
 
     class VacancyModel
     {
-        private $db;
+        private PDO $db;
+        private TransactionalAuditDecorator $audit;
+        private TransactionManager $transactions;
 
         public function __construct()
         {
             $this->db = (new Database())->connect();
+            $this->audit = new TransactionalAuditDecorator(
+                new AuditService(
+                    new AuditLogRepository($this->db),
+                    IdentityContext::current()
+                )
+            );
+            $this->transactions = new TransactionManager($this->db);
         }
 
         public function getAvailableCounts()
@@ -89,20 +103,22 @@
          */
         public function ocuparVagaComPagamento($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo)
         {
-            try {
-                $this->db->beginTransaction();
-
+            return $this->transactions->run(function () use (
+                $idVaga,
+                $horaEntrada,
+                $horaSaida,
+                $ownerName,
+                $phone,
+                $plate,
+                $valorPago,
+                $tipoVeiculo
+            ) {
                 $idVagaPreenchida = $this->insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo);
                 $this->insertTransacao($idVagaPreenchida, $valorPago);
                 $this->updateVagaStatus($idVaga, 'reservada');
 
-                $this->db->commit();
                 return $idVagaPreenchida;
-
-            } catch (PDOException $e) {
-                $this->db->rollBack();
-                throw $e;
-            }
+            });
         }
 
         public function checkIfVehicleIsParked(string $plate)
@@ -116,12 +132,13 @@
         }
 
 
-        public function insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $paidAmount, $tipoVeiculo)
+        private function insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $paidAmount, $tipoVeiculo)
         {
+            $userId = IdentityContext::current()->userId();
             $sql = "INSERT INTO vagas_preenchidas 
-        (id_vaga, hora_entrada, hora_saida, nome_cliente, telefone, placa, valor_pago, tipo_veiculo)
+        (id_vaga, hora_entrada, hora_saida, nome_cliente, telefone, placa, valor_pago, tipo_veiculo, created_by, updated_by)
         VALUES 
-        (:id_vaga, :hora_entrada, :hora_saida, :nome, :telefone, :placa, :valor_pago, :tipo_veiculo)";
+        (:id_vaga, :hora_entrada, :hora_saida, :nome, :telefone, :placa, :valor_pago, :tipo_veiculo, :created_by, :updated_by)";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
@@ -132,34 +149,64 @@
                 'telefone' => $phone,
                 'placa' => strtoupper($plate),
                 'valor_pago' => (float)$paidAmount,
-                'tipo_veiculo' => $tipoVeiculo
+                'tipo_veiculo' => $tipoVeiculo,
+                'created_by' => $userId,
+                'updated_by' => $userId
             ]);
 
-            return $this->db->lastInsertId();
+            $id = (int) $this->db->lastInsertId();
+            $this->audit->created(
+                'vagas_preenchidas',
+                $id,
+                fn (): array => $this->findFilledVacancy($id)
+            );
+
+            return $id;
         }
 
 
-        public function insertTransacao($idVagaPreenchida, $valorPago)
+        private function insertTransacao($idVagaPreenchida, $valorPago)
         {
+            $userId = IdentityContext::current()->userId();
             $sql = "INSERT INTO transacoes 
-                (id_vaga_preenchida, valor, data_transacao)
+                (id_vaga_preenchida, valor, data_transacao, created_by, updated_by)
                 VALUES 
-                (:id_vaga_preenchida, :valor, NOW())";
+                (:id_vaga_preenchida, :valor, NOW(), :created_by, :updated_by)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 'id_vaga_preenchida' => $idVagaPreenchida,
-                'valor' => (float)$valorPago
+                'valor' => (float)$valorPago,
+                'created_by' => $userId,
+                'updated_by' => $userId
             ]);
+
+            $id = (int) $this->db->lastInsertId();
+            $this->audit->created(
+                'transacoes',
+                $id,
+                fn (): array => $this->findTransaction($id)
+            );
         }
 
-        public function updateVagaStatus($idVaga, $status)
+        private function updateVagaStatus($idVaga, $status)
         {
-            $sql = "UPDATE vagas_disponiveis SET status = :status WHERE id_vaga = :id";
+            $oldValues = $this->findAvailableVacancyForUpdate((int) $idVaga);
+            $sql = "UPDATE vagas_disponiveis
+                    SET status = :status, updated_by = :updated_by
+                    WHERE id_vaga = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 'status' => $status,
+                'updated_by' => IdentityContext::current()->userId(),
                 'id' => $idVaga
             ]);
+
+            $this->audit->updated(
+                'vagas_disponiveis',
+                (int) $idVaga,
+                $oldValues,
+                fn (): array => $this->getVagaById($idVaga)
+            );
         }
 
         public function getVagasFiltradas($categoria = null, $placa = null)
@@ -241,33 +288,89 @@
                 $intervalo->s
             );
 
-            try {
-                $this->db->beginTransaction();
-
+            $this->transactions->run(function () use (
+                $vagaPreenchida,
+                $horaSaidaInput,
+                $tempoTotal,
+                $idVaga
+            ) {
+                $lockedFilledVacancy = $this->findFilledVacancyForUpdate(
+                    (int) $vagaPreenchida['id_vaga_preenchida']
+                );
                 // Atualiza a vaga preenchida corretamente
                 $sqlUpdate = "UPDATE vagas_preenchidas
                       SET
                           hora_saida = :hora_saida,
-                          tempo_total = :tempo_total
+                          tempo_total = :tempo_total,
+                          updated_by = :updated_by
                       WHERE id_vaga_preenchida = :id";
 
                 $stmtUpdate = $this->db->prepare($sqlUpdate);
                 $stmtUpdate->execute([
                     'hora_saida' => $horaSaidaInput->format('Y-m-d H:i:s'),
                     'tempo_total' => $tempoTotal,
+                    'updated_by' => IdentityContext::current()->userId(),
                     'id' => $vagaPreenchida['id_vaga_preenchida']
                 ]);
 
+                $this->audit->updated(
+                    'vagas_preenchidas',
+                    (int) $vagaPreenchida['id_vaga_preenchida'],
+                    $lockedFilledVacancy,
+                    fn (): array => $this->findFilledVacancy(
+                        (int) $vagaPreenchida['id_vaga_preenchida']
+                    )
+                );
+
                 // Libera a vaga novamente
                 $this->updateVagaStatus($idVaga, 'livre');
-
-                $this->db->commit();
-
-            } catch (PDOException $e) {
-                $this->db->rollBack();
-                throw $e;
-            }
+            });
         }
 
+        private function findAvailableVacancyForUpdate(int $id): array
+        {
+            $statement = $this->db->prepare(
+                'SELECT * FROM vagas_disponiveis
+                 WHERE id_vaga = :id
+                 FOR UPDATE'
+            );
+            $statement->execute(['id' => $id]);
+
+            return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+        }
+
+        private function findFilledVacancyForUpdate(int $id): array
+        {
+            $statement = $this->db->prepare(
+                'SELECT * FROM vagas_preenchidas
+                 WHERE id_vaga_preenchida = :id
+                 FOR UPDATE'
+            );
+            $statement->execute(['id' => $id]);
+
+            return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+        }
+
+        private function findFilledVacancy(int $id): array
+        {
+            $statement = $this->db->prepare(
+                'SELECT * FROM vagas_preenchidas
+                 WHERE id_vaga_preenchida = :id'
+            );
+            $statement->execute(['id' => $id]);
+
+            return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+        }
+
+        private function findTransaction(int $id): array
+        {
+            $statement = $this->db->prepare(
+                'SELECT * FROM transacoes
+                 WHERE id_transacao = :id'
+            );
+            $statement->execute(['id' => $id]);
+
+            return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+        }
 
     }

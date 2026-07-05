@@ -10,6 +10,8 @@ use App\Controllers\ContactController;
 use App\Controllers\AboutController;
 use App\Controllers\CreateAccController;
 use App\Controllers\ProfileController;
+use App\Exceptions\UnauthorizedException;
+use App\Middleware\IdentityMiddleware;
 
 $router = new Router();
 
@@ -17,12 +19,12 @@ $router = new Router();
 function authRequired($callback)
 {
     return function () use ($callback) {
-        session_start();
-        if (!isset($_SESSION['user_id'])) {
+        try {
+            (new IdentityMiddleware())->handle($callback);
+        } catch (UnauthorizedException $exception) {
             header('Location: /login');
             exit;
         }
-        $callback();
     };
 }
 

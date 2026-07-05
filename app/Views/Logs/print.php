@@ -11,33 +11,20 @@
                 <h1 class="text-3xl md:text-5xl font-black text-white tracking-tighter italic">
                     Relatório de <span class="text-blue-500">Logs</span>
                 </h1>
-                <p class="text-slate-500 text-sm font-medium mt-2 uppercase tracking-widest">Histórico detalhado de movimentação</p>
+                <p class="text-slate-500 text-sm font-medium mt-2 uppercase tracking-widest">
+                    Histórico detalhado de movimentação — <?= htmlspecialchars($periodLabel ?? '') ?>
+                </p>
             </div>
 
             <div class="flex items-center gap-4 print:hidden">
-                <div class="relative group">
-        <span class="absolute -top-2 -right-2 flex h-3 w-3 z-20">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
-        </span>
-
-                    <button disabled
-                            class="relative flex items-center gap-3 px-6 py-3 rounded-2xl
-                       bg-yellow-500/5 border-2 border-yellow-500/50 backdrop-blur-md
-                       text-yellow-500 font-black text-xs uppercase tracking-widest
-                       cursor-wait overflow-hidden transition-all duration-500
-                       shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-
-                        <div class="absolute inset-0 bg-yellow-500/5 opacity-50 group-hover:opacity-100 transition-opacity"></div>
-
-                        <div class="relative flex items-center justify-center">
-                            <i data-lucide="printer" class="w-4 h-4 opacity-40"></i>
-                            <div class="absolute inset-0 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin w-5 h-5 -m-0.5"></div>
-                        </div>
-
-                        <span class="relative italic">On Process...</span>
-                    </button>
-                </div>
+                <a href="/logs/print?filter=<?= rawurlencode($filter ?? '') ?>&download=1"
+                   class="relative flex items-center gap-3 px-6 py-3 rounded-2xl
+                          bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-md
+                          text-emerald-400 font-black text-xs uppercase tracking-widest
+                          hover:bg-emerald-500/20 transition-all duration-300">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="relative italic">Baixar XLSX</span>
+                </a>
 
                 <a href="/"
                    class="flex items-center gap-2 bg-white/5 border border-white/10 text-slate-400 px-6 py-3 rounded-2xl hover:text-white transition-all duration-300 font-bold text-sm">

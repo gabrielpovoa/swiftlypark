@@ -13,29 +13,29 @@ document.addEventListener('DOMContentLoaded', function () {
             const response = await fetch('/logs/options');
             const filters = await response.json();
 
-            const inputOptions = { '': 'Todos' };
+            const inputOptions = {};
             filters.forEach(item => {
                 inputOptions[item.value] = item.label;
             });
 
-            const { value: selectedDate } = await Swal.fire({
-                title: 'Selecione a data para imprimir',
+            const { value: selectedMonth } = await Swal.fire({
+                title: 'Selecione o mês para abrir o relatório',
                 input: 'select',
                 inputOptions: inputOptions,
-                inputPlaceholder: 'Selecione uma data ou Todos',
+                inputPlaceholder: 'Selecione um mês',
                 showCancelButton: true,
-                confirmButtonText: 'Imprimir',
+                confirmButtonText: 'Abrir relatório',
                 cancelButtonText: 'Cancelar',
             });
 
-            if (selectedDate !== undefined) {
-                const query = selectedDate ? `?filter=${selectedDate}` : '';
-                window.location.href = `/logs/print${query}`;
+            if (selectedMonth) {
+                const query = new URLSearchParams({ filter: selectedMonth });
+                window.location.href = `/logs/print?${query.toString()}`;
             }
 
         } catch (error) {
             console.error('Erro ao carregar filtros:', error);
-            Swal.fire('Erro', 'Não foi possível carregar as datas para filtro.', 'error');
+            Swal.fire('Erro', 'Não foi possível carregar os meses para filtro.', 'error');
         }
     };
 

@@ -14,47 +14,64 @@ class HomeDashModel
         $this->db = (new Database())->connect();
     }
 
-    public function getDailyIncome()
+    public function getIncomeByPeriod(string $startUtc, string $endUtc)
     {
         $sql = "
-        SELECT SUM(valor) AS total_pago
-        FROM transacoes t
-        INNER JOIN vagas_preenchidas v ON t.id_vaga_preenchida = v.id_vaga_preenchida
-        WHERE DATE(v.hora_entrada) = CURDATE()
-           OR (v.hora_saida IS NOT NULL AND DATE(v.hora_saida) = CURDATE())
-    ";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchColumn() ?: 0; // Retorna 0 se não houver transações
+            SELECT COALESCE(SUM(valor), 0) AS total_pago
+            FROM transacoes
+            WHERE payment_date >= :start_utc
+              AND payment_date < :end_utc
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'start_utc' => $startUtc,
+            'end_utc' => $endUtc,
+        ]);
+
+        return $stmt->fetchColumn() ?: 0;
     }
 
 
-    public function getLogEntry()
+    public function getLogEntriesByPeriod(string $startLocal, string $endLocal)
     {
         $sql = "
         SELECT 
             'entrada' AS tipo,
             DATE_FORMAT(hora_entrada, '%H:%i') AS hora,
+            DATE_FORMAT(hora_entrada, '%d/%m') AS data,
             nome_cliente,
             placa,
-            tipo_veiculo
+            tipo_veiculo,
+            hora_entrada AS evento_em
         FROM vagas_preenchidas
-        WHERE DATE(hora_entrada) = CURDATE()
+        WHERE hora_entrada >= :entry_start
+          AND hora_entrada < :entry_end
         
         UNION ALL
         
         SELECT 
             'saida' AS tipo,
             DATE_FORMAT(hora_saida, '%H:%i') AS hora,
+            DATE_FORMAT(hora_saida, '%d/%m') AS data,
             nome_cliente,
             placa,
-            tipo_veiculo
+            tipo_veiculo,
+            hora_saida AS evento_em
         FROM vagas_preenchidas
-        WHERE hora_saida IS NOT NULL AND DATE(hora_saida) = CURDATE()
+        WHERE hora_saida >= :exit_start
+          AND hora_saida < :exit_end
         
-        ORDER BY hora DESC
-    ";
+        ORDER BY evento_em DESC
+        ";
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'entry_start' => $startLocal,
+            'entry_end' => $endLocal,
+            'exit_start' => $startLocal,
+            'exit_end' => $endLocal,
+        ]);
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

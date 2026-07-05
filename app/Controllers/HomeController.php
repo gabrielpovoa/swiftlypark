@@ -7,13 +7,24 @@
     class HomeController extends Controller {
         public function index()
         {
+            $localTimezone = new \DateTimeZone('America/Sao_Paulo');
+            $utcTimezone = new \DateTimeZone('UTC');
+            $monthStart = new \DateTimeImmutable('first day of this month 00:00:00', $localTimezone);
+            $nextMonthStart = $monthStart->modify('first day of next month');
+
             $model = new HomeDashModel();
-            $dailyIncome = $model->getDailyIncome();
-            $logEntry = $model->getLogEntry();
+            $monthlyIncome = $model->getIncomeByPeriod(
+                $monthStart->setTimezone($utcTimezone)->format('Y-m-d H:i:s'),
+                $nextMonthStart->setTimezone($utcTimezone)->format('Y-m-d H:i:s')
+            );
+            $logEntry = $model->getLogEntriesByPeriod(
+                $monthStart->format('Y-m-d H:i:s'),
+                $nextMonthStart->format('Y-m-d H:i:s')
+            );
 
             $this->setView('HomeDash/homedash', [
                 'title' => 'Dashboard SwiftlyPark',
-                'dailyIncome' => $dailyIncome,
+                'monthlyIncome' => $monthlyIncome,
                 'logEntry' => $logEntry,
             ]);
         }

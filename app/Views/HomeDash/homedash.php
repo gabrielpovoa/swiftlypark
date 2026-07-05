@@ -43,10 +43,10 @@
 
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-white/5 pb-8 flex-shrink-0">
                     <div>
-                        <h2 class="text-4xl font-black text-white tracking-tighter italic">Fluxo <span class="text-blue-500">Recente</span></h2>
+                        <h2 class="text-4xl font-black text-white tracking-tighter italic">Fluxo <span class="text-blue-500">do Mês</span></h2>
                         <div class="flex items-center gap-2 mt-2">
                             <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-mono">Real-time Activity Feed</p>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-mono">Entradas e saídas do mês atual</p>
                         </div>
                     </div>
 
@@ -88,6 +88,7 @@
                                 </span>
                                     <div class="text-right min-w-[60px]">
                                         <span class="block text-xs font-black text-white tracking-tighter"><?= $log['hora'] ?></span>
+                                        <span class="block text-[8px] font-bold text-slate-500"><?= $log['data'] ?></span>
                                     </div>
                                 </div>
                             </div>
@@ -105,9 +106,9 @@
                 <div class="md:col-span-2 relative overflow-hidden group bg-blue-600 rounded-[3rem] px-10 flex items-center justify-between shadow-[0_20px_50px_rgba(37,99,235,0.25)]">
                     <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 blur-[80px] rounded-full -mr-24 -mt-24 group-hover:scale-150 transition-transform duration-700"></div>
                     <div>
-                        <p class="text-blue-100 text-[10px] font-black uppercase tracking-[0.4em] mb-2 opacity-80">Receita Total de Hoje</p>
+                        <p class="text-blue-100 text-[10px] font-black uppercase tracking-[0.4em] mb-2 opacity-80">Receita Total do Mês</p>
                         <h3 class="text-5xl font-black text-white tracking-tighter italic">
-                            R$ <?= number_format(floatval($dailyIncome), 2, ',', '.') ?>
+                            R$ <?= number_format(floatval($monthlyIncome), 2, ',', '.') ?>
                         </h3>
                     </div>
                     <div class="bg-black/20 p-5 rounded-[2rem] border border-white/10 backdrop-blur-md group-hover:rotate-12 transition-transform shadow-2xl">

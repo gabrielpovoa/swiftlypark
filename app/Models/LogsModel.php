@@ -1,5 +1,5 @@
 <?php
-namespace App\models;
+namespace App\Models;
 
 use Config\Database;
 use PDO;
@@ -15,15 +15,26 @@ class LogsModel
 
     public function getFilters()
     {
-        $sql = "SELECT DISTINCT DATE(hora_entrada) as value,
-                       DATE_FORMAT(hora_entrada, '%d/%m/%Y') as label
+        $sql = "
+            SELECT month_value AS value,
+                   DATE_FORMAT(CONCAT(month_value, '-01'), '%m/%Y') AS label
+            FROM (
+                SELECT DATE_FORMAT(hora_entrada, '%Y-%m') AS month_value
                 FROM vagas_preenchidas
-                ORDER BY value DESC";
+
+                UNION
+
+                SELECT DATE_FORMAT(hora_saida, '%Y-%m') AS month_value
+                FROM vagas_preenchidas
+                WHERE hora_saida IS NOT NULL
+            ) AS available_months
+            ORDER BY month_value DESC
+        ";
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getLogsByFilter($filter)
+    public function getLogsByPeriod(string $startLocal, string $endLocal)
     {
         $sql = "
         SELECT 
@@ -34,31 +45,18 @@ class LogsModel
             placa,
             valor_pago
         FROM vagas_preenchidas
-        WHERE DATE(hora_entrada) = ?
-           OR (hora_saida IS NOT NULL AND DATE(hora_saida) = ?)
+        WHERE (hora_entrada >= :entry_start AND hora_entrada < :entry_end)
+           OR (hora_saida >= :exit_start AND hora_saida < :exit_end)
         ORDER BY hora_entrada ASC, hora_saida ASC
     ";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([$filter, $filter]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+        $stmt->execute([
+            'entry_start' => $startLocal,
+            'entry_end' => $endLocal,
+            'exit_start' => $startLocal,
+            'exit_end' => $endLocal,
+        ]);
 
-    public function getAllLogs()
-    {
-        $sql = "
-        SELECT 
-            DATE_FORMAT(hora_entrada, '%d/%m/%Y') AS data,
-            DATE_FORMAT(hora_entrada, '%H:%i') AS hora_entrada,
-            DATE_FORMAT(hora_saida, '%H:%i') AS hora_saida,
-            nome_cliente,
-            placa,
-            valor_pago
-        FROM vagas_preenchidas
-        WHERE DATE(hora_entrada) = CURDATE()
-           OR (hora_saida IS NOT NULL AND DATE(hora_saida) = CURDATE())
-        ORDER BY hora_entrada ASC, hora_saida ASC
-    ";
-        $stmt = $this->db->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -6,6 +6,7 @@
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10 w-full h-full overflow-hidden">
 
+        <?php if (!empty($canCheckin)): ?>
         <aside class="lg:col-span-3 flex flex-col h-full">
             <div class="flex items-center gap-2 mb-6 ml-1">
                 <div class="w-2 h-5 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
@@ -36,8 +37,9 @@
                 <?php endforeach; ?>
             </div>
         </aside>
+        <?php endif; ?>
 
-        <main class="lg:col-span-9 flex flex-col gap-6 h-full overflow-hidden">
+        <main class="<?= !empty($canCheckin) ? 'lg:col-span-9' : 'lg:col-span-12' ?> flex flex-col gap-6 h-full overflow-hidden">
 
             <div class="flex-1 bg-white/[0.01] backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 shadow-2xl flex flex-col overflow-hidden">
 
@@ -50,11 +52,13 @@
                         </div>
                     </div>
 
+                    <?php if (!empty($canViewReports)): ?>
                     <button id="btn-print-logs"
                             class="js-print-logs relative group flex items-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 text-white text-xs font-black uppercase tracking-[0.2em] rounded-2xl border border-white/10 transition-all active:scale-95 cursor-pointer">
                         <i data-lucide="printer" class="w-4 h-4 text-blue-400 group-hover:rotate-12 transition-transform"></i>
                         <span>Relatório</span>
                     </button>
+                    <?php endif; ?>
                 </div>
 
                 <div class="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-2">

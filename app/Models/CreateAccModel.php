@@ -57,6 +57,12 @@ class CreateAccModel
 
             $idUsuario = $this->db->lastInsertId();
 
+            $stmtRole = $this->db->prepare("
+                INSERT INTO user_roles (user_id, role_id)
+                SELECT :user_id, id FROM roles WHERE slug = 'operator'
+            ");
+            $stmtRole->execute(['user_id' => $idUsuario]);
+
             $this->db->commit();
 
             return (int)$idUsuario;

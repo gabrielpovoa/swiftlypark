@@ -8,6 +8,7 @@ use App\Context\IdentityContext;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\Decorators\TransactionalAuditDecorator;
 use App\Services\AuditService;
+use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;
 use Config\Database;
 use PDO;
@@ -34,6 +35,9 @@ final class CreateVacancyModel
     public function createVacancy(string $category, int $amount): bool
     {
         try {
+            (new AuthorizationService(IdentityContext::current()))
+                ->check('vacancy.create');
+
             $this->transactions->run(function () use ($category, $amount) {
                 $statement = $this->db->prepare(
                     'INSERT INTO vagas_disponiveis (

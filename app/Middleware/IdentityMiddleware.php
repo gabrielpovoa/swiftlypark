@@ -43,7 +43,9 @@ final class IdentityMiddleware
             $this->resolveIpAddress(),
             $this->uuid(),
             new DateTimeImmutable('now', new DateTimeZone('UTC')),
-            $this->permissions()
+            $this->permissions(),
+            $this->roleSlugs(),
+            $this->roleMetadata()
         );
 
         IdentityContext::set($identity);
@@ -94,5 +96,29 @@ final class IdentityMiddleware
             static fn (mixed $permission): bool => is_string($permission)
                 && preg_match('/^[a-z][a-z0-9._-]+$/', $permission) === 1
         )));
+    }
+
+    private function roleSlugs(): array
+    {
+        $roles = $_SESSION['role_slugs'] ?? [];
+
+        return is_array($roles)
+            ? array_values(array_filter($roles, 'is_string'))
+            : [];
+    }
+
+    private function roleMetadata(): array
+    {
+        $metadata = $_SESSION['role_metadata'] ?? [];
+
+        if (!is_array($metadata)) {
+            return ['role' => 'none', 'label' => 'Sem papel', 'icon' => 'user'];
+        }
+
+        return [
+            'role' => (string) ($metadata['role'] ?? 'none'),
+            'label' => (string) ($metadata['label'] ?? 'Sem papel'),
+            'icon' => (string) ($metadata['icon'] ?? 'user'),
+        ];
     }
 }

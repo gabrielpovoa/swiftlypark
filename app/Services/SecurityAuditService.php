@@ -27,6 +27,8 @@ final class SecurityAuditService
     ): void {
         try {
             $context = json_encode([
+                'role_slug' => $this->identity->primaryRoleSlug(),
+                'role_slugs' => $this->identity->roleSlugs(),
                 'requested_action' => $permission,
                 'route' => $route,
                 'reason' => $reason,

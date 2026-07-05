@@ -1,8 +1,11 @@
 <?php
 namespace App\Controllers;
 
+use App\Authorization\Repositories\RbacRepository;
+use App\Authorization\Services\RolePermissionResolver;
 use Core\Controller;
 use App\Models\LoginModel;
+use Config\Database;
 
 class LoginController extends Controller
 {
@@ -35,6 +38,16 @@ class LoginController extends Controller
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_name']  = $user['nome'];
             $_SESSION['user_photo'] = $user['photo'] ?? null;
+
+            $connection = (new Database())->connect();
+            $authorization = (new RolePermissionResolver(
+                new RbacRepository($connection)
+            ))->resolve((int) $user['id_usuario']);
+            $_SESSION['permissions'] = $authorization->permissions();
+            $_SESSION['role_slugs'] = $authorization->roleSlugs();
+            $_SESSION['role_metadata'] = $authorization
+                ->roleMetadata()
+                ->toArray();
 
             header('Location: /');
             exit;

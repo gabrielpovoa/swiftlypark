@@ -6,6 +6,7 @@
     use App\Repositories\AuditLogRepository;
     use App\Repositories\Decorators\TransactionalAuditDecorator;
     use App\Services\AuditService;
+    use App\Services\AuthorizationService;
     use App\Transactions\TransactionManager;
     use Config\Database;
     use DateTime;
@@ -103,6 +104,9 @@
          */
         public function ocuparVagaComPagamento($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo)
         {
+            (new AuthorizationService(IdentityContext::current()))
+                ->check('vehicle.checkin');
+
             return $this->transactions->run(function () use (
                 $idVaga,
                 $horaEntrada,
@@ -240,6 +244,9 @@
 
         public function finalizarVaga($idVaga, $horaSaida)
         {
+            (new AuthorizationService(IdentityContext::current()))
+                ->check('vehicle.checkout');
+
             // Buscar a vaga ativa (sem hora de saída)
             $sql = "SELECT * FROM vagas_preenchidas
             WHERE id_vaga = :id

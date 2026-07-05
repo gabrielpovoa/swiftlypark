@@ -14,7 +14,13 @@ final class RequestIdentity
         private string $ipAddress,
         private string $requestId,
         private DateTimeImmutable $requestedAt,
-        private array $permissions = []
+        private array $permissions = [],
+        private array $roleSlugs = [],
+        private array $roleMetadata = [
+            'role' => 'none',
+            'label' => 'Sem papel',
+            'icon' => 'user',
+        ]
     ) {
     }
 
@@ -46,5 +52,20 @@ final class RequestIdentity
     public function permissions(): array
     {
         return $this->permissions;
+    }
+
+    public function roleSlugs(): array
+    {
+        return $this->roleSlugs;
+    }
+
+    public function primaryRoleSlug(): string
+    {
+        return (string) ($this->roleMetadata['role'] ?? 'none');
+    }
+
+    public function roleMetadata(): array
+    {
+        return $this->roleMetadata;
     }
 }

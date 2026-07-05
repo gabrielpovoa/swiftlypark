@@ -73,4 +73,14 @@
             $this->setView('404/404', ['title' => 'Página Não Encontrada'], false); // false para não usar layout
             exit;
         }
+
+        public function render403(): void
+        {
+            http_response_code(403);
+            $this->setView('403/403', [
+                'title' => 'Acesso Negado - SwiftlyPark',
+                'message' => 'Você não possui permissão para acessar este recurso.',
+            ], false);
+            exit;
+        }
     }

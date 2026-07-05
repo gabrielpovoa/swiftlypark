@@ -3,6 +3,8 @@
 
     use Core\Controller;
     use App\Models\HomeDashModel;
+    use App\Context\IdentityContext;
+    use App\Services\AuthorizationService;
 
     class HomeController extends Controller {
         public function index()
@@ -21,11 +23,16 @@
                 $monthStart->format('Y-m-d H:i:s'),
                 $nextMonthStart->format('Y-m-d H:i:s')
             );
+            $authorization = new AuthorizationService(
+                IdentityContext::current()
+            );
 
             $this->setView('HomeDash/homedash', [
                 'title' => 'Dashboard SwiftlyPark',
                 'monthlyIncome' => $monthlyIncome,
                 'logEntry' => $logEntry,
+                'canCheckin' => $authorization->can('vehicle.checkin'),
+                'canViewReports' => $authorization->can('report.view'),
             ]);
         }
     }

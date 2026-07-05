@@ -2,7 +2,9 @@
 
 namespace App\Controllers;
 
+use App\Context\IdentityContext;
 use App\Models\LogsModel;
+use App\Services\AuthorizationService;
 use Core\Controller;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -14,6 +16,8 @@ class LogsController extends Controller
      */
     public function options()
     {
+        $this->authorizeReports();
+
         try {
             $model = new LogsModel();
             $data = $model->getFilters();
@@ -48,6 +52,8 @@ class LogsController extends Controller
      */
     public function print()
     {
+        $this->authorizeReports();
+
         $timezone = new \DateTimeZone('America/Sao_Paulo');
         $filter = $_GET['filter']
             ?? (new \DateTimeImmutable('now', $timezone))->format('Y-m');
@@ -132,5 +138,11 @@ class LogsController extends Controller
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
+    }
+
+    private function authorizeReports(): void
+    {
+        (new AuthorizationService(IdentityContext::current()))
+            ->check('report.view');
     }
 }

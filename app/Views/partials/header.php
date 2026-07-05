@@ -1,4 +1,8 @@
 <?php
+use App\Authorization\Services\NavigationService;
+use App\Context\IdentityContext;
+use App\Services\AuthorizationService;
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -6,6 +10,9 @@ $userName  = $_SESSION['user_name'] ?? 'Visitante';
 $userPhoto = $_SESSION['user_photo'] ?? null;
 $photoPath = __DIR__ . '/../../public/uploads/' . $userPhoto;
 $photoUrl  = '/uploads/' . $userPhoto;
+$identity = IdentityContext::current();
+$roleMetadata = $identity->roleMetadata();
+$navigation = new NavigationService(new AuthorizationService($identity));
 ?>
 
 <aside class="group fixed top-0 left-0 h-full bg-[#0b0e14] border-r border-white/5 text-slate-400 flex flex-col w-20 hover:w-72 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] z-[100] shadow-2xl overflow-hidden">
@@ -24,18 +31,21 @@ $photoUrl  = '/uploads/' . $userPhoto;
 
     <nav class="flex-grow flex flex-col gap-2 px-3 overflow-y-auto overflow-x-hidden custom-scrollbar">
         <?php
-        $links = [
-                ['/', 'home', 'Painel Inicial'],
-                ['/vacancy/manage', 'layout-grid', 'Gerenciar Vagas'],
-                ['/About', 'info', 'Sobre o Projeto'],
-                ['/Contact', 'mail', 'Suporte & Contato'],
-                ['#', 'printer', 'Relatórios', 'js-print-logs', 'btn-print-logs'],
-        ];
+        $links = $navigation->allowedItems([
+            ['href' => '/', 'icon' => 'home', 'label' => 'Painel Inicial', 'permission' => 'dashboard.view'],
+            ['href' => '/vacancy/manage', 'icon' => 'layout-grid', 'label' => 'Gerenciar Vagas', 'permission' => 'vehicle.view'],
+            ['href' => '/About', 'icon' => 'info', 'label' => 'Sobre o Projeto'],
+            ['href' => '/Contact', 'icon' => 'mail', 'label' => 'Suporte & Contato'],
+            ['href' => '#', 'icon' => 'printer', 'label' => 'Relatórios', 'permission' => 'report.view', 'class' => 'js-print-logs', 'id' => 'btn-print-logs'],
+            ['href' => '/audit', 'icon' => 'search-check', 'label' => 'Auditoria', 'permission' => 'audit.view'],
+        ]);
 
         foreach ($links as $link):
-            [$href, $icon, $label] = $link;
-            $extraClass = $link[3] ?? '';
-            $id = $link[4] ?? '';
+            $href = $link['href'];
+            $icon = $link['icon'];
+            $label = $link['label'];
+            $extraClass = $link['class'] ?? '';
+            $id = $link['id'] ?? '';
             ?>
             <a href="<?= $href ?>" id="<?= $id ?>"
                class="<?= $extraClass ?> group/item relative flex items-center h-12 rounded-xl hover:bg-white/[0.05] hover:text-white transition-all duration-300">
@@ -83,7 +93,7 @@ $photoUrl  = '/uploads/' . $userPhoto;
             <span class="block text-[11px] font-black text-white truncate uppercase tracking-tighter">
                 <?= htmlspecialchars(implode(' ', array_slice(explode(' ', $userName), 0, 2))) ?>
             </span>
-                <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-widest">Ver Perfil</span>
+                <?php $this->partial('role-badge', ['roleMetadata' => $roleMetadata]); ?>
             </div>
         </a>
 

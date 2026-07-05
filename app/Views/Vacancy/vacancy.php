@@ -30,6 +30,7 @@
             ][$item['color']];
             ?>
 
+            <?php if (!empty($canCheckin)): ?>
             <a href="/vacancy/apply?type=<?= $item['type'] ?>"
                class="group relative rounded-[2.5rem] bg-white/[0.03] border border-white/5 p-8 flex flex-col items-center
                       transition-all duration-500 hover:bg-white/[0.06] hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
@@ -60,6 +61,16 @@
                     <div class="h-full bg-blue-500 w-1/3 group-hover:w-full transition-all duration-700"></div>
                 </div>
             </a>
+            <?php else: ?>
+            <div class="group relative rounded-[2.5rem] bg-white/[0.03] border border-white/5 p-8 flex flex-col items-center">
+                <div class="mb-6 p-5 rounded-2xl <?= $colorClass ?> border">
+                    <i data-lucide="<?= $item['icon'] ?>" class="w-10 h-10"></i>
+                </div>
+                <h2 class="text-sm font-bold tracking-[0.2em] text-slate-500"><?= $item['label'] ?></h2>
+                <span class="text-7xl font-black text-white tracking-tighter mt-4"><?= $item['count'] ?></span>
+                <p class="text-xs font-bold uppercase tracking-widest text-slate-600 mt-2">vagas livres</p>
+            </div>
+            <?php endif; ?>
 
         <?php endforeach; ?>
     </div>
@@ -72,12 +83,14 @@
             Gerenciar Vagas
         </a>
 
+        <?php if (!empty($canCreateVacancy)): ?>
         <a href="/CreateVacancy"
            class="group flex items-center gap-3 px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold
                   transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] active:scale-95">
             <i data-lucide="plus" class="w-5 h-5 group-hover:rotate-90 transition-transform duration-500"></i>
             Adicionar Novas Vagas
         </a>
+        <?php endif; ?>
     </div>
 
 </section>

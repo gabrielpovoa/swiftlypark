@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use Core\Controller;
 use App\Models\VacancyModel;
+use App\Context\IdentityContext;
+use App\Services\AuthorizationService;
 
 class VacancyController extends Controller
 {
@@ -17,7 +19,9 @@ class VacancyController extends Controller
 
         $this->setview('Vacancy/vacancy', [
             'title' => 'Vagas Disponíveis',
-            'counts' => $counts
+            'counts' => $counts,
+            'canCheckin' => $this->authorization()->can('vehicle.checkin'),
+            'canCreateVacancy' => $this->authorization()->can('vacancy.create')
         ]);
     }
 
@@ -57,7 +61,9 @@ class VacancyController extends Controller
             if (!$vagaLivre) {
                 return $this->setview('Vacancy/noVacancy', [
                     'title' => 'Sem Vagas Disponíveis',
-                    'type' => $type
+                    'type' => $type,
+                    'canCreateVacancy' => $this->authorization()
+                        ->can('vacancy.create')
                 ]);
             }
 
@@ -98,7 +104,9 @@ class VacancyController extends Controller
         if (!$vagaLivre) {
             return $this->setview('Vacancy/noVacancy', [
                 'title' => 'Sem Vagas Disponíveis',
-                'type' => $type
+                'type' => $type,
+                'canCreateVacancy' => $this->authorization()
+                    ->can('vacancy.create')
             ]);
         }
 
@@ -187,6 +195,9 @@ class VacancyController extends Controller
         }
     }
 
-
+    private function authorization(): AuthorizationService
+    {
+        return new AuthorizationService(IdentityContext::current());
+    }
 
 }

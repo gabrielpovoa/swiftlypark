@@ -41,11 +41,13 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <?php if (!empty($canCreateVacancy)): ?>
                     <a href="/CreateVacancy"
                        class="group flex flex-col items-center justify-center p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] hover:bg-blue-600 transition-all duration-500 shadow-xl">
                         <i data-lucide="plus-circle" class="w-6 h-6 text-blue-500 group-hover:text-white mb-2 transition-colors"></i>
                         <span class="text-white font-bold text-xs uppercase tracking-widest">Expandir Vagas</span>
                     </a>
+                    <?php endif; ?>
 
                     <a href="/"
                        class="group flex flex-col items-center justify-center p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] hover:bg-slate-800 transition-all duration-500 shadow-xl">

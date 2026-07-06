@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
+use App\Authorization\Repositories\RbacRepository;
+use App\Authorization\Services\RolePermissionResolver;
 use App\Context\IdentityContext;
 use App\Context\RequestIdentity;
 use App\Exceptions\UnauthorizedException;
+use App\Exceptions\AccessRevokedException;
+use App\Identity\Repositories\UserAccessRepository;
+use Config\Database;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -28,6 +33,26 @@ final class IdentityMiddleware
             throw new UnauthorizedException('A autenticação é obrigatória.');
         }
 
+        $connection = (new Database())->connect();
+
+        if (!(new UserAccessRepository($connection))->isActive($userId)) {
+            $_SESSION = [];
+            session_destroy();
+
+            throw new AccessRevokedException(
+                'Seu acesso foi revogado. Entre em contato com o administrador do sistema.'
+            );
+        }
+
+        $authorization = (new RolePermissionResolver(
+            new RbacRepository($connection)
+        ))->resolve($userId);
+        $_SESSION['permissions'] = $authorization->permissions();
+        $_SESSION['role_slugs'] = $authorization->roleSlugs();
+        $_SESSION['role_metadata'] = $authorization
+            ->roleMetadata()
+            ->toArray();
+
         $email = filter_var(
             $_SESSION['user_email'] ?? null,
             FILTER_VALIDATE_EMAIL
@@ -43,9 +68,9 @@ final class IdentityMiddleware
             $this->resolveIpAddress(),
             $this->uuid(),
             new DateTimeImmutable('now', new DateTimeZone('UTC')),
-            $this->permissions(),
-            $this->roleSlugs(),
-            $this->roleMetadata()
+            $authorization->permissions(),
+            $authorization->roleSlugs(),
+            $authorization->roleMetadata()->toArray()
         );
 
         IdentityContext::set($identity);
@@ -83,42 +108,4 @@ final class IdentityMiddleware
         );
     }
 
-    private function permissions(): array
-    {
-        $permissions = $_SESSION['permissions'] ?? [];
-
-        if (!is_array($permissions)) {
-            return [];
-        }
-
-        return array_values(array_unique(array_filter(
-            $permissions,
-            static fn (mixed $permission): bool => is_string($permission)
-                && preg_match('/^[a-z][a-z0-9._-]+$/', $permission) === 1
-        )));
-    }
-
-    private function roleSlugs(): array
-    {
-        $roles = $_SESSION['role_slugs'] ?? [];
-
-        return is_array($roles)
-            ? array_values(array_filter($roles, 'is_string'))
-            : [];
-    }
-
-    private function roleMetadata(): array
-    {
-        $metadata = $_SESSION['role_metadata'] ?? [];
-
-        if (!is_array($metadata)) {
-            return ['role' => 'none', 'label' => 'Sem papel', 'icon' => 'user'];
-        }
-
-        return [
-            'role' => (string) ($metadata['role'] ?? 'none'),
-            'label' => (string) ($metadata['label'] ?? 'Sem papel'),
-            'icon' => (string) ($metadata['icon'] ?? 'user'),
-        ];
-    }
 }

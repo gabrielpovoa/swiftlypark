@@ -34,4 +34,37 @@ final class RbacRepository implements RbacRepositoryInterface
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function findDirectPermissionsForUser(int $userId): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT p.slug
+             FROM user_permissions up
+             INNER JOIN permissions p
+                ON p.id = up.permission_id AND p.is_active = 1
+             WHERE up.user_id = :user_id
+             ORDER BY p.slug'
+        );
+        $statement->execute(['user_id' => $userId]);
+
+        return $statement->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public function findPermissionLabels(array $slugs): array
+    {
+        if ($slugs === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($slugs), '?'));
+        $statement = $this->connection->prepare(
+            'SELECT slug, name
+             FROM permissions
+             WHERE is_active = 1 AND slug IN (' . $placeholders . ')
+             ORDER BY name'
+        );
+        $statement->execute(array_values($slugs));
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

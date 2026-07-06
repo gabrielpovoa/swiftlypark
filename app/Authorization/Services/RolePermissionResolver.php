@@ -37,6 +37,10 @@ final class RolePermissionResolver implements RolePermissionResolverInterface
                 $permissions[] = $row['permission_slug'];
             }
         }
+        $permissions = array_merge(
+            $permissions,
+            $this->repository->findDirectPermissionsForUser($userId)
+        );
 
         return new ResolvedAuthorizationContext(
             array_values(array_unique($roles)),

@@ -9,6 +9,7 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\Decorators\TransactionalAuditDecorator;
 use App\Services\AuditService;
 use App\Services\AuthorizationService;
+use App\Exceptions\ForbiddenException;
 use App\Transactions\TransactionManager;
 use Config\Database;
 use PDO;
@@ -65,6 +66,8 @@ final class CreateVacancyModel
             });
 
             return true;
+        } catch (ForbiddenException $exception) {
+            throw $exception;
         } catch (Throwable $throwable) {
             error_log($throwable->getMessage());
 

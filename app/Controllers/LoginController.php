@@ -13,7 +13,10 @@ class LoginController extends Controller
     public function index() {
         $this->setView('Login/login', [
             'title' => 'Login - SwiftlyPark',
-            'message' => 'Por favor, faça login'
+            'message' => 'Por favor, faça login',
+            'error' => isset($_GET['revoked'])
+                ? 'Seu acesso foi revogado. Entre em contato com o administrador do sistema.'
+                : null,
         ], false);
     }
 
@@ -29,6 +32,19 @@ class LoginController extends Controller
 
         $model = new LoginModel();
         $user = $model->getUserByEmail($email); // Busca login + usuário
+
+        if (
+            $user
+            && password_verify($password, $user['senha_hash'])
+            && $user['deleted_at'] !== null
+        ) {
+            $this->setView('Login/login', [
+                'title' => 'Login - SwiftlyPark',
+                'error' => 'Seu acesso foi revogado. Entre em contato com o administrador do sistema.'
+            ], false);
+
+            return;
+        }
 
         if ($user && password_verify($password, $user['senha_hash'])) {
             // Login bem-sucedido

@@ -8,7 +8,7 @@
         <div class="absolute -bottom-[10%] -left-[5%] w-[400px] h-[400px] bg-indigo-600/5 blur-[120px] rounded-full"></div>
     </div>
 
-    <div class="relative z-10 p-4 md:p-8 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div class="relative z-10 min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-700">
         <?= $content ?? '' ?>
     </div>
 
@@ -43,15 +43,6 @@
         transition: margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Garante que o conteúdo interno não quebre o layout */
-    .content-wrapper {
-        max-width: 1600px;
-        margin: 0 auto;
-    }main {
-         transition: margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-     }
-
-    /* Garante que o conteúdo interno não quebre o layout */
     .content-wrapper {
         max-width: 1600px;
         margin: 0 auto;

@@ -6,6 +6,6 @@ namespace App\Exceptions;
 
 use RuntimeException;
 
-final class UnauthorizedException extends RuntimeException
+class UnauthorizedException extends RuntimeException
 {
 }

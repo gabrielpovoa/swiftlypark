@@ -22,7 +22,7 @@ class LoginModel
     public function getUserByEmail($email)
     {
         $sql = "
-            SELECT u.id_usuario, u.email, u.senha_hash, u.nome, u.photo
+            SELECT u.id_usuario, u.email, u.senha_hash, u.nome, u.photo, u.deleted_at
             FROM usuario u
             WHERE u.email = :email
             LIMIT 1

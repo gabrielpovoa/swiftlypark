@@ -1,13 +1,12 @@
 <?php
-$this->partial('head', ['title' => $title]);
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 $userName = $user['nome'] ?? 'Visitante';
 $userEmail = $user['email'] ?? 'não informado';
 $userPhoto = $user['photo'] ?? null;
+$roleMetadata = $roleMetadata ?? [
+    'role' => 'none',
+    'label' => 'Sem papel',
+    'icon' => 'user',
+];
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -33,15 +32,17 @@ $userPhoto = $user['photo'] ?? null;
                             </div>
                         <?php endif; ?>
 
-                        <label for="photo"
+                        <?php if (!empty($canChangePhoto)): ?>
+                        <form action="/Profile/uploadPhoto" method="POST" enctype="multipart/form-data">
+                            <label for="photo"
                                class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <i data-lucide="camera" class="w-8 h-8 text-white mb-1"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-white">Alterar</span>
-                            <form action="/Profile/uploadPhoto" method="POST" enctype="multipart/form-data">
+                                <i data-lucide="camera" class="w-8 h-8 text-white mb-1"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-white">Alterar</span>
                                 <input type="file" id="photo" name="photo" class="hidden" accept="image/*"
                                        onchange="this.form.submit()">
-                            </form>
-                        </label>
+                            </label>
+                        </form>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -53,6 +54,9 @@ $userPhoto = $user['photo'] ?? null;
                         <i data-lucide="mail" class="w-3.5 h-3.5"></i>
                         <?= htmlspecialchars($userEmail) ?>
                     </p>
+                    <div class="mt-3">
+                        <?php $this->partial('role-badge', ['roleMetadata' => $roleMetadata]); ?>
+                    </div>
                 </div>
 
                 <div class="w-full grid grid-cols-2 gap-4 mt-8 pt-8 border-t border-white/5">
@@ -60,6 +64,13 @@ $userPhoto = $user['photo'] ?? null;
                         <span class="block text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold">Status</span>
                         <span class="text-sm font-medium text-emerald-400 flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Ativo
+                        </span>
+                    </div>
+                    <div class="text-left">
+                        <span class="block text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold">Proteção</span>
+                        <span class="text-sm font-medium text-blue-400 flex items-center gap-1.5">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                            RBAC ativo
                         </span>
                     </div>
                 </div>
@@ -73,16 +84,103 @@ $userPhoto = $user['photo'] ?? null;
                     </p>
                 </div>
             </div>
+
+            <div class="rounded-2xl border border-white/5 bg-white/[0.025] p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <span class="block text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Proteção da conta</span>
+                        <h3 class="text-sm font-bold text-white mt-1">Boas práticas</h3>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                        <i data-lucide="lock-keyhole" class="w-4 h-4"></i>
+                    </div>
+                </div>
+
+                <ul class="space-y-3">
+                    <li class="flex items-start gap-3 text-xs text-slate-500 leading-relaxed">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+                        Encerre a sessão ao utilizar um dispositivo compartilhado.
+                    </li>
+                    <li class="flex items-start gap-3 text-xs text-slate-500 leading-relaxed">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+                        Nunca compartilhe sua senha ou códigos de recuperação.
+                    </li>
+                    <li class="flex items-start gap-3 text-xs text-slate-500 leading-relaxed">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+                        Solicite ao administrador somente os acessos necessários.
+                    </li>
+                </ul>
+
+                <a href="/login/logout"
+                   class="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/20 text-slate-400 hover:text-rose-400 text-[10px] font-black uppercase tracking-widest transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    Encerrar sessão
+                </a>
+            </div>
         </aside>
 
         <main class="lg:col-span-8">
             <div class="rounded-3xl border border-white/5 bg-white/[0.03] backdrop-blur-2xl p-8 md:p-12 shadow-2xl">
+
+                <?php if (!empty($message)): ?>
+                    <div class="mb-8 rounded-2xl bg-blue-500/10 border border-blue-500/20 px-5 py-4 text-blue-300 font-bold">
+                        <?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?>
+                    </div>
+                <?php endif; ?>
+
+                <section class="mb-10 pb-10 border-b border-white/5">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-[0.25em] text-blue-500">Seu acesso</span>
+                            <h2 class="text-2xl font-black text-white mt-1">Papéis e capacidades</h2>
+                            <p class="text-sm text-slate-500 mt-1">Informações somente leitura definidas pela política de acesso.</p>
+                        </div>
+                        <span class="text-xs text-slate-500">
+                            <?= count($permissionLabels) ?> permissões efetivas
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <?php foreach ($roleSlugs as $roleSlug): ?>
+                            <span class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-black uppercase tracking-wider">
+                                <i data-lucide="badge-check" class="w-3.5 h-3.5"></i>
+                                <?= htmlspecialchars($roleSlug, ENT_QUOTES, 'UTF-8') ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                        <?php foreach ($permissionLabels as $permission): ?>
+                            <div class="flex items-center gap-3 p-3 rounded-2xl bg-black/20 border border-white/5">
+                                <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <strong class="block text-xs text-slate-200 truncate">
+                                        <?= htmlspecialchars($permission['name'], ENT_QUOTES, 'UTF-8') ?>
+                                    </strong>
+                                    <span class="block text-[9px] text-slate-600 truncate">
+                                        <?= htmlspecialchars($permission['slug'], ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="mt-5 flex items-start gap-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10">
+                        <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-amber-100/60 leading-relaxed">
+                            Estas permissões são informativas e não podem ser alteradas por esta página. Mudanças de acesso exigem um usuário Master autorizado.
+                        </p>
+                    </div>
+                </section>
 
                 <header class="mb-12">
                     <h1 class="text-3xl font-bold text-white tracking-tight italic">Configurações</h1>
                     <p class="text-slate-400 mt-2">Gerencie suas credenciais de acesso e segurança.</p>
                 </header>
 
+                <?php if (!empty($canChangePassword)): ?>
                 <form action="/Profile/changePassword" method="POST" class="space-y-10">
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
@@ -142,6 +240,12 @@ $userPhoto = $user['photo'] ?? null;
                     </div>
 
                 </form>
+                <?php else: ?>
+                    <div class="rounded-2xl border border-white/5 bg-black/20 p-8 text-center">
+                        <i data-lucide="lock-keyhole" class="w-8 h-8 text-slate-600 mx-auto mb-3"></i>
+                        <p class="text-sm text-slate-400">A alteração de senha não está disponível para seu nível de acesso.</p>
+                    </div>
+                <?php endif; ?>
             </div>
         </main>
     </div>

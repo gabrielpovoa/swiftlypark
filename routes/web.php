@@ -12,7 +12,9 @@ use App\Controllers\AboutController;
 use App\Controllers\CreateAccController;
 use App\Controllers\ProfileController;
 use App\Controllers\AuditController;
+use App\Controllers\IdentityManagementController;
 use App\Exceptions\UnauthorizedException;
+use App\Exceptions\AccessRevokedException;
 use App\Exceptions\ForbiddenException;
 use App\Context\IdentityContext;
 use App\Middleware\IdentityMiddleware;
@@ -30,6 +32,9 @@ function authRequired($callback)
     return function () use ($callback) {
         try {
             (new IdentityMiddleware())->handle($callback);
+        } catch (AccessRevokedException $exception) {
+            header('Location: /login?revoked=1');
+            exit;
         } catch (UnauthorizedException $exception) {
             header('Location: /login');
             exit;
@@ -183,6 +188,16 @@ $router->get('logs/print', permissionRequired('report.view', 'logs/print', funct
 
 $router->get('audit', permissionRequired('audit.view', 'audit', function () {
     (new AuditController())->index();
+}));
+
+$router->get('identity', permissionRequired('identity.view', 'identity', function () {
+    (new IdentityManagementController())->index();
+}));
+$router->post('identity/revoke', permissionRequired('identity.manage', 'identity/revoke', function () {
+    (new IdentityManagementController())->revoke();
+}));
+$router->post('identity/permissions', permissionRequired('identity.manage', 'identity/permissions', function () {
+    (new IdentityManagementController())->permissions();
 }));
 
 

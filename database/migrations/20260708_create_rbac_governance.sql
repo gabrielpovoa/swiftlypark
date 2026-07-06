@@ -1,3 +1,5 @@
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 CREATE TABLE roles (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     slug VARCHAR(80) NOT NULL,

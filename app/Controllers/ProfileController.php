@@ -2,6 +2,10 @@
 
 namespace App\Controllers;
 
+use App\Authorization\Repositories\RbacRepository;
+use App\Context\IdentityContext;
+use App\Services\AuthorizationService;
+use Config\Database;
 use Core\Controller;
 use App\Models\User;
 
@@ -17,10 +21,7 @@ class ProfileController extends Controller
         $userModel = new User();
         $user = $userModel->getUserById($_SESSION['user_id']);
 
-        $this->setView('Profile/profile', [
-            'title' => 'Perfil - SwiftlyPark',
-            'user' => $user
-        ]);
+        $this->renderProfile($user);
     }
 
 
@@ -36,11 +37,7 @@ class ProfileController extends Controller
             $userModel = new User();
             $user = $userModel->getUserById($_SESSION['user_id']);
 
-            $this->setView('Profile/profile', [
-                'title' => 'Perfil - SwiftlyPark',
-                'message' => 'Preencha todos os campos.',
-                'user' => $user
-            ]);
+            $this->renderProfile($user, 'Preencha todos os campos.');
             return;
         }
 
@@ -50,11 +47,7 @@ class ProfileController extends Controller
         // 🔥 Buscar novamente o usuário aqui
         $user = $userModel->getUserById($_SESSION['user_id']);
 
-        $this->setView('Profile/profile', [
-            'title' => 'Perfil - SwiftlyPark',
-            'message' => $resultado['message'],
-            'user' => $user
-        ]);
+        $this->renderProfile($user, $resultado['message']);
         return;
     }
 
@@ -62,10 +55,7 @@ class ProfileController extends Controller
     $userModel = new User();
     $user = $userModel->getUserById($_SESSION['user_id']);
 
-    $this->setView('Profile/profile', [
-        'title' => 'Perfil - SwiftlyPark',
-        'user' => $user
-    ]);
+    $this->renderProfile($user);
 }
 
 
@@ -158,5 +148,26 @@ class ProfileController extends Controller
         error_log('Falha ao atualizar foto no banco: ' . ($update['error'] ?? 'erro desconhecido'));
         http_response_code(500);
         exit("Não foi possível atualizar a foto.");
+    }
+
+    private function renderProfile(array $user, ?string $message = null): void
+    {
+        $identity = IdentityContext::current();
+        $authorization = new AuthorizationService($identity);
+        $connection = (new Database())->connect();
+
+        $this->setView('Profile/profile', [
+            'title' => 'Perfil - SwiftlyPark',
+            'user' => $user,
+            'message' => $message,
+            'roleMetadata' => $identity->roleMetadata(),
+            'roleSlugs' => $identity->roleSlugs(),
+            'permissionLabels' => (new RbacRepository($connection))
+                ->findPermissionLabels($identity->permissions()),
+            'canChangePassword' => $authorization
+                ->can('profile.password.update'),
+            'canChangePhoto' => $authorization
+                ->can('profile.photo.update'),
+        ]);
     }
 }

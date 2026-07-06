@@ -38,6 +38,7 @@ $navigation = new NavigationService(new AuthorizationService($identity));
             ['href' => '/Contact', 'icon' => 'mail', 'label' => 'Suporte & Contato'],
             ['href' => '#', 'icon' => 'printer', 'label' => 'Relatórios', 'permission' => 'report.view', 'class' => 'js-print-logs', 'id' => 'btn-print-logs'],
             ['href' => '/audit', 'icon' => 'search-check', 'label' => 'Auditoria', 'permission' => 'audit.view'],
+            ['href' => '/identity', 'icon' => 'users-round', 'label' => 'Usuários', 'permission' => 'identity.view'],
         ]);
 
         foreach ($links as $link):

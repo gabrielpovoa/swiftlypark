@@ -1,19 +1,17 @@
-<?php $this->partial('head', ['title' => $title]); ?>
-
-<section class="h-screen w-full bg-[#0b0e14] text-slate-300 p-6 md:p-8 relative overflow-hidden flex flex-col">
+<section class="min-h-screen w-full bg-[#0b0e14] text-slate-300 p-4 sm:p-6 lg:p-8 relative overflow-x-hidden">
 
     <div class="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10 w-full h-full overflow-hidden">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 relative z-10 w-full">
 
         <?php if (!empty($canCheckin)): ?>
-        <aside class="lg:col-span-3 flex flex-col h-full">
+        <aside class="lg:col-span-3 flex flex-col">
             <div class="flex items-center gap-2 mb-6 ml-1">
                 <div class="w-2 h-5 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
                 <h2 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Check-in Rápido</h2>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-1 gap-4 overflow-y-auto overflow-x-visible pr-1 custom-scrollbar">
+            <div class="grid grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-4">
                 <?php
                 $quickActions = [
                         ['moto', 'Moto', 'text-amber-400', 'bg-amber-400/10'],
@@ -24,11 +22,11 @@
 
                 foreach ($quickActions as $action): ?>
                     <a href="/vacancy/apply?type=<?= $action[0] ?>"
-                       class="group relative flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-[2.5rem] p-7 transition-all duration-500
+                       class="group relative flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-[2rem] p-4 xl:p-6 transition-all duration-500
                           hover:bg-white/[0.08] hover:border-blue-500/30 hover:-translate-y-1 hover:scale-[1.02] shadow-2xl overflow-visible">
-                        <div class="p-4 rounded-2xl <?= $action[3] ?> mb-3 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
+                        <div class="p-3 xl:p-4 rounded-2xl <?= $action[3] ?> mb-2 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
                             <i data-lucide="<?= ($action[0] === 'moto' ? 'bike' : ($action[0] === 'carro' ? 'car' : ($action[0] === 'caminhao' ? 'truck' : 'smartphone'))) ?>"
-                               class="w-8 h-8 <?= $action[2] ?>"></i>
+                               class="w-6 h-6 xl:w-8 xl:h-8 <?= $action[2] ?>"></i>
                         </div>
                         <span class="text-white text-sm font-black uppercase tracking-widest group-hover:text-blue-400 transition-colors">
                             <?= $action[1] ?>
@@ -39,9 +37,9 @@
         </aside>
         <?php endif; ?>
 
-        <main class="<?= !empty($canCheckin) ? 'lg:col-span-9' : 'lg:col-span-12' ?> flex flex-col gap-6 h-full overflow-hidden">
+        <main class="<?= !empty($canCheckin) ? 'lg:col-span-9' : 'lg:col-span-12' ?> flex flex-col gap-5 lg:gap-6 min-w-0">
 
-            <div class="flex-1 bg-white/[0.01] backdrop-blur-3xl border border-white/5 rounded-[3rem] p-8 shadow-2xl flex flex-col overflow-hidden">
+            <div class="bg-white/[0.01] backdrop-blur-3xl border border-white/5 rounded-[2rem] lg:rounded-[3rem] p-5 lg:p-8 shadow-2xl flex flex-col min-h-[26rem]">
 
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-white/5 pb-8 flex-shrink-0">
                     <div>
@@ -61,7 +59,7 @@
                     <?php endif; ?>
                 </div>
 
-                <div class="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-2">
+                <div class="max-h-[24rem] overflow-y-auto pr-2 lg:pr-3 custom-scrollbar space-y-2">
                     <?php if (!empty($logEntry)): ?>
                         <?php foreach ($logEntry as $log):
                             $isEntrada = $log['tipo'] === 'entrada';
@@ -106,12 +104,12 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-36 flex-shrink-0 mb-2">
-                <div class="md:col-span-2 relative overflow-hidden group bg-blue-600 rounded-[3rem] px-10 flex items-center justify-between shadow-[0_20px_50px_rgba(37,99,235,0.25)]">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-2">
+                <div class="md:col-span-2 min-h-36 relative overflow-hidden group bg-blue-600 rounded-[2rem] lg:rounded-[3rem] px-6 lg:px-10 py-6 flex items-center justify-between shadow-[0_20px_50px_rgba(37,99,235,0.25)]">
                     <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 blur-[80px] rounded-full -mr-24 -mt-24 group-hover:scale-150 transition-transform duration-700"></div>
                     <div>
                         <p class="text-blue-100 text-[10px] font-black uppercase tracking-[0.4em] mb-2 opacity-80">Receita Total do Mês</p>
-                        <h3 class="text-5xl font-black text-white tracking-tighter italic">
+                        <h3 class="text-3xl sm:text-4xl xl:text-5xl font-black text-white tracking-tighter italic">
                             R$ <?= number_format(floatval($monthlyIncome), 2, ',', '.') ?>
                         </h3>
                     </div>
@@ -121,7 +119,7 @@
                 </div>
 
                 <a href="/vacancy"
-                   class="relative group bg-white rounded-[3rem] flex flex-col items-center justify-center text-center transition-all duration-500 hover:bg-blue-50 hover:-translate-y-2 shadow-xl shadow-white/5">
+                   class="relative group bg-white rounded-[2rem] lg:rounded-[3rem] min-h-36 flex flex-col items-center justify-center text-center transition-all duration-500 hover:bg-blue-50 hover:-translate-y-2 shadow-xl shadow-white/5">
                     <div class="w-16 h-16 bg-blue-600/10 rounded-3xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <i data-lucide="layout-grid" class="w-7 h-7 text-blue-600"></i>
                     </div>

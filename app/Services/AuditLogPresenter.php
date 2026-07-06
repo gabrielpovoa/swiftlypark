@@ -14,6 +14,7 @@ final class AuditLogPresenter
         'vagas_disponiveis' => 'Vaga',
         'transacoes' => 'Pagamento',
         'authorization' => 'Segurança',
+        'identity' => 'Gestão de identidade',
     ];
 
     private const ENTITY_MESSAGES = [
@@ -53,6 +54,10 @@ final class AuditLogPresenter
         'route' => 'Página solicitada',
         'reason' => 'Motivo',
         'role_slug' => 'Papel do usuário',
+        'target_user_id' => 'Usuário alterado',
+        'target_email' => 'E-mail alterado',
+        'permissions_added' => 'Permissões adicionadas',
+        'permissions_removed' => 'Permissões removidas',
     ];
 
     public function present(array $log): array
@@ -93,6 +98,8 @@ final class AuditLogPresenter
             'UPDATE' => 'Alteração',
             'DELETE' => 'Exclusão',
             'UNAUTHORIZED_ACCESS_ATTEMPT' => 'Acesso negado',
+            'ACCESS_REVOKED' => 'Acesso revogado',
+            'USER_PERMISSIONS_UPDATED' => 'Permissões alteradas',
             default => 'Evento',
         };
     }
@@ -106,6 +113,20 @@ final class AuditLogPresenter
             return sprintf(
                 'Tentou acessar “%s” sem a permissão necessária.',
                 $newValues['route'] ?? 'uma área protegida'
+            );
+        }
+
+        if ($log['action'] === 'ACCESS_REVOKED') {
+            return sprintf(
+                'O acesso de %s foi revogado.',
+                $newValues['target_email'] ?? ('usuário #' . $log['entity_id'])
+            );
+        }
+
+        if ($log['action'] === 'USER_PERMISSIONS_UPDATED') {
+            return sprintf(
+                'As permissões extras de %s foram atualizadas.',
+                $newValues['target_email'] ?? ('usuário #' . $log['entity_id'])
             );
         }
 
@@ -150,7 +171,7 @@ final class AuditLogPresenter
             $old = $oldValues[$field] ?? null;
             $new = $newValues[$field] ?? null;
 
-            if ((string) $old === (string) $new) {
+            if ($old === $new) {
                 continue;
             }
 

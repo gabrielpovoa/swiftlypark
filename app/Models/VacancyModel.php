@@ -102,7 +102,7 @@
         /**
          * Reserva a vaga, insere em vagas_preenchidas e transacoes e marca como preenchida
          */
-        public function ocuparVagaComPagamento($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo)
+        public function ocuparVagaComPagamento($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo, $paymentMethod)
         {
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vehicle.checkin');
@@ -115,10 +115,15 @@
                 $phone,
                 $plate,
                 $valorPago,
-                $tipoVeiculo
+                $tipoVeiculo,
+                $paymentMethod
             ) {
                 $idVagaPreenchida = $this->insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo);
-                $this->insertTransacao($idVagaPreenchida, $valorPago);
+                $this->insertTransacao(
+                    $idVagaPreenchida,
+                    $valorPago,
+                    $paymentMethod
+                );
                 $this->updateVagaStatus($idVaga, 'reservada');
 
                 return $idVagaPreenchida;
@@ -169,17 +174,22 @@
         }
 
 
-        private function insertTransacao($idVagaPreenchida, $valorPago)
+        private function insertTransacao(
+            $idVagaPreenchida,
+            $valorPago,
+            string $paymentMethod
+        )
         {
             $userId = IdentityContext::current()->userId();
             $sql = "INSERT INTO transacoes 
-                (id_vaga_preenchida, valor, data_transacao, created_by, updated_by)
+                (id_vaga_preenchida, valor, payment_method, data_transacao, payment_date, created_by, updated_by)
                 VALUES 
-                (:id_vaga_preenchida, :valor, NOW(), :created_by, :updated_by)";
+                (:id_vaga_preenchida, :valor, :payment_method, UTC_TIMESTAMP(), UTC_TIMESTAMP(), :created_by, :updated_by)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 'id_vaga_preenchida' => $idVagaPreenchida,
                 'valor' => (float)$valorPago,
+                'payment_method' => $paymentMethod,
                 'created_by' => $userId,
                 'updated_by' => $userId
             ]);

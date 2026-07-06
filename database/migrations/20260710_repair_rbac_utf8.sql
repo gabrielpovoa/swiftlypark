@@ -24,6 +24,8 @@ SET name = CASE slug
     WHEN 'identity.view' THEN 'Visualizar usuários'
     WHEN 'identity.manage' THEN 'Gerenciar acessos e permissões'
     WHEN 'financial.view' THEN 'Visualizar financeiro'
+    WHEN 'finance.view' THEN 'Visualizar BI financeiro'
+    WHEN 'finance.adjust' THEN 'Realizar ajustes financeiros'
     ELSE name
 END
 WHERE slug IN (
@@ -38,5 +40,7 @@ WHERE slug IN (
     'profile.photo.update',
     'identity.view',
     'identity.manage',
-    'financial.view'
+    'financial.view',
+    'finance.view',
+    'finance.adjust'
 );

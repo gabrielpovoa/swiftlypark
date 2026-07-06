@@ -13,6 +13,7 @@ final class AuditLogPresenter
         'vagas_preenchidas' => 'Ocupação',
         'vagas_disponiveis' => 'Vaga',
         'transacoes' => 'Pagamento',
+        'financial_adjustments' => 'Ajuste financeiro',
         'authorization' => 'Segurança',
         'identity' => 'Gestão de identidade',
     ];
@@ -54,6 +55,11 @@ final class AuditLogPresenter
         'route' => 'Página solicitada',
         'reason' => 'Motivo',
         'role_slug' => 'Papel do usuário',
+        'payment_method' => 'Forma de pagamento',
+        'transaction_id' => 'Transação',
+        'adjustment_type' => 'Tipo do ajuste',
+        'amount' => 'Valor do ajuste',
+        'reason' => 'Justificativa',
         'target_user_id' => 'Usuário alterado',
         'target_email' => 'E-mail alterado',
         'permissions_added' => 'Permissões adicionadas',
@@ -100,6 +106,7 @@ final class AuditLogPresenter
             'UNAUTHORIZED_ACCESS_ATTEMPT' => 'Acesso negado',
             'ACCESS_REVOKED' => 'Acesso revogado',
             'USER_PERMISSIONS_UPDATED' => 'Permissões alteradas',
+            'FINANCIAL_ADJUSTMENT' => 'Ajuste financeiro',
             default => 'Evento',
         };
     }
@@ -127,6 +134,13 @@ final class AuditLogPresenter
             return sprintf(
                 'As permissões extras de %s foram atualizadas.',
                 $newValues['target_email'] ?? ('usuário #' . $log['entity_id'])
+            );
+        }
+
+        if ($log['action'] === 'FINANCIAL_ADJUSTMENT') {
+            return sprintf(
+                'Um ajuste financeiro foi registrado na transação #%s.',
+                $newValues['transaction_id'] ?? $log['entity_id']
             );
         }
 
@@ -192,8 +206,26 @@ final class AuditLogPresenter
             return 'Não informado';
         }
 
-        if (in_array($field, ['valor', 'valor_pago'], true)) {
+        if (in_array($field, ['valor', 'valor_pago', 'amount'], true)) {
             return 'R$ ' . number_format((float) $value, 2, ',', '.');
+        }
+
+        if ($field === 'adjustment_type') {
+            return match ($value) {
+                'REFUND' => 'Estorno',
+                'CORRECTION' => 'Correção',
+                default => ucfirst(strtolower((string) $value)),
+            };
+        }
+
+        if ($field === 'payment_method') {
+            return match ($value) {
+                'PIX' => 'Pix',
+                'CARD' => 'Cartão',
+                'CASH' => 'Dinheiro',
+                'UNKNOWN' => 'Não informado',
+                default => (string) $value,
+            };
         }
 
         if ($field === 'status') {

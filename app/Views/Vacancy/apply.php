@@ -112,6 +112,20 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                     </div>
                 </div>
 
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Forma de Pagamento</label>
+                    <div class="relative group">
+                        <i data-lucide="wallet-cards" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
+                        <select name="payment_method" required
+                                class="w-full pl-12 pr-4 py-4 rounded-2xl bg-[#111722] border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                            <option value="">Selecione</option>
+                            <option value="PIX">Pix</option>
+                            <option value="CARD">Cartão</option>
+                            <option value="CASH">Dinheiro</option>
+                        </select>
+                    </div>
+                </div>
+
                 <button type="button" onclick="openConfirmationModal()"
                         class="md:col-span-2 w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all duration-300 shadow-xl shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-3">
                     <i data-lucide="check-circle" class="w-5 h-5"></i>
@@ -145,71 +159,9 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                     <span class="text-slate-500 font-bold uppercase text-[10px]">Valor:</span>
                     <span id="reviewPrice" class="text-emerald-400 font-black"></span>
                 </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="closeConfirmationModal()" class="py-4 rounded-2xl bg-white/5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
-                    Corrigir
-                </button>
-                <button onclick="submitRealForm()" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">
-                    Confirmar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function openConfirmationModal() {
-            // Pegar os valores dos inputs
-            const plate = document.getElementsByName('plate')[0].value;
-            const time = document.getElementsByName('entry_time')[0].value;
-            const price = document.getElementsByName('paid_amount')[0].value;
-
-            // Validar se não estão vazios antes de abrir
-            if(!plate || !time || !price) {
-                alert("Por favor, preencha todos os campos obrigatórios.");
-                return;
-            }
-
-            // Injetar no Modal
-            document.getElementById('reviewPlate').innerText = plate;
-            document.getElementById('reviewTime').innerText = time;
-            document.getElementById('reviewPrice').innerText = 'R$ ' + parseFloat(price).toLocaleString('pt-br', {minimumFractionDigits: 2});
-
-            // Mostrar modal
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmationModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-        }
-
-        function submitRealForm() {
-            // Pegar o formulário real pelo ID ou Nome e enviar
-            document.querySelector('form').submit();
-        }
-    </script><div id="confirmModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0b0e14]/80 backdrop-blur-sm">
-        <div class="bg-[#1f2b4a] border border-white/10 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
-                    <i data-lucide="search" class="w-8 h-8 text-yellow-500"></i>
-                </div>
-                <h3 class="text-white text-xl font-black italic tracking-tighter uppercase">Conferência de Dados</h3>
-                <p class="text-slate-400 text-xs mt-1 font-bold">Revise as informações antes de salvar</p>
-            </div>
-
-            <div class="space-y-4 bg-white/[0.03] p-6 rounded-3xl border border-white/5 mb-8">
-                <div class="flex justify-between text-sm">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Placa:</span>
-                    <span id="reviewPlate" class="text-blue-400 font-black tracking-widest uppercase"></span>
-                </div>
                 <div class="flex justify-between text-sm border-t border-white/5 pt-4">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Entrada:</span>
-                    <span id="reviewTime" class="text-white font-mono italic"></span>
-                </div>
-                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Valor:</span>
-                    <span id="reviewPrice" class="text-emerald-400 font-black"></span>
+                    <span class="text-slate-500 font-bold uppercase text-[10px]">Pagamento:</span>
+                    <span id="reviewPaymentMethod" class="text-white font-black"></span>
                 </div>
             </div>
 
@@ -230,9 +182,10 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
             const plate = document.getElementsByName('plate')[0].value;
             const time = document.getElementsByName('entry_time')[0].value;
             const price = document.getElementsByName('paid_amount')[0].value;
+            const payment = document.getElementsByName('payment_method')[0];
 
             // Validar se não estão vazios antes de abrir
-            if(!plate || !time || !price) {
+            if(!plate || !time || !price || !payment.value) {
                 alert("Por favor, preencha todos os campos obrigatórios.");
                 return;
             }
@@ -241,6 +194,7 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
             document.getElementById('reviewPlate').innerText = plate;
             document.getElementById('reviewTime').innerText = time;
             document.getElementById('reviewPrice').innerText = 'R$ ' + parseFloat(price).toLocaleString('pt-br', {minimumFractionDigits: 2});
+            document.getElementById('reviewPaymentMethod').innerText = payment.options[payment.selectedIndex].text;
 
             // Mostrar modal
             document.getElementById('confirmModal').classList.remove('hidden');
@@ -254,39 +208,5 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
             // Pegar o formulário real pelo ID ou Nome e enviar
             document.querySelector('form').submit();
         }
-    </script><div id="confirmModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0b0e14]/80 backdrop-blur-sm">
-        <div class="bg-[#1f2b4a] border border-white/10 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-yellow-500/20">
-                    <i data-lucide="search" class="w-8 h-8 text-yellow-500"></i>
-                </div>
-                <h3 class="text-white text-xl font-black italic tracking-tighter uppercase">Conferência de Dados</h3>
-                <p class="text-slate-400 text-xs mt-1 font-bold">Revise as informações antes de salvar</p>
-            </div>
-
-            <div class="space-y-4 bg-white/[0.03] p-6 rounded-3xl border border-white/5 mb-8">
-                <div class="flex justify-between text-sm">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Placa:</span>
-                    <span id="reviewPlate" class="text-blue-400 font-black tracking-widest uppercase"></span>
-                </div>
-                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Entrada:</span>
-                    <span id="reviewTime" class="text-white font-mono italic"></span>
-                </div>
-                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Valor:</span>
-                    <span id="reviewPrice" class="text-emerald-400 font-black"></span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="closeConfirmationModal()" class="py-4 rounded-2xl bg-white/5 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-all">
-                    Corrigir
-                </button>
-                <button onclick="submitRealForm()" class="py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">
-                    Confirmar
-                </button>
-            </div>
-        </div>
-    </div>
+    </script>
 </section>

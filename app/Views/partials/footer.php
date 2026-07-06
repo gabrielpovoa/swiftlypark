@@ -1,74 +1,99 @@
-<footer class="relative w-full max-w-7xl mx-auto mt-24 mb-10 px-6">
-    <div class="w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent mb-12"></div>
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-    <div class="relative bg-gradient-to-b from-white/[0.05] to-transparent backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+$footerShellClass = isset($_SESSION['user_id'])
+    ? 'ml-20 w-[calc(100%-5rem)]'
+    : 'w-full';
+?>
 
-        <div class="absolute -top-10 -left-10 w-32 h-32 bg-indigo-600/20 blur-[60px] rounded-full"></div>
-        <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-600/20 blur-[60px] rounded-full"></div>
+<footer class="<?= $footerShellClass ?> relative bg-[#0b0e14] text-slate-300 px-3 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 overflow-x-hidden">
+    <div class="w-full max-w-7xl mx-auto">
+        <div class="h-px w-full bg-gradient-to-r from-transparent via-blue-500/40 to-transparent mb-5 lg:mb-6"></div>
 
-        <div class="relative flex flex-col lg:flex-row items-center justify-between gap-10">
+        <div class="relative overflow-hidden rounded-[1.75rem] lg:rounded-[2rem] bg-white/[0.03] border border-white/5 p-4 lg:p-6">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[280px] lg:w-[420px] h-[120px] lg:h-[160px] bg-blue-600/10 blur-[80px] lg:blur-[100px] rounded-full pointer-events-none"></div>
 
-            <div class="flex flex-col items-center lg:items-start gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="h-14 w-14 bg-white text-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.4)] transform -rotate-6 group-hover:rotate-0 transition-transform duration-500">
-                        <span class="text-3xl font-black italic">P</span>
+            <div class="relative grid grid-cols-1 xl:grid-cols-[1fr_auto_1fr] items-center gap-5 lg:gap-6">
+                <div class="flex flex-col sm:flex-row items-center justify-center xl:justify-start gap-3 text-center xl:text-left">
+                    <div class="flex h-11 w-11 lg:h-12 lg:w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500">
+                        <span class="text-2xl font-black italic">P</span>
                     </div>
+
                     <div>
-                        <h2 class="text-2xl font-black tracking-tighter text-white italic">Swiftly<span class="text-blue-500">Park</span></h2>
-                        <div class="flex items-center gap-2">
-                            <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500/80">System Online</span>
+                        <h2 class="text-xl lg:text-2xl font-black tracking-tighter text-white italic">
+                            Swiftly<span class="text-blue-500">Park</span>
+                        </h2>
+                        <div class="mt-1 flex items-center justify-center lg:justify-start gap-2">
+                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.22em] lg:tracking-[0.3em] text-emerald-500">
+                                System Online
+                            </span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="flex items-center gap-3">
-                <a href="https://joao-povoa-filho.vercel.app/" target="_blank"
-                   class="group flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-blue-600 transition-all duration-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:-translate-y-1">
-                    <i data-lucide="layout" class="w-5 h-5 text-blue-400 group-hover:text-white transition-colors"></i>
-                    <span class="text-sm font-bold text-slate-300 group-hover:text-white">Portfolio</span>
-                </a>
+                <div class="grid grid-cols-1 min-[420px]:grid-cols-2 lg:flex lg:flex-row items-stretch lg:items-center justify-center gap-3">
+                    <a href="https://joao-povoa-filho.vercel.app/" target="_blank" rel="noopener noreferrer"
+                       class="group inline-flex items-center justify-center gap-3 px-5 lg:px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-bold transition-all duration-300 hover:bg-blue-600 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 lg:w-5 lg:h-5 text-blue-400 group-hover:text-white"></i>
+                        <span>Portfolio</span>
+                    </a>
 
-                <a href="https://www.linkedin.com/in/gabriel-limapovoa/" target="_blank"
-                   class="group flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-[#0077b5] transition-all duration-500 hover:shadow-[0_0_20px_rgba(0,119,181,0.4)] hover:-translate-y-1">
-                    <i data-lucide="linkedin" class="w-5 h-5 text-[#0077b5] group-hover:text-white transition-colors"></i>
-                    <span class="text-sm font-bold text-slate-300 group-hover:text-white">LinkedIn</span>
-                </a>
-            </div>
+                    <a href="https://www.linkedin.com/in/gabriel-limapovoa/" target="_blank" rel="noopener noreferrer"
+                       class="group inline-flex items-center justify-center gap-3 px-5 lg:px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-bold transition-all duration-300 hover:bg-blue-600 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+                        <i data-lucide="external-link" class="w-4 h-4 lg:w-5 lg:h-5 text-blue-400 group-hover:text-white"></i>
+                        <span>LinkedIn</span>
+                    </a>
+                </div>
 
-            <div class="flex flex-col items-center lg:items-end text-center lg:text-right">
-                <p class="text-sm font-bold text-white tracking-tight">
-                    Desenvolvido por <span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">João Gabriel Póvoa</span>
-                </p>
-                <div class="mt-2 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    <span>PHP 8.3</span>
-                    <span class="w-1 h-1 rounded-full bg-slate-700"></span>
-                    <span>Tailwind CSS</span>
-                    <span class="w-1 h-1 rounded-full bg-slate-700"></span>
-                    <span>v2.4.0</span>
+                <div class="text-center xl:text-right">
+                    <p class="text-xs sm:text-sm font-bold text-white leading-relaxed">
+                        Desenvolvido por
+                        <span class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                            João Gabriel Póvoa
+                        </span>
+                    </p>
+
+                    <div class="mt-2 flex flex-wrap items-center justify-center xl:justify-end gap-x-2 lg:gap-x-3 gap-y-2 text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.14em] lg:tracking-[0.2em] text-slate-500">
+                        <span>PHP 8.3</span>
+                        <span class="h-1 w-1 rounded-full bg-slate-700"></span>
+                        <span>Tailwind CSS</span>
+                        <span class="h-1 w-1 rounded-full bg-slate-700"></span>
+                        <span>v2.4.0</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="mt-10 pt-6 border-t border-white/5 text-center">
-            <p class="text-[10px] text-slate-600 font-medium uppercase tracking-[0.3em]">
-                &copy; <?= date('Y') ?> SwiftlyPark — Inteligência em Estacionamentos
-            </p>
+            <div class="relative mt-5 lg:mt-6 pt-4 lg:pt-5 border-t border-white/5 text-center">
+                <p class="text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.14em] lg:tracking-[0.24em] text-slate-600 leading-relaxed">
+                    &copy; <?= date('Y') ?> SwiftlyPark — Inteligência em Estacionamentos
+                </p>
+            </div>
         </div>
     </div>
 </footer>
 
-<script src="https://unpkg.com/lucide@latest"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        lucide.createIcons();
-    });
+    (() => {
+        const createFooterIcons = () => {
+            if (window.lucide?.createIcons) {
+                window.lucide.createIcons();
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', createFooterIcons);
+        } else {
+            createFooterIcons();
+        }
+    })();
 </script>
 
 <script src="/js/ReportLog.js"></script>
 <script src="/js/GetFilterVacancy.js"></script>
-<sript src="/js/modalApplyVacancy.js"></sript>
+<script src="/js/modalApplyVacancy.js"></script>
 <script src="/js/FinishVacancy.js"></script>
 <script src="/js/changePassword.js"></script>
 </body>

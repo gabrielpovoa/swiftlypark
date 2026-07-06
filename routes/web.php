@@ -13,6 +13,7 @@ use App\Controllers\CreateAccController;
 use App\Controllers\ProfileController;
 use App\Controllers\AuditController;
 use App\Controllers\IdentityManagementController;
+use App\Controllers\FinanceController;
 use App\Exceptions\UnauthorizedException;
 use App\Exceptions\AccessRevokedException;
 use App\Exceptions\ForbiddenException;
@@ -198,6 +199,22 @@ $router->post('identity/revoke', permissionRequired('identity.manage', 'identity
 }));
 $router->post('identity/permissions', permissionRequired('identity.manage', 'identity/permissions', function () {
     (new IdentityManagementController())->permissions();
+}));
+
+$router->get('finance', permissionRequired('finance.view', 'finance', function () {
+    (new FinanceController())->index();
+}));
+$router->get('finance/data', permissionRequired('finance.view', 'finance/data', function () {
+    (new FinanceController())->data();
+}));
+$router->get('finance/export', permissionRequired('finance.view', 'finance/export', function () {
+    (new FinanceController())->exportCsv();
+}));
+$router->get('finance/print', permissionRequired('finance.view', 'finance/print', function () {
+    (new FinanceController())->printPdf();
+}));
+$router->post('finance/refund', permissionRequired('finance.adjust', 'finance/refund', function () {
+    (new FinanceController())->refund();
 }));
 
 

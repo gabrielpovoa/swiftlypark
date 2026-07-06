@@ -35,6 +35,9 @@ class VacancyController extends Controller
             $phone = trim($_POST['phone'] ?? '');
             $plate = trim($_POST['plate'] ?? '');
             $paidAmount = $_POST['paid_amount'] ?? '';
+            $paymentMethod = strtoupper(trim(
+                (string) ($_POST['payment_method'] ?? '')
+            ));
             $entryTime = $_POST['entry_time'] ?? '';
             $exitTime = $_POST['exit_time'] ?? null;
 
@@ -51,7 +54,14 @@ class VacancyController extends Controller
             }
 
             // Validação básica
-            if (!$ownerName || !$phone || !$plate || !$paidAmount || !$entryTime) {
+            if (
+                !$ownerName
+                || !$phone
+                || !$plate
+                || !$paidAmount
+                || !$entryTime
+                || !in_array($paymentMethod, ['PIX', 'CARD', 'CASH'], true)
+            ) {
                 echo "<h1>Erro: Campos obrigatórios não preenchidos.</h1>";
                 exit;
             }
@@ -84,7 +94,8 @@ class VacancyController extends Controller
                     $phone,
                     $plate,
                     (float) $paidAmount,
-                    $type
+                    $type,
+                    $paymentMethod
                 );
 
 

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Context\TenantContext;
+use App\Exceptions\TenantNotSetException;
 use Config\Database;
 use PDO;
 
@@ -21,11 +23,13 @@ class HomeDashModel
             FROM transacoes
             WHERE payment_date >= :start_utc
               AND payment_date < :end_utc
+              AND company_id = :company_id
         ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'start_utc' => $startUtc,
             'end_utc' => $endUtc,
+            'company_id' => $this->companyId(),
         ]);
 
         return $stmt->fetchColumn() ?: 0;
@@ -46,6 +50,7 @@ class HomeDashModel
         FROM vagas_preenchidas
         WHERE hora_entrada >= :entry_start
           AND hora_entrada < :entry_end
+          AND company_id = :entry_company_id
         
         UNION ALL
         
@@ -60,18 +65,32 @@ class HomeDashModel
         FROM vagas_preenchidas
         WHERE hora_saida >= :exit_start
           AND hora_saida < :exit_end
+          AND company_id = :exit_company_id
         
         ORDER BY evento_em DESC
         ";
 
         $stmt = $this->db->prepare($sql);
+        $companyId = $this->companyId();
         $stmt->execute([
             'entry_start' => $startLocal,
             'entry_end' => $endLocal,
+            'entry_company_id' => $companyId,
             'exit_start' => $startLocal,
             'exit_end' => $endLocal,
+            'exit_company_id' => $companyId,
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function companyId(): int
+    {
+        $companyId = TenantContext::instance()->getCompanyId();
+        if ($companyId === null) {
+            throw new TenantNotSetException();
+        }
+
+        return $companyId;
     }
 }

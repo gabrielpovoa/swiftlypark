@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Context\RequestIdentity;
+use App\Context\TenantContext;
 use App\Exceptions\AuditLogException;
 use App\Repositories\AuditLogRepository;
 use JsonException;
@@ -16,8 +17,10 @@ final class SecurityAuditService
 
     public function __construct(
         private AuditLogRepository $auditLogs,
-        private RequestIdentity $identity
+        private RequestIdentity $identity,
+        private ?TenantContext $tenantContext = null
     ) {
+        $this->tenantContext ??= TenantContext::instance();
     }
 
     public function recordDeniedAccess(
@@ -43,6 +46,7 @@ final class SecurityAuditService
 
         $this->auditLogs->insert([
             'user_id' => $this->identity->userId(),
+            'company_id' => $this->tenantContext->getCompanyId(),
             'actor_email' => $this->identity->email(),
             'action' => self::UNAUTHORIZED_ACCESS_ATTEMPT,
             'entity' => 'authorization',

@@ -26,7 +26,8 @@ final class UserRepository
     {
         $statement = $this->connection->prepare(
             'UPDATE usuario
-             SET senha_hash = :password_hash
+             SET senha_hash = :password_hash,
+                 password_reset_required = 0
              WHERE email = :email'
         );
         $statement->execute([

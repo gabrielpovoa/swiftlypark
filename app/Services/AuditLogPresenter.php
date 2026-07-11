@@ -16,6 +16,7 @@ final class AuditLogPresenter
         'financial_adjustments' => 'Ajuste financeiro',
         'authorization' => 'Segurança',
         'identity' => 'Gestão de identidade',
+        'companies' => 'Empresa',
     ];
 
     private const ENTITY_MESSAGES = [
@@ -64,6 +65,15 @@ final class AuditLogPresenter
         'target_email' => 'E-mail alterado',
         'permissions_added' => 'Permissões adicionadas',
         'permissions_removed' => 'Permissões removidas',
+        'company_id' => 'Empresa',
+        'company_name' => 'Nome da empresa',
+        'company_slug' => 'Slug da empresa',
+        'old_name' => 'Nome anterior',
+        'old_slug' => 'Slug anterior',
+        'new_name' => 'Novo nome',
+        'new_slug' => 'Novo slug',
+        'revoked_company_memberships' => 'Vínculos revogados',
+        'revoked_user_ids' => 'Usuários revogados',
     ];
 
     public function present(array $log): array
@@ -135,6 +145,24 @@ final class AuditLogPresenter
                 'As permissões extras de %s foram atualizadas.',
                 $newValues['target_email'] ?? ('usuário #' . $log['entity_id'])
             );
+        }
+
+        if ($log['entity'] === 'companies') {
+            return match ($log['action']) {
+                'CREATE' => sprintf(
+                    'A empresa %s foi criada.',
+                    $newValues['company_name'] ?? ('#' . $log['entity_id'])
+                ),
+                'UPDATE' => sprintf(
+                    'A empresa %s foi atualizada.',
+                    $newValues['new_name'] ?? ('#' . $log['entity_id'])
+                ),
+                'DELETE' => sprintf(
+                    'A empresa %s foi inativada.',
+                    $newValues['company_name'] ?? ('#' . $log['entity_id'])
+                ),
+                default => sprintf('A empresa #%s recebeu um evento.', $log['entity_id']),
+            };
         }
 
         if ($log['action'] === 'FINANCIAL_ADJUSTMENT') {

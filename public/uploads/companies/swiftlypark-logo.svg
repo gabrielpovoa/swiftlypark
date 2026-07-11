@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SwiftlyPark</title>
+  <desc id="desc">Logo da SwiftlyPark com monograma P, pista e marcador de estacionamento.</desc>
+  <defs>
+    <linearGradient id="mark" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="0.52" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="road" x1="159" y1="381" x2="353" y2="381" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="shadow" x="52" y="52" width="408" height="408" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#020617" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0b0e14"/>
+  <g filter="url(#shadow)">
+    <path d="M256 66c82.8 0 150 67.2 150 150 0 102-112.2 203.1-140.8 227.3a14.2 14.2 0 0 1-18.4 0C218.2 419.1 106 318 106 216 106 133.2 173.2 66 256 66Z" fill="url(#mark)"/>
+    <circle cx="256" cy="216" r="106" fill="#f8fafc"/>
+  </g>
+  <path d="M206 294V143h66.8c39.6 0 66.2 24.2 66.2 61.2 0 36.7-26.6 61-66.2 61h-28.6V294H206Zm38.2-61.8h25.6c18.9 0 30.6-10.6 30.6-28 0-17.6-11.7-28.2-30.6-28.2h-25.6v56.2Z" fill="#0b0e14"/>
+  <path d="M159 381c37.7-26.1 69.6-39.2 95.7-39.2 26.8 0 59.6 13.1 98.3 39.2" fill="none" stroke="url(#road)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M256 348v47" stroke="#0b0e14" stroke-width="10" stroke-linecap="round" stroke-dasharray="14 18"/>
+</svg>

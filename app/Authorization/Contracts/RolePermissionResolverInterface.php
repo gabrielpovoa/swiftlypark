@@ -8,5 +8,5 @@ use App\Authorization\DTO\ResolvedAuthorizationContext;
 
 interface RolePermissionResolverInterface
 {
-    public function resolve(int $userId): ResolvedAuthorizationContext;
+    public function resolve(int $userId, ?int $companyId = null): ResolvedAuthorizationContext;
 }

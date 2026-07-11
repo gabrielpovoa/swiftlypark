@@ -7,13 +7,23 @@
     <div class="max-w-7xl mx-auto relative z-10">
 
         <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
-            <div class="text-center md:text-left">
-                <h1 class="text-3xl md:text-5xl font-black text-white tracking-tighter italic">
-                    Relatório de <span class="text-blue-500">Logs</span>
-                </h1>
-                <p class="text-slate-500 text-sm font-medium mt-2 uppercase tracking-widest">
-                    Histórico detalhado de movimentação — <?= htmlspecialchars($periodLabel ?? '') ?>
-                </p>
+            <div class="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white font-black italic">P</div>
+                    <?php if (!empty($companyBrand['logo_path'])): ?>
+                        <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
+                             alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
+                             class="h-14 w-14 rounded-2xl border border-white/10 bg-white object-contain p-2">
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-black text-white tracking-tighter italic">
+                        Relatório de <span class="text-blue-500">Logs</span>
+                    </h1>
+                    <p class="text-slate-500 text-sm font-medium mt-2 uppercase tracking-widest">
+                        <?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?> — <?= htmlspecialchars($periodLabel ?? '') ?>
+                    </p>
+                </div>
             </div>
 
             <div class="flex items-center gap-4 print:hidden">

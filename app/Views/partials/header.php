@@ -1,7 +1,10 @@
 <?php
 use App\Authorization\Services\NavigationService;
 use App\Context\IdentityContext;
+use App\Context\TenantContext;
+use App\Repositories\TenantRepository;
 use App\Services\AuthorizationService;
+use Config\Database;
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -13,6 +16,16 @@ $photoUrl  = '/uploads/' . $userPhoto;
 $identity = IdentityContext::current();
 $roleMetadata = $identity->roleMetadata();
 $navigation = new NavigationService(new AuthorizationService($identity));
+$tenantContext = TenantContext::instance();
+$currentCompany = $tenantContext->getCompany();
+$currentCompanyId = $tenantContext->getCompanyId();
+$tenantRepository = new TenantRepository((new Database())->connect());
+$tenants = $tenantRepository->findCompaniesForUser($identity->userId());
+$roleSlugs = $identity->roleSlugs();
+$showTenantSwitcher = count($tenants) > 1
+    || in_array('master', $roleSlugs, true)
+    || in_array('super-admin', $roleSlugs, true);
+$escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
 
 <aside class="group fixed top-0 left-0 h-full bg-[#0b0e14] border-r border-white/5 text-slate-400 flex flex-col w-20 hover:w-72 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] z-[100] shadow-2xl overflow-hidden">
@@ -23,24 +36,22 @@ $navigation = new NavigationService(new AuthorizationService($identity));
         <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 transform group-hover:rotate-12 transition-transform duration-500">
             <span class="text-white font-black italic text-lg select-none">P</span>
         </div>
+        <?php if ($currentCompany?->logoPath()): ?>
+            <div class="ml-2 flex-shrink-0 w-8 h-8 rounded-xl bg-white border border-white/10 p-1 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <img src="/uploads/<?= $escape($currentCompany->logoPath()) ?>"
+                     alt="<?= $escape($currentCompany->name()) ?>"
+                     class="w-full h-full object-contain">
+            </div>
+        <?php endif; ?>
         <div class="ml-4 flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
             <span class="text-white font-black tracking-tighter text-xl italic">Swiftly<span class="text-blue-500">Park</span></span>
-            <span class="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold -mt-1">Management</span>
+            <span class="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold -mt-1"><?= $escape($currentCompany?->name() ?? 'Management') ?></span>
         </div>
     </div>
 
     <nav class="flex-grow flex flex-col gap-2 px-3 overflow-y-auto overflow-x-hidden custom-scrollbar">
         <?php
-        $links = $navigation->allowedItems([
-            ['href' => '/', 'icon' => 'home', 'label' => 'Painel Inicial', 'permission' => 'dashboard.view'],
-            ['href' => '/vacancy/manage', 'icon' => 'layout-grid', 'label' => 'Gerenciar Vagas', 'permission' => 'vehicle.view'],
-            ['href' => '/About', 'icon' => 'info', 'label' => 'Sobre o Projeto'],
-            ['href' => '/Contact', 'icon' => 'mail', 'label' => 'Suporte & Contato'],
-            ['href' => '#', 'icon' => 'printer', 'label' => 'Relatórios', 'permission' => 'report.view', 'class' => 'js-print-logs', 'id' => 'btn-print-logs'],
-            ['href' => '/audit', 'icon' => 'search-check', 'label' => 'Auditoria', 'permission' => 'audit.view'],
-            ['href' => '/identity', 'icon' => 'users-round', 'label' => 'Usuários', 'permission' => 'identity.view'],
-            ['href' => '/finance', 'icon' => 'chart-column', 'label' => 'Relatórios Financeiros', 'permission' => 'finance.view'],
-        ]);
+        $links = $navigation->allowedItems($navigation->defaultItems());
 
         foreach ($links as $link):
             $href = $link['href'];
@@ -49,28 +60,57 @@ $navigation = new NavigationService(new AuthorizationService($identity));
             $extraClass = $link['class'] ?? '';
             $id = $link['id'] ?? '';
             ?>
-            <a href="<?= $href ?>" id="<?= $id ?>"
+            <a href="<?= $escape($href) ?>" id="<?= $escape($id) ?>"
                class="<?= $extraClass ?> group/item relative flex items-center h-12 rounded-xl hover:bg-white/[0.05] hover:text-white transition-all duration-300">
 
                 <div class="w-14 flex-shrink-0 flex justify-center">
-                    <i data-lucide="<?= $icon ?>"
+                    <i data-lucide="<?= $escape($icon) ?>"
                        class="w-5 h-5 transition-all duration-300 group-hover/item:text-blue-400 group-hover/item:scale-110"></i>
                 </div>
 
                 <span class="opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-bold tracking-tight">
-                    <?= $label ?>
+                    <?= $escape($label) ?>
                 </span>
 
                 <div class="absolute left-0 w-1 h-6 bg-blue-500 rounded-r-full scale-y-0 group-hover/item:scale-y-100 transition-transform origin-center"></div>
 
                 <div class="absolute left-20 px-3 py-2 bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-2xl border border-white/5 pointer-events-none opacity-0 group-hover:hidden group-hover/item:opacity-100 transition-all duration-300 translate-x-2 group-hover/item:translate-x-0">
-                    <?= $label ?>
+                    <?= $escape($label) ?>
                 </div>
             </a>
         <?php endforeach; ?>
     </nav>
 
     <div class="mt-auto px-3 py-6 border-t border-white/5 bg-white/[0.01]">
+        <?php if ($showTenantSwitcher): ?>
+            <div
+                class="tenant-switcher mb-3 rounded-xl border border-white/10 bg-white/[0.03] p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                data-current-company-id="<?= $escape($currentCompanyId ?? '') ?>">
+                <label for="tenant-switcher-select" class="sr-only">Empresa ativa</label>
+                <div class="flex items-center gap-2">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <i data-lucide="building-2" class="h-4 w-4"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <span class="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Empresa</span>
+                        <select
+                            id="tenant-switcher-select"
+                            class="tenant-switcher__select mt-1 w-full rounded-lg border border-white/10 bg-[#111827] px-2 py-1.5 text-xs font-bold text-white outline-none transition focus:border-blue-500 disabled:opacity-60">
+                            <?php foreach ($tenants as $tenant): ?>
+                                <option
+                                    value="<?= (int) $tenant['id'] ?>"
+                                    <?= (int) $tenant['id'] === (int) $currentCompanyId ? 'selected' : '' ?>>
+                                    <?= $escape($tenant['name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="tenant-switcher__loading hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg text-blue-400" aria-live="polite">
+                        <i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <a href="/Profile" class="group/user flex items-center h-14 rounded-2xl hover:bg-white/[0.05] transition-all duration-300 mb-2">
             <div class="w-14 flex-shrink-0 flex justify-center">
@@ -116,5 +156,17 @@ $navigation = new NavigationService(new AuthorizationService($identity));
 </style>
 
 <script>
+    window.SwiftlyParkTenant = Object.assign(window.SwiftlyParkTenant || {}, {
+        currentCompanyId: <?= json_encode($currentCompanyId, JSON_THROW_ON_ERROR) ?>,
+        tenants: <?= json_encode(array_map(
+            fn (array $tenant): array => [
+                'id' => (int) $tenant['id'],
+                'name' => (string) $tenant['name'],
+                'slug' => (string) $tenant['slug'],
+                'logo_path' => $tenant['logo_path'] !== null ? (string) $tenant['logo_path'] : null,
+            ],
+            $tenants
+        ), JSON_THROW_ON_ERROR) ?>
+    });
     lucide.createIcons();
 </script>

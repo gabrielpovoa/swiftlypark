@@ -34,7 +34,9 @@
                 <?php
                 $formAction = match ($step) {
                     'verify' => '/login/recovery/verify',
-                    'reset' => '/login/recovery/reset',
+                    'reset' => !empty($forcePasswordReset)
+                        ? '/login/password-required'
+                        : '/login/recovery/reset',
                     default => '/login/recovery/send',
                 };
                 ?>
@@ -110,11 +112,6 @@
                         Fazer Login
                     </a>
                 </p>
-                <div class="pt-4 border-t border-white/5">
-                    <a href="/CreateAcc" class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 hover:text-blue-500 transition-colors">
-                        Não tem conta? Registre-se aqui
-                    </a>
-                </div>
             </footer>
         </div>
     </section>

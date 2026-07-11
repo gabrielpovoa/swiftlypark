@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Context\RequestIdentity;
+use App\Context\TenantContext;
 use App\Exceptions\AuditLogException;
 use App\Repositories\AuditLogRepository;
 use JsonException;
@@ -51,8 +52,39 @@ final class AuditService
 
     public function __construct(
         private AuditLogRepository $auditLogs,
-        private RequestIdentity $identity
+        private RequestIdentity $identity,
+        private ?TenantContext $tenantContext = null
     ) {
+        $this->tenantContext ??= TenantContext::instance();
+    }
+
+    public function log(string $action, array $data): void
+    {
+        unset($data['company_id']);
+
+        try {
+            $this->auditLogs->insert([
+                'user_id' => $this->identity->userId(),
+                'company_id' => $this->tenantContext->getCompanyId(),
+                'actor_email' => $this->identity->email(),
+                'action' => $action,
+                'entity' => (string) ($data['entity'] ?? 'system'),
+                'entity_id' => (string) ($data['entity_id'] ?? $this->identity->userId()),
+                'old_values' => $this->encodePayload($data['old_values'] ?? null),
+                'new_values' => $this->encodePayload($data['new_values'] ?? null),
+                'ip_address' => $this->identity->ipAddress(),
+                'request_id' => $this->identity->requestId(),
+                'created_at' => $this->identity
+                    ->requestedAt()
+                    ->format('Y-m-d H:i:s.u'),
+            ]);
+        } catch (JsonException $exception) {
+            throw new AuditLogException(
+                'Falha ao serializar os dados de auditoria.',
+                $this->identity->requestId(),
+                $exception
+            );
+        }
     }
 
     public function record(
@@ -93,6 +125,7 @@ final class AuditService
         try {
             $this->auditLogs->insert([
                 'user_id' => $this->identity->userId(),
+                'company_id' => $this->tenantContext->getCompanyId(),
                 'actor_email' => $this->identity->email(),
                 'action' => $action,
                 'entity' => $entity,
@@ -128,6 +161,15 @@ final class AuditService
             $values,
             array_flip(self::ALLOWED_FIELDS[$entity])
         );
+    }
+
+    private function encodePayload(mixed $payload): ?string
+    {
+        if ($payload === null || is_string($payload)) {
+            return $payload;
+        }
+
+        return json_encode($payload, JSON_THROW_ON_ERROR);
     }
 
     private function changedValues(array $oldValues, array $newValues): array

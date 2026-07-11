@@ -91,6 +91,7 @@ $footerShellClass = isset($_SESSION['user_id'])
     })();
 </script>
 
+<script src="/js/TenantContext.js"></script>
 <script src="/js/ReportLog.js"></script>
 <script src="/js/GetFilterVacancy.js"></script>
 <script src="/js/modalApplyVacancy.js"></script>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Context\IdentityContext;
+use App\Context\TenantContext;
 use App\Finance\Repositories\FinancialAdjustmentRepository;
 use App\Finance\Repositories\FinancialReportRepository;
 use App\Finance\Services\FinancialAdjustmentService;
@@ -34,6 +35,7 @@ final class FinanceController extends Controller
             'csrfToken' => $this->csrfToken(),
             'success' => $_SESSION['finance_success'] ?? null,
             'error' => $_SESSION['finance_error'] ?? null,
+            'companyBrand' => TenantContext::instance()->getCompany()?->toArray(),
         ]);
         unset($_SESSION['finance_success'], $_SESSION['finance_error']);
     }
@@ -173,6 +175,7 @@ final class FinanceController extends Controller
             'title' => 'Relatório Financeiro - SwiftlyPark',
             'month' => $month,
             'data' => $data,
+            'companyBrand' => TenantContext::instance()->getCompany()?->toArray(),
         ], false);
     }
 

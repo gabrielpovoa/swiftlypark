@@ -9,17 +9,21 @@ use App\Controllers\CreateVacancy;
 use App\Controllers\LogsController;
 use App\Controllers\ContactController;
 use App\Controllers\AboutController;
-use App\Controllers\CreateAccController;
 use App\Controllers\ProfileController;
 use App\Controllers\AuditController;
 use App\Controllers\IdentityManagementController;
 use App\Controllers\FinanceController;
+use App\Controllers\AdminProvisioningController;
+use App\Controllers\ApiTenantController;
 use App\Exceptions\UnauthorizedException;
 use App\Exceptions\AccessRevokedException;
 use App\Exceptions\ForbiddenException;
 use App\Context\IdentityContext;
+use App\Context\TenantContext;
 use App\Middleware\IdentityMiddleware;
 use App\Middleware\AuthorizeMiddleware;
+use App\Middleware\TenantMiddleware;
+use App\Middleware\RegistrationBlockedMiddleware;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuthorizationService;
 use App\Services\SecurityAuditService;
@@ -32,12 +36,33 @@ function authRequired($callback)
 {
     return function () use ($callback) {
         try {
-            (new IdentityMiddleware())->handle($callback);
+            (new IdentityMiddleware())->handle(function () use ($callback) {
+                (new TenantMiddleware())->handle($callback);
+            });
         } catch (AccessRevokedException $exception) {
             header('Location: /login?revoked=1');
             exit;
         } catch (UnauthorizedException $exception) {
             header('Location: /login');
+            exit;
+        }
+    };
+}
+
+function authIdentityRequired($callback)
+{
+    return function () use ($callback) {
+        try {
+            (new IdentityMiddleware())->handle($callback);
+        } catch (AccessRevokedException $exception) {
+            header('Content-Type: application/json; charset=UTF-8');
+            http_response_code(403);
+            echo json_encode(['error' => $exception->getMessage()]);
+            exit;
+        } catch (UnauthorizedException $exception) {
+            header('Content-Type: application/json; charset=UTF-8');
+            http_response_code(401);
+            echo json_encode(['error' => 'A autenticação é obrigatória.']);
             exit;
         }
     };
@@ -92,6 +117,14 @@ $router->post('login/authenticate', function () {
     $controller = new LoginController();
     $controller->authenticate();
 });
+$router->get('login/password-required', function () {
+    $controller = new LoginController();
+    $controller->showPasswordRequired();
+});
+$router->post('login/password-required', function () {
+    $controller = new LoginController();
+    $controller->updateRequiredPassword();
+});
 $router->get('login/logout', function () {
     $controller = new LoginController();
     $controller->logout();
@@ -117,14 +150,14 @@ $router->post('login/recovery/reset', function () {
     $controller->resetPassword();
 });
 
-// Cadastro de usuário
 $router->get('CreateAcc', function () {
-    $controller = new CreateAccController();
-    $controller->index();
+    (new RegistrationBlockedMiddleware())->handle();
 });
 $router->post('CreateAcc/create', function () {
-    $controller = new CreateAccController();
-    $controller->createAcc();
+    (new RegistrationBlockedMiddleware())->handle();
+});
+$router->get('CreateAcc/create', function () {
+    (new RegistrationBlockedMiddleware())->handle();
 });
 
 // Perfil (somente logado)
@@ -201,6 +234,25 @@ $router->post('identity/permissions', permissionRequired('identity.manage', 'ide
     (new IdentityManagementController())->permissions();
 }));
 
+$router->get('admin', permissionRequired('identity.manage', 'admin', function () {
+    (new AdminProvisioningController())->index();
+}));
+$router->get('admin/companies', permissionRequired('identity.manage', 'admin/companies', function () {
+    (new AdminProvisioningController())->companiesIndex();
+}));
+$router->post('admin/companies/create', authRequired(function () {
+    (new AdminProvisioningController())->createCompany();
+}));
+$router->post('admin/companies/update', authRequired(function () {
+    (new AdminProvisioningController())->updateCompany();
+}));
+$router->post('admin/companies/deactivate', authRequired(function () {
+    (new AdminProvisioningController())->deactivateCompany();
+}));
+$router->post('admin/users/create', authRequired(function () {
+    (new AdminProvisioningController())->createUser();
+}));
+
 $router->get('finance', permissionRequired('finance.view', 'finance', function () {
     (new FinanceController())->index();
 }));
@@ -215,6 +267,16 @@ $router->get('finance/print', permissionRequired('finance.view', 'finance/print'
 }));
 $router->post('finance/refund', permissionRequired('finance.adjust', 'finance/refund', function () {
     (new FinanceController())->refund();
+}));
+
+$router->get('api/v1/user/tenants', authIdentityRequired(function () {
+    (new ApiTenantController())->tenants();
+}));
+$router->post('api/v1/tenant/switch', authIdentityRequired(function () {
+    (new ApiTenantController())->switchTenant();
+}));
+$router->get('api/v1/permissions/context', authIdentityRequired(function () {
+    (new ApiTenantController())->permissionsContext();
 }));
 
 

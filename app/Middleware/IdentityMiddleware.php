@@ -11,6 +11,7 @@ use App\Context\RequestIdentity;
 use App\Exceptions\UnauthorizedException;
 use App\Exceptions\AccessRevokedException;
 use App\Identity\Repositories\UserAccessRepository;
+use App\Repositories\TenantRepository;
 use Config\Database;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -44,9 +45,19 @@ final class IdentityMiddleware
             );
         }
 
+        $companyId = filter_var(
+            $_SESSION['company_id'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+        $companyId = $companyId !== false
+            && (new TenantRepository($connection))->hasMembership($userId, (int) $companyId)
+                ? (int) $companyId
+                : null;
+
         $authorization = (new RolePermissionResolver(
             new RbacRepository($connection)
-        ))->resolve($userId);
+        ))->resolve($userId, $companyId);
         $_SESSION['permissions'] = $authorization->permissions();
         $_SESSION['role_slugs'] = $authorization->roleSlugs();
         $_SESSION['role_metadata'] = $authorization

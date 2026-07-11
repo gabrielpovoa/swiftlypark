@@ -64,10 +64,7 @@
 
             <div class="mt-10 text-center space-y-4">
                 <p class="text-slate-500 text-sm font-medium">
-                    Novo por aqui?
-                    <a href="/CreateAcc" class="text-white font-bold hover:text-blue-400 underline-offset-4 hover:underline transition-all ml-1">
-                        Criar conta administrativa
-                    </a>
+                    Acesso provisionado exclusivamente por um usuário Master.
                 </p>
             </div>
         </div>

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Context\IdentityContext;
+use App\Context\TenantContext;
+use App\Exceptions\TenantNotSetException;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\Decorators\TransactionalAuditDecorator;
 use App\Services\AuditService;
@@ -42,15 +44,20 @@ final class CreateVacancyModel
             $this->transactions->run(function () use ($category, $amount) {
                 $statement = $this->db->prepare(
                     'INSERT INTO vagas_disponiveis (
-                        categoria, created_by, updated_by
+                        company_id, categoria, created_by, updated_by
                      ) VALUES (
-                        :categoria, :created_by, :updated_by
+                        :company_id, :categoria, :created_by, :updated_by
                      )'
                 );
                 $userId = IdentityContext::current()->userId();
+                $companyId = TenantContext::instance()->getCompanyId();
+                if ($companyId === null) {
+                    throw new TenantNotSetException();
+                }
 
                 for ($index = 0; $index < $amount; $index++) {
                     $statement->execute([
+                        'company_id' => $companyId,
                         'categoria' => $category,
                         'created_by' => $userId,
                         'updated_by' => $userId,
@@ -78,9 +85,14 @@ final class CreateVacancyModel
     private function findVacancy(int $id): array
     {
         $statement = $this->db->prepare(
-            'SELECT * FROM vagas_disponiveis WHERE id_vaga = :id'
+            'SELECT * FROM vagas_disponiveis
+             WHERE id_vaga = :id
+               AND company_id = :company_id'
         );
-        $statement->execute(['id' => $id]);
+        $statement->execute([
+            'id' => $id,
+            'company_id' => TenantContext::instance()->getCompanyId(),
+        ]);
 
         return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
     }

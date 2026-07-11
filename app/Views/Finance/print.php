@@ -19,10 +19,20 @@ $metricLabels = [
 <body class="bg-slate-100 text-slate-900">
     <main class="max-w-5xl mx-auto bg-white min-h-screen p-10">
         <header class="flex justify-between items-start border-b pb-6 mb-8">
-            <div>
-                <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-black">SwiftlyPark</p>
-                <h1 class="text-3xl font-black mt-2">Relatório Financeiro</h1>
-                <p class="text-slate-500 mt-1">Período: <?= htmlspecialchars($month) ?></p>
+            <div class="flex items-start gap-4">
+                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white font-black italic">P</div>
+                <?php if (!empty($companyBrand['logo_path'])): ?>
+                    <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
+                         alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
+                         class="h-14 w-14 rounded-2xl border object-contain p-2">
+                <?php endif; ?>
+                <div>
+                    <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-black">SwiftlyPark</p>
+                    <h1 class="text-3xl font-black mt-2">Relatório Financeiro</h1>
+                    <p class="text-slate-500 mt-1">
+                        <?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?> · Período: <?= htmlspecialchars($month) ?>
+                    </p>
+                </div>
             </div>
             <button onclick="window.print()"
                     class="print:hidden rounded-xl bg-emerald-600 text-white font-bold px-5 py-3">

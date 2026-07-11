@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Context\IdentityContext;
+use App\Context\TenantContext;
 use App\Models\LogsModel;
 use App\Services\AuthorizationService;
 use Core\Controller;
@@ -86,6 +87,7 @@ class LogsController extends Controller
                 'logs' => $logs,
                 'periodLabel' => $monthStart->format('m/Y'),
                 'filter' => $filter,
+                'companyBrand' => TenantContext::instance()->getCompany()?->toArray(),
             ],
             false
         );

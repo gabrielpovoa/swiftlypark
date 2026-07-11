@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Finance\Services;
 
 use App\Context\RequestIdentity;
+use App\Context\TenantContext;
 use App\Repositories\AuditLogRepository;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -14,8 +15,10 @@ final class FinancialAuditService
 {
     public function __construct(
         private AuditLogRepository $auditLogs,
-        private RequestIdentity $identity
+        private RequestIdentity $identity,
+        private ?TenantContext $tenantContext = null
     ) {
+        $this->tenantContext ??= TenantContext::instance();
     }
 
     public function recordAdjustment(
@@ -45,6 +48,7 @@ final class FinancialAuditService
 
         $this->auditLogs->insert([
             'user_id' => $this->identity->userId(),
+            'company_id' => $this->tenantContext->getCompanyId(),
             'actor_email' => $this->identity->email(),
             'action' => 'FINANCIAL_ADJUSTMENT',
             'entity' => 'financial_adjustments',

@@ -8,21 +8,33 @@ use App\Exceptions\AuditLogException;
 use PDO;
 use Throwable;
 
-final class AuditLogRepository
+final class AuditLogRepository extends BaseRepository
 {
-    public function __construct(private PDO $connection)
-    {
-    }
 
     public function insert(array $entry): void
     {
+        $entry += ['company_id' => null];
+        $entry = array_intersect_key($entry, array_flip([
+            'user_id',
+            'company_id',
+            'actor_email',
+            'action',
+            'entity',
+            'entity_id',
+            'old_values',
+            'new_values',
+            'ip_address',
+            'request_id',
+            'created_at',
+        ]));
+
         try {
             $statement = $this->connection->prepare(
                 'INSERT INTO audit_logs (
-                    user_id, actor_email, action, entity, entity_id,
+                    user_id, company_id, actor_email, action, entity, entity_id,
                     old_values, new_values, ip_address, request_id, created_at
                  ) VALUES (
-                    :user_id, :actor_email, :action, :entity, :entity_id,
+                    :user_id, :company_id, :actor_email, :action, :entity, :entity_id,
                     :old_values, :new_values, :ip_address, :request_id, :created_at
                  )'
             );
@@ -70,17 +82,19 @@ final class AuditLogRepository
             ? 'al.actor_email ASC, al.created_at DESC'
             : 'al.created_at DESC';
 
-        $statement = $this->connection->prepare(
-            'SELECT
-                al.id, al.user_id, al.actor_email, u.nome AS actor_name,
-                al.action, al.entity, al.entity_id, al.old_values,
-                al.new_values, al.ip_address, al.request_id, al.created_at
+        $query = 'SELECT
+                al.id, al.user_id, al.company_id, al.actor_email,
+                u.nome AS actor_name, al.action, al.entity, al.entity_id,
+                al.old_values, al.new_values, al.ip_address,
+                al.request_id, al.created_at
              FROM audit_logs al
              LEFT JOIN usuario u ON u.id_usuario = al.user_id'
             . $where
             . ' ORDER BY ' . $orderBy
-            . ' LIMIT ' . $limit
-        );
+            . ' LIMIT ' . $limit;
+        $this->applyTenantFilter($query, $parameters, 'al.company_id');
+
+        $statement = $this->connection->prepare($query);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -88,13 +102,54 @@ final class AuditLogRepository
 
     public function findActors(): array
     {
-        $statement = $this->connection->query(
-            'SELECT al.actor_email, MAX(u.nome) AS actor_name
+        $query = 'SELECT al.actor_email, MAX(u.nome) AS actor_name
              FROM audit_logs al
              LEFT JOIN usuario u ON u.id_usuario = al.user_id
              GROUP BY al.actor_email
-             ORDER BY actor_name ASC, al.actor_email ASC'
+             ORDER BY actor_name ASC, al.actor_email ASC';
+        $parameters = [];
+        $this->applyTenantFilter($query, $parameters, 'al.company_id');
+
+        $statement = $this->connection->prepare($query);
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getGlobalLogs(int $limit = 200): array
+    {
+        $limit = max(1, min($limit, 500));
+        $statement = $this->connection->query(
+            'SELECT
+                al.id, al.user_id, al.company_id, al.actor_email,
+                u.nome AS actor_name, al.action, al.entity, al.entity_id,
+                al.old_values, al.new_values, al.ip_address,
+                al.request_id, al.created_at
+             FROM audit_logs al
+             LEFT JOIN usuario u ON u.id_usuario = al.user_id
+             ORDER BY al.created_at DESC
+             LIMIT ' . $limit
         );
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getLogsByCompany(int $companyId, int $limit = 200): array
+    {
+        $limit = max(1, min($limit, 500));
+        $statement = $this->connection->prepare(
+            'SELECT
+                al.id, al.user_id, al.company_id, al.actor_email,
+                u.nome AS actor_name, al.action, al.entity, al.entity_id,
+                al.old_values, al.new_values, al.ip_address,
+                al.request_id, al.created_at
+             FROM audit_logs al
+             LEFT JOIN usuario u ON u.id_usuario = al.user_id
+             WHERE al.company_id = :company_id
+             ORDER BY al.created_at DESC
+             LIMIT ' . $limit
+        );
+        $statement->execute(['company_id' => $companyId]);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }

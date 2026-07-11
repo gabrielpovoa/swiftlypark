@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Identity\Services;
 
 use App\Context\RequestIdentity;
+use App\Context\TenantContext;
 use App\Exceptions\ForbiddenException;
 use App\Identity\Repositories\IdentityManagementRepository;
 use App\Repositories\AuditLogRepository;
@@ -20,8 +21,10 @@ final class IdentityManagementService
         private IdentityManagementRepository $users,
         private AuditLogRepository $auditLogs,
         private TransactionManager $transactions,
-        private RequestIdentity $identity
+        private RequestIdentity $identity,
+        private ?TenantContext $tenantContext = null
     ) {
+        $this->tenantContext ??= TenantContext::instance();
     }
 
     public function revoke(int $targetUserId): void
@@ -67,10 +70,12 @@ final class IdentityManagementService
     {
         (new AuthorizationService($this->identity))->check('identity.manage');
 
-        if ($targetUserId === $this->identity->userId()) {
+        if ($targetUserId === $this->identity->userId()
+            && !in_array('master', $this->identity->roleSlugs(), true)
+            && !in_array('super-admin', $this->identity->roleSlugs(), true)) {
             throw new ForbiddenException(
                 'identity.manage',
-                'Você não pode alterar as próprias permissões extras.'
+                'Apenas MASTER pode alterar as próprias permissões extras.'
             );
         }
 
@@ -113,6 +118,7 @@ final class IdentityManagementService
     {
         $this->auditLogs->insert([
             'user_id' => $this->identity->userId(),
+            'company_id' => $this->tenantContext->getCompanyId(),
             'actor_email' => $this->identity->email(),
             'action' => $action,
             'entity' => 'identity',

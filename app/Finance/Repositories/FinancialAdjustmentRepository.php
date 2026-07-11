@@ -6,21 +6,20 @@ namespace App\Finance\Repositories;
 
 use PDO;
 
-final class FinancialAdjustmentRepository
+final class FinancialAdjustmentRepository extends \App\Repositories\BaseRepository
 {
-    public function __construct(private PDO $connection)
-    {
-    }
 
     public function findTransactionForUpdate(int $transactionId): ?array
     {
-        $statement = $this->connection->prepare(
-            'SELECT id_transacao, valor, payment_method, payment_date
+        $parameters = ['id' => $transactionId];
+        $query = 'SELECT id_transacao, valor, payment_method, payment_date
              FROM transacoes
              WHERE id_transacao = :id
-             FOR UPDATE'
-        );
-        $statement->execute(['id' => $transactionId]);
+             FOR UPDATE';
+        $this->applyTenantFilter($query, $parameters, 'company_id');
+
+        $statement = $this->connection->prepare($query);
+        $statement->execute($parameters);
         $transaction = $statement->fetch(PDO::FETCH_ASSOC);
 
         return $transaction === false ? null : $transaction;
@@ -28,12 +27,14 @@ final class FinancialAdjustmentRepository
 
     public function totalAdjusted(int $transactionId): float
     {
-        $statement = $this->connection->prepare(
-            'SELECT COALESCE(SUM(amount), 0)
+        $parameters = ['transaction_id' => $transactionId];
+        $query = 'SELECT COALESCE(SUM(amount), 0)
              FROM financial_adjustments
-             WHERE transaction_id = :transaction_id'
-        );
-        $statement->execute(['transaction_id' => $transactionId]);
+             WHERE transaction_id = :transaction_id';
+        $this->applyTenantFilter($query, $parameters, 'company_id');
+
+        $statement = $this->connection->prepare($query);
+        $statement->execute($parameters);
 
         return (float) $statement->fetchColumn();
     }
@@ -45,14 +46,17 @@ final class FinancialAdjustmentRepository
         string $reason,
         int $createdBy
     ): int {
+        $companyId = $this->assertTenantContext();
+
         $statement = $this->connection->prepare(
             'INSERT INTO financial_adjustments (
-                transaction_id, adjustment_type, amount, reason, created_by
+                company_id, transaction_id, adjustment_type, amount, reason, created_by
              ) VALUES (
-                :transaction_id, :type, :amount, :reason, :created_by
+                :company_id, :transaction_id, :type, :amount, :reason, :created_by
              )'
         );
         $statement->execute([
+            'company_id' => $companyId,
             'transaction_id' => $transactionId,
             'type' => $type,
             'amount' => $amount,

@@ -108,8 +108,62 @@ $escape = static fn (mixed $value): string => htmlspecialchars(
                                 </button>
                             </form>
                         </details>
-                    <?php elseif ($isSelf): ?>
-                        <p class="mt-4 text-xs text-amber-400/70">Sua própria conta é protegida contra alterações administrativas.</p>
+                    <?php elseif ($isSelf && !$isRevoked): ?>
+                        <details class="mt-5 border-t border-white/5 pt-4">
+                            <summary class="cursor-pointer text-xs font-black uppercase tracking-widest text-slate-500 hover:text-white">
+                                Gerenciar minhas permissões extras
+                            </summary>
+                            <form method="POST" action="/identity/permissions" class="mt-4">
+                                <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                                <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <?php foreach ($permissions as $permission): ?>
+                                        <?php
+                                        $permissionId = (int) $permission['id'];
+                                        $isInherited = in_array(
+                                            $permissionId,
+                                            $user['role_permissions'],
+                                            true
+                                        );
+                                        $isDirect = in_array(
+                                            $permissionId,
+                                            $user['direct_permissions'],
+                                            true
+                                        );
+                                        $isGranted = $isInherited || $isDirect;
+                                        ?>
+                                        <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors
+                                            <?= $isGranted
+                                                ? 'bg-blue-500/5 border-blue-500/20'
+                                                : 'bg-black/20 border-white/5 hover:border-blue-500/30' ?>">
+                                            <input type="checkbox"
+                                                <?= !$isInherited ? 'name="permissions[]"' : '' ?>
+                                                   value="<?= $permissionId ?>"
+                                                <?= $isGranted ? 'checked' : '' ?>
+                                                <?= $isInherited ? 'disabled' : '' ?>
+                                                   class="mt-1 accent-blue-500 disabled:opacity-60">
+                                            <span>
+                                                <strong class="block text-xs text-white"><?= $escape($permission['name']) ?></strong>
+                                                <span class="text-[10px] text-slate-600"><?= $escape($permission['slug']) ?></span>
+                                                <span class="block mt-1 text-[9px] font-black uppercase tracking-wider
+                                                    <?= $isGranted ? 'text-blue-400' : 'text-slate-700' ?>">
+                                                    <?php if ($isInherited): ?>
+                                                        Concedida pelo papel
+                                                    <?php elseif ($isDirect): ?>
+                                                        Permissão extra
+                                                    <?php else: ?>
+                                                        Não concedida
+                                                    <?php endif; ?>
+                                                </span>
+                                            </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button class="mt-4 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black">
+                                    Salvar minhas permissões extras
+                                </button>
+                            </form>
+                        </details>
                     <?php endif; ?>
                 </article>
             <?php endforeach; ?>

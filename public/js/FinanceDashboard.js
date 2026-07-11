@@ -11,7 +11,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const load = async () => {
         const response = await fetch(`/finance/data?month=${encodeURIComponent(month.value)}`);
-        if (!response.ok) throw new Error("Falha ao carregar dados financeiros.");
+        if (!response.ok) {
+            let message = "Falha ao carregar dados financeiros.";
+            try {
+                const payload = await response.json();
+                message = payload.error || message;
+            } catch (_) {
+            }
+
+            throw new Error(message);
+        }
+
         const data = await response.json();
         const exportLink = document.getElementById("finance-export");
         const printLink = document.getElementById("finance-print");
@@ -41,9 +51,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         dailyChart?.destroy();
         methodChart?.destroy();
-        dailyChart = chart("daily-chart", "line", data.charts.daily_revenue);
-        methodChart = chart("method-chart", "doughnut", data.charts.payment_methods);
+        if (window.Chart) {
+            dailyChart = chart("daily-chart", "line", data.charts.daily_revenue);
+            methodChart = chart("method-chart", "doughnut", data.charts.payment_methods);
+        }
         renderOperatorRanking(data.operators.top_parking);
+        document.querySelectorAll(".animate-pulse").forEach((element) =>
+            element.classList.remove("animate-pulse")
+        );
+    };
+
+    const renderError = (error) => {
+        const container = document.getElementById("operator-ranking");
+        if (container) {
+            container.innerHTML = `
+                <div class="rounded-2xl bg-rose-500/10 border border-rose-500/20 p-5 text-rose-300 font-bold">
+                    ${escapeHtml(error.message || "Não foi possível carregar o BI financeiro.")}
+                </div>
+            `;
+        }
+
         document.querySelectorAll(".animate-pulse").forEach((element) =>
             element.classList.remove("animate-pulse")
         );
@@ -133,6 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     );
 
-    month.addEventListener("change", () => load().catch(console.error));
-    load().catch(console.error);
+    month.addEventListener("change", () => load().catch(renderError));
+    load().catch(renderError);
 });

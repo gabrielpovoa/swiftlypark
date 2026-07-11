@@ -6,7 +6,7 @@ namespace App\Authorization\Contracts;
 
 interface RbacRepositoryInterface
 {
-    public function findAuthorizationRowsForUser(int $userId): array;
+    public function findAuthorizationRowsForUser(int $userId, ?int $companyId = null): array;
 
     public function findDirectPermissionsForUser(int $userId): array;
 }

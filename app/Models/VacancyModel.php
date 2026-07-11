@@ -3,6 +3,8 @@
     namespace App\Models;
 
     use App\Context\IdentityContext;
+    use App\Context\TenantContext;
+    use App\Exceptions\TenantNotSetException;
     use App\Repositories\AuditLogRepository;
     use App\Repositories\Decorators\TransactionalAuditDecorator;
     use App\Services\AuditService;
@@ -37,9 +39,11 @@
             $sql = "SELECT categoria, COUNT(*) as total
                 FROM vagas_disponiveis
                 WHERE status = 'livre'
+                  AND company_id = :company_id
                 GROUP BY categoria";
 
-            $stmt = $this->db->query($sql);
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['company_id' => $this->companyId()]);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $counts = [];
@@ -52,10 +56,15 @@
         public function getFreeVagaByCategory($categoria)
         {
             $sql = "SELECT * FROM vagas_disponiveis 
-                WHERE categoria = :cat AND status = 'livre'
+                WHERE categoria = :cat
+                  AND status = 'livre'
+                  AND company_id = :company_id
                 LIMIT 1";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['cat' => $categoria]);
+            $stmt->execute([
+                'cat' => $categoria,
+                'company_id' => $this->companyId(),
+            ]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
@@ -93,9 +102,14 @@
 
         public function getVagaById($idVaga)
         {
-            $sql = "SELECT * FROM vagas_disponiveis WHERE id_vaga = :id";
+            $sql = "SELECT * FROM vagas_disponiveis
+                WHERE id_vaga = :id
+                  AND company_id = :company_id";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['id' => $idVaga]);
+            $stmt->execute([
+                'id' => $idVaga,
+                'company_id' => $this->companyId(),
+            ]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
@@ -132,9 +146,14 @@
 
         public function checkIfVehicleIsParked(string $plate)
         {
-            $sql = "SELECT id_vaga FROM vagas_preenchidas WHERE placa = :plate AND hora_saida IS NULL LIMIT 1";
+            $sql = "SELECT id_vaga FROM vagas_preenchidas
+                WHERE placa = :plate
+                  AND hora_saida IS NULL
+                  AND company_id = :company_id
+                LIMIT 1";
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':plate', strtoupper(trim($plate)));
+            $stmt->bindValue(':company_id', $this->companyId(), PDO::PARAM_INT);
             $stmt->execute();
 
             return $stmt->fetch();
@@ -145,12 +164,13 @@
         {
             $userId = IdentityContext::current()->userId();
             $sql = "INSERT INTO vagas_preenchidas 
-        (id_vaga, hora_entrada, hora_saida, nome_cliente, telefone, placa, valor_pago, tipo_veiculo, created_by, updated_by)
+        (company_id, id_vaga, hora_entrada, hora_saida, nome_cliente, telefone, placa, valor_pago, tipo_veiculo, created_by, updated_by)
         VALUES 
-        (:id_vaga, :hora_entrada, :hora_saida, :nome, :telefone, :placa, :valor_pago, :tipo_veiculo, :created_by, :updated_by)";
+        (:company_id, :id_vaga, :hora_entrada, :hora_saida, :nome, :telefone, :placa, :valor_pago, :tipo_veiculo, :created_by, :updated_by)";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
+                'company_id' => $this->companyId(),
                 'id_vaga' => $idVaga,
                 'hora_entrada' => $horaEntrada,
                 'hora_saida' => $horaSaida,
@@ -182,11 +202,12 @@
         {
             $userId = IdentityContext::current()->userId();
             $sql = "INSERT INTO transacoes 
-                (id_vaga_preenchida, valor, payment_method, data_transacao, payment_date, created_by, updated_by)
+                (company_id, id_vaga_preenchida, valor, payment_method, data_transacao, payment_date, created_by, updated_by)
                 VALUES 
-                (:id_vaga_preenchida, :valor, :payment_method, UTC_TIMESTAMP(), UTC_TIMESTAMP(), :created_by, :updated_by)";
+                (:company_id, :id_vaga_preenchida, :valor, :payment_method, UTC_TIMESTAMP(), UTC_TIMESTAMP(), :created_by, :updated_by)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
+                'company_id' => $this->companyId(),
                 'id_vaga_preenchida' => $idVagaPreenchida,
                 'valor' => (float)$valorPago,
                 'payment_method' => $paymentMethod,
@@ -207,12 +228,14 @@
             $oldValues = $this->findAvailableVacancyForUpdate((int) $idVaga);
             $sql = "UPDATE vagas_disponiveis
                     SET status = :status, updated_by = :updated_by
-                    WHERE id_vaga = :id";
+                    WHERE id_vaga = :id
+                      AND company_id = :company_id";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 'status' => $status,
                 'updated_by' => IdentityContext::current()->userId(),
-                'id' => $idVaga
+                'id' => $idVaga,
+                'company_id' => $this->companyId(),
             ]);
 
             $this->audit->updated(
@@ -228,10 +251,12 @@
             $sql = "SELECT v.*, p.placa, p.hora_entrada, p.id_vaga_preenchida
         FROM vagas_disponiveis v
         LEFT JOIN vagas_preenchidas p 
-          ON v.id_vaga = p.id_vaga AND p.hora_saida IS NULL
-        WHERE 1=1";
+          ON v.id_vaga = p.id_vaga
+         AND p.company_id = v.company_id
+         AND p.hora_saida IS NULL
+        WHERE v.company_id = :company_id";
 
-            $params = [];
+            $params = ['company_id' => $this->companyId()];
 
 // Filtrar por categoria
             if ($categoria && $categoria !== 'all') {
@@ -261,12 +286,14 @@
             $sql = "SELECT * FROM vagas_preenchidas
             WHERE id_vaga = :id
               AND hora_saida IS NULL
+              AND company_id = :company_id
             ORDER BY id_vaga_preenchida DESC
             LIMIT 1";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                'id' => $idVaga
+                'id' => $idVaga,
+                'company_id' => $this->companyId(),
             ]);
 
             $vagaPreenchida = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -320,14 +347,16 @@
                           hora_saida = :hora_saida,
                           tempo_total = :tempo_total,
                           updated_by = :updated_by
-                      WHERE id_vaga_preenchida = :id";
+                      WHERE id_vaga_preenchida = :id
+                        AND company_id = :company_id";
 
                 $stmtUpdate = $this->db->prepare($sqlUpdate);
                 $stmtUpdate->execute([
                     'hora_saida' => $horaSaidaInput->format('Y-m-d H:i:s'),
                     'tempo_total' => $tempoTotal,
                     'updated_by' => IdentityContext::current()->userId(),
-                    'id' => $vagaPreenchida['id_vaga_preenchida']
+                    'id' => $vagaPreenchida['id_vaga_preenchida'],
+                    'company_id' => $this->companyId(),
                 ]);
 
                 $this->audit->updated(
@@ -349,9 +378,13 @@
             $statement = $this->db->prepare(
                 'SELECT * FROM vagas_disponiveis
                  WHERE id_vaga = :id
+                   AND company_id = :company_id
                  FOR UPDATE'
             );
-            $statement->execute(['id' => $id]);
+            $statement->execute([
+                'id' => $id,
+                'company_id' => $this->companyId(),
+            ]);
 
             return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
         }
@@ -361,9 +394,13 @@
             $statement = $this->db->prepare(
                 'SELECT * FROM vagas_preenchidas
                  WHERE id_vaga_preenchida = :id
+                   AND company_id = :company_id
                  FOR UPDATE'
             );
-            $statement->execute(['id' => $id]);
+            $statement->execute([
+                'id' => $id,
+                'company_id' => $this->companyId(),
+            ]);
 
             return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
         }
@@ -373,8 +410,12 @@
             $statement = $this->db->prepare(
                 'SELECT * FROM vagas_preenchidas
                  WHERE id_vaga_preenchida = :id'
+                . ' AND company_id = :company_id'
             );
-            $statement->execute(['id' => $id]);
+            $statement->execute([
+                'id' => $id,
+                'company_id' => $this->companyId(),
+            ]);
 
             return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
         }
@@ -384,10 +425,24 @@
             $statement = $this->db->prepare(
                 'SELECT * FROM transacoes
                  WHERE id_transacao = :id'
+                . ' AND company_id = :company_id'
             );
-            $statement->execute(['id' => $id]);
+            $statement->execute([
+                'id' => $id,
+                'company_id' => $this->companyId(),
+            ]);
 
             return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+        }
+
+        private function companyId(): int
+        {
+            $companyId = TenantContext::instance()->getCompanyId();
+            if ($companyId === null) {
+                throw new TenantNotSetException();
+            }
+
+            return $companyId;
         }
 
     }

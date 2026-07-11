@@ -3,10 +3,21 @@
 <section class="min-h-screen bg-[#0b0e14] text-slate-300 p-5 md:p-10">
     <div class="max-w-7xl mx-auto">
         <header class="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-8">
-            <div>
+            <div class="flex items-start gap-4">
+                <?php if (!empty($companyBrand['logo_path'])): ?>
+                    <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
+                         alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
+                         class="h-14 w-14 rounded-2xl border border-white/10 bg-white object-contain p-2">
+                <?php endif; ?>
+                <div>
                 <span class="text-emerald-500 text-xs font-black uppercase tracking-[0.3em]">Business Intelligence</span>
                 <h1 class="text-4xl font-black text-white mt-2">BI Financeiro</h1>
-                <p class="text-slate-500 mt-2">Receita, ocupação e meios de pagamento em uma visão consolidada.</p>
+                <p class="text-slate-500 mt-2">
+                    <?= !empty($companyBrand['name'])
+                        ? htmlspecialchars($companyBrand['name']) . ' · Receita, ocupação e meios de pagamento.'
+                        : 'Receita, ocupação e meios de pagamento em uma visão consolidada.' ?>
+                </p>
+                </div>
             </div>
             <div class="flex flex-col sm:flex-row gap-3">
                 <input id="finance-month" type="month" value="<?= date('Y-m') ?>"

@@ -24,14 +24,28 @@ final class AuditController extends Controller
         $repository = new AuditLogRepository($connection);
         $filters = $this->filters();
         $presenter = new AuditLogPresenter();
-        $logs = array_map(
-            [$presenter, 'present'],
-            $repository->findFiltered(
+        $identity = IdentityContext::current();
+        $isMaster = in_array('master', $identity->roleSlugs(), true);
+        $companyId = filter_var(
+            $_GET['company_id'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+        $rawLogs = match (true) {
+            $isMaster && ($_GET['scope'] ?? '') === 'global' => $repository
+                ->getGlobalLogs(),
+            $isMaster && $companyId !== false && $companyId !== null => $repository
+                ->getLogsByCompany((int) $companyId),
+            default => $repository->findFiltered(
                 $filters['actor'],
                 $filters['start_at'],
                 $filters['end_at'],
                 $filters['order']
-            )
+            ),
+        };
+        $logs = array_map(
+            [$presenter, 'present'],
+            $rawLogs
         );
 
         $this->setView('Audit/index', [

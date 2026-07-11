@@ -15,9 +15,9 @@ final class RolePermissionResolver implements RolePermissionResolverInterface
     {
     }
 
-    public function resolve(int $userId): ResolvedAuthorizationContext
+    public function resolve(int $userId, ?int $companyId = null): ResolvedAuthorizationContext
     {
-        $rows = $this->repository->findAuthorizationRowsForUser($userId);
+        $rows = $this->repository->findAuthorizationRowsForUser($userId, $companyId);
         $roles = [];
         $permissions = [];
         $metadata = null;

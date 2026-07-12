@@ -23,7 +23,8 @@ final class IdentityManagementController extends Controller
         $connection = (new Database())->connect();
         $repository = new IdentityManagementRepository($connection);
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $users = $repository->paginate($page, self::PER_PAGE);
+        $filters = $this->filters();
+        $users = $repository->paginate($page, self::PER_PAGE, $filters);
 
         foreach ($users as &$user) {
             $user['role_slugs'] = $user['roles'] === null
@@ -42,10 +43,12 @@ final class IdentityManagementController extends Controller
             'title' => 'Gestão de Identidade - SwiftlyPark',
             'users' => $users,
             'permissions' => $repository->permissions(),
+            'companies' => $repository->companiesForFilter(),
+            'filters' => $filters,
             'page' => $page,
             'totalPages' => max(
                 1,
-                (int) ceil($repository->countUsers() / self::PER_PAGE)
+                (int) ceil($repository->countUsers($filters) / self::PER_PAGE)
             ),
             'csrfToken' => $this->csrfToken(),
             'currentUserId' => IdentityContext::current()->userId(),
@@ -61,6 +64,14 @@ final class IdentityManagementController extends Controller
         $this->executeAction(function (IdentityManagementService $service): void {
             $service->revoke((int) ($_POST['user_id'] ?? 0));
             $_SESSION['identity_success'] = 'Acesso revogado com sucesso.';
+        });
+    }
+
+    public function reactivate(): void
+    {
+        $this->executeAction(function (IdentityManagementService $service): void {
+            $service->reactivate((int) ($_POST['user_id'] ?? 0));
+            $_SESSION['identity_success'] = 'Usuário reativado e senha temporária enviada.';
         });
     }
 
@@ -112,6 +123,29 @@ final class IdentityManagementController extends Controller
         }
 
         return $_SESSION['identity_csrf'];
+    }
+
+    private function filters(): array
+    {
+        $query = trim((string) ($_GET['q'] ?? ''));
+        $companyId = filter_var(
+            $_GET['company_id'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+        $status = (string) ($_GET['status'] ?? 'all');
+        $status = in_array($status, ['all', 'active', 'revoked'], true)
+            ? $status
+            : 'all';
+
+        return [
+            'query' => substr($query, 0, 120),
+            'company_id' => $companyId === false ? null : (int) $companyId,
+            'status' => $status,
+            'is_filtered' => $query !== ''
+                || $companyId !== false
+                || $status !== 'all',
+        ];
     }
 
     private function hasValidCsrfToken(): bool

@@ -128,6 +128,125 @@ $roleMetadata = $roleMetadata ?? [
                     </div>
                 <?php endif; ?>
 
+                <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white tracking-tight italic">Configurações</h1>
+                        <p class="text-slate-400 mt-2">Gerencie suas credenciais de acesso e segurança.</p>
+                    </div>
+
+                    <details class="relative">
+                        <summary class="list-none cursor-pointer inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-white/10 transition-all">
+                            <i data-lucide="settings-2" class="w-4 h-4"></i>
+                            Editar dados
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </summary>
+
+                        <div class="absolute right-0 mt-3 w-80 rounded-2xl border border-white/10 bg-[#11151d] p-3 shadow-2xl z-10">
+                            <div class="mb-3 rounded-xl bg-blue-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">
+                                Editar perfil
+                            </div>
+
+                            <details class="group rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 mb-3" open>
+                                <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-white">
+                                    <span class="flex items-center gap-2">
+                                        <i data-lucide="lock-keyhole" class="w-4 h-4 text-blue-400"></i>
+                                        Alterar senha
+                                    </span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                                </summary>
+                                <div class="mt-4">
+                                    <?php if (!empty($canChangePassword)): ?>
+                                        <form action="/Profile/changePassword" method="POST" class="space-y-5">
+                                            <div class="space-y-3">
+                                                <label for="current_password" class="text-sm font-semibold text-slate-300 ml-1 flex items-center gap-2">
+                                                    <i data-lucide="lock" class="w-4 h-4 opacity-50"></i>
+                                                    Senha Atual
+                                                </label>
+                                                <input type="password" id="current_password" name="current_password"
+                                                       class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-600 outline-none ring-offset-0 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
+                                                       placeholder="••••••••">
+                                            </div>
+
+                                            <div class="space-y-3">
+                                                <label for="new_password" class="text-sm font-semibold text-slate-300 ml-1 flex items-center gap-2">
+                                                    <i data-lucide="key-round" class="w-4 h-4 opacity-50"></i>
+                                                    Nova Senha
+                                                </label>
+                                                <input type="password" id="new_password" name="new_password"
+                                                       class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-600 outline-none ring-offset-0 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
+                                                       placeholder="••••••••">
+                                            </div>
+
+                                            <div class="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+                                                <div class="flex justify-between items-end mb-2">
+                                                    <div>
+                                                        <h4 class="text-sm font-bold text-slate-200">Segurança da senha</h4>
+                                                        <p class="text-xs text-slate-500">Use pelo menos 8 caracteres.</p>
+                                                    </div>
+                                                    <span id="password-strength-text" class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 transition-colors duration-300"></span>
+                                                </div>
+                                                <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                                    <div id="password-strength" class="w-1/3 h-full bg-red-500 rounded-full transition-all duration-700"></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center justify-end gap-3 pt-2">
+                                                <button type="button" onclick="location.reload()" class="px-4 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-colors">
+                                                    Descartar
+                                                </button>
+                                                <button type="submit" class="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
+                                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                                    Salvar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    <?php else: ?>
+                                        <div class="rounded-2xl border border-white/5 bg-black/20 p-4 text-center">
+                                            <i data-lucide="lock-keyhole" class="w-6 h-6 text-slate-600 mx-auto mb-2"></i>
+                                            <p class="text-sm text-slate-400">A alteração de senha não está disponível para seu nível de acesso.</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </details>
+
+                            <details class="group rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                                <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-white">
+                                    <span class="flex items-center gap-2">
+                                        <i data-lucide="user-pen" class="w-4 h-4 text-emerald-400"></i>
+                                        Nome e e-mail
+                                    </span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                                </summary>
+                                <div class="mt-4">
+                                    <form action="/Profile/updateProfile" method="POST" class="space-y-4">
+                                        <input type="hidden" name="target_user_id" value="<?= (int) ($targetUserId ?? 0) ?>">
+                                        <div class="space-y-3">
+                                            <label for="profile_name" class="text-sm font-semibold text-slate-300 ml-1 flex items-center gap-2">
+                                                <i data-lucide="user" class="w-4 h-4 opacity-50"></i>
+                                                Nome
+                                            </label>
+                                            <input type="text" id="profile_name" name="nome" value="<?= htmlspecialchars($user['nome'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300">
+                                        </div>
+                                        <div class="space-y-3">
+                                            <label for="profile_email" class="text-sm font-semibold text-slate-300 ml-1 flex items-center gap-2">
+                                                <i data-lucide="mail" class="w-4 h-4 opacity-50"></i>
+                                                E-mail
+                                            </label>
+                                            <input type="email" id="profile_email" name="email" value="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required class="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-slate-600 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300">
+                                        </div>
+                                        <div class="flex items-center justify-end pt-2">
+                                            <button type="submit" class="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2">
+                                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                                Salvar dados
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </details>
+                        </div>
+                    </details>
+                </div>
+
                 <section class="mb-10 pb-10 border-b border-white/5">
                     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                         <div>
@@ -175,77 +294,7 @@ $roleMetadata = $roleMetadata ?? [
                     </div>
                 </section>
 
-                <header class="mb-12">
-                    <h1 class="text-3xl font-bold text-white tracking-tight italic">Configurações</h1>
-                    <p class="text-slate-400 mt-2">Gerencie suas credenciais de acesso e segurança.</p>
-                </header>
 
-                <?php if (!empty($canChangePassword)): ?>
-                <form action="/Profile/changePassword" method="POST" class="space-y-10">
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
-
-                        <div class="space-y-3">
-                            <label for="current_password"
-                                   class="text-sm font-semibold text-slate-300 ml-1 flex items-center gap-2">
-                                <i data-lucide="lock" class="w-4 h-4 opacity-50"></i>
-                                Senha Atual
-                            </label>
-                            <input type="password" id="current_password" name="current_password"
-                                   class="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 text-white
-                                          placeholder:text-slate-600 outline-none ring-offset-0 focus:ring-2
-                                          focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
-                                   placeholder="••••••••">
-                        </div>
-
-                        <div class="space-y-3 relative">
-                            <label for="new_password"
-                                   class="text-sm font-semibold text-slate-300 ml-1 flex items-center gap-2">
-                                <i data-lucide="key-round" class="w-4 h-4 opacity-50"></i>
-                                Nova Senha
-                            </label>
-                            <input type="password" id="new_password" name="new_password"
-                                   class="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 text-white
-                                          placeholder:text-slate-600 outline-none ring-offset-0 focus:ring-2
-                                          focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300"
-                                   placeholder="••••••••">
-                        </div>
-                    </div>
-
-                    <div class="bg-white/[0.02] p-6 rounded-2xl border border-white/5">
-                        <div class="flex justify-between items-end mb-3">
-                            <div>
-                                <h4 class="text-sm font-bold text-slate-200">Segurança da senha</h4>
-                                <p class="text-xs text-slate-500">Use pelo menos 8 caracteres.</p>
-                            </div>
-                            <span id="password-strength-text" class="text-xs font-bold uppercase tracking-widest transition-colors duration-300"></span>
-                        </div>
-                        <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div id="password-strength"
-                                 class="w-1/3 h-full bg-red-500 rounded-full transition-all duration-700"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end gap-4 pt-6">
-                        <button type="button" onclick="location.reload()"
-                                class="px-6 py-4 rounded-2xl text-sm font-bold text-slate-400 hover:text-white transition-colors">
-                            Descartar
-                        </button>
-                        <button type="submit"
-                                class="cursor-pointer px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold
-                                       shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-3">
-                            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-                            Salvar Alterações
-                        </button>
-                    </div>
-
-                </form>
-                <?php else: ?>
-                    <div class="rounded-2xl border border-white/5 bg-black/20 p-8 text-center">
-                        <i data-lucide="lock-keyhole" class="w-8 h-8 text-slate-600 mx-auto mb-3"></i>
-                        <p class="text-sm text-slate-400">A alteração de senha não está disponível para seu nível de acesso.</p>
-                    </div>
-                <?php endif; ?>
             </div>
         </main>
     </div>

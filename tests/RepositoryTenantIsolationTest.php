@@ -5,7 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Context\TenantContext;
-use App\Exceptions\TenantNotSetException;
+use App\Exceptions\SecurityCriticalException;
 use App\Repositories\BaseRepository;
 
 final class TestRepository extends BaseRepository
@@ -34,9 +34,13 @@ $tenantContext->clear();
 
 try {
     (new TestRepository($tenantContext, new PDO('sqlite::memory:')))->runQuery();
-    fwrite(STDERR, "Expected TenantNotSetException\n");
+    fwrite(STDERR, "Expected SecurityCriticalException\n");
     exit(1);
-} catch (TenantNotSetException) {
+} catch (SecurityCriticalException $exception) {
+    if ($exception->securityCode() !== SecurityCriticalException::CODE_TENANT_CONTEXT_MISSING) {
+        fwrite(STDERR, "Expected tenant context security code\n");
+        exit(1);
+    }
 }
 
 $tenantContext->setCompany(new \App\Models\Company(7, 'Tenant Seven', 'tenant-seven'));

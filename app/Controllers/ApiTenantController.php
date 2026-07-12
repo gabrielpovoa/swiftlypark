@@ -10,8 +10,10 @@ use App\Authorization\Services\RolePermissionResolver;
 use App\Context\IdentityContext;
 use App\Context\TenantContext;
 use App\Models\Company;
+use App\Repositories\AuditLogRepository;
 use App\Repositories\TenantRepository;
 use App\Services\AuthorizationService;
+use App\Services\SecurityAuditService;
 use Config\Database;
 use Core\Controller;
 use Throwable;
@@ -23,18 +25,20 @@ final class ApiTenantController extends Controller
         $this->json(function (): array {
             $this->startSession();
             $identity = IdentityContext::current();
-            $repository = new TenantRepository((new Database())->connect());
+            $connection = (new Database())->connect();
+            $repository = new TenantRepository($connection);
+            $isPlatformAdmin = $this->hasGlobalPlatformRole($connection, $identity->userId());
             $tenants = $this->normalizeTenants(
-                $repository->findCompaniesForUser($identity->userId())
+                $isPlatformAdmin
+                    ? $repository->findSwitchableCompaniesForPlatformUser($identity->userId())
+                    : $repository->findCompaniesForUser($identity->userId())
             );
-            $currentCompanyId = $this->currentCompanyId($repository, $identity->userId(), $tenants);
-            $roles = $identity->roleSlugs();
+            $currentCompanyId = $this->currentCompanyId($repository, $identity->userId(), $tenants, $isPlatformAdmin);
 
             return [
                 'current_company_id' => $currentCompanyId,
                 'can_switch' => count($tenants) > 1
-                    || in_array('master', $roles, true)
-                    || in_array('super-admin', $roles, true),
+                    || $isPlatformAdmin,
                 'tenants' => $tenants,
             ];
         });
@@ -60,8 +64,20 @@ final class ApiTenantController extends Controller
 
             $connection = (new Database())->connect();
             $repository = new TenantRepository($connection);
+            $hasMembership = $repository->hasMembership($identity->userId(), (int) $companyId);
+            $isPlatformAdmin = $this->hasGlobalPlatformRole($connection, $identity->userId());
 
-            if (!$repository->hasMembership($identity->userId(), (int) $companyId)) {
+            if (!$isPlatformAdmin && !$hasMembership) {
+                (new SecurityAuditService(
+                    new AuditLogRepository($connection),
+                    $identity,
+                    TenantContext::instance()
+                ))->recordCrossTenantAccess(
+                    'api/v1/tenant/switch',
+                    (int) $companyId,
+                    'Usuário tentou trocar para empresa sem vínculo.'
+                );
+
                 http_response_code(403);
 
                 return ['error' => 'Você não possui acesso a esta empresa.'];
@@ -75,6 +91,18 @@ final class ApiTenantController extends Controller
             }
 
             $_SESSION['company_id'] = (int) $company['id'];
+            if (!$hasMembership && $isPlatformAdmin) {
+                $_SESSION['support_impersonation'] = [
+                    'super_admin_user_id' => $identity->userId(),
+                    'company_id' => (int) $company['id'],
+                    'company_name' => (string) $company['name'],
+                    'started_at' => $identity->requestedAt()->format('Y-m-d H:i:s.u'),
+                ];
+                $this->recordImpersonationStart(new AuditLogRepository($connection), $company);
+            } else {
+                unset($_SESSION['support_impersonation']);
+            }
+
             TenantContext::instance()->setCompany(new Company(
                 (int) $company['id'],
                 (string) $company['name'],
@@ -96,6 +124,8 @@ final class ApiTenantController extends Controller
                     $authorization->roleSlugs(),
                     $authorization->roleMetadata()->toArray()
                 ),
+                'support_impersonation' => !$hasMembership && $isPlatformAdmin,
+                'redirect_url' => '/operational/dashboard',
             ];
         });
     }
@@ -159,7 +189,7 @@ final class ApiTenantController extends Controller
         return $_POST;
     }
 
-    private function currentCompanyId(TenantRepository $repository, int $userId, array $tenants): ?int
+    private function currentCompanyId(TenantRepository $repository, int $userId, array $tenants, bool $isPlatformAdmin = false): ?int
     {
         $sessionCompanyId = filter_var(
             $_SESSION['company_id'] ?? null,
@@ -167,7 +197,9 @@ final class ApiTenantController extends Controller
             ['options' => ['min_range' => 1]]
         );
 
-        if ($sessionCompanyId !== false && $repository->hasMembership($userId, (int) $sessionCompanyId)) {
+        if ($sessionCompanyId !== false
+            && ($isPlatformAdmin || $repository->hasMembership($userId, (int) $sessionCompanyId))
+        ) {
             return (int) $sessionCompanyId;
         }
 
@@ -182,6 +214,7 @@ final class ApiTenantController extends Controller
                 'name' => (string) $tenant['name'],
                 'slug' => (string) $tenant['slug'],
                 'logo_path' => $tenant['logo_path'] !== null ? (string) $tenant['logo_path'] : null,
+                'has_membership' => (bool) ($tenant['has_membership'] ?? true),
                 'role' => $tenant['role_slug'] !== null ? [
                     'slug' => (string) $tenant['role_slug'],
                     'label' => (string) $tenant['role_label'],
@@ -215,5 +248,45 @@ final class ApiTenantController extends Controller
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+    }
+
+    private function isPlatformAdmin(array $roles): bool
+    {
+        return in_array('super-admin', $roles, true)
+            || in_array('master', $roles, true);
+    }
+
+    private function hasGlobalPlatformRole(\PDO $connection, int $userId): bool
+    {
+        $authorization = (new RolePermissionResolver(
+            new RbacRepository($connection)
+        ))->resolve($userId, null);
+
+        return $this->isPlatformAdmin($authorization->roleSlugs());
+    }
+
+    private function recordImpersonationStart(AuditLogRepository $auditLogs, array $company): void
+    {
+        $identity = IdentityContext::current();
+
+        $auditLogs->insert([
+            'user_id' => $identity->userId(),
+            'company_id' => (int) $company['id'],
+            'actor_email' => $identity->email(),
+            'action' => 'UPDATE',
+            'entity' => 'support_impersonation',
+            'entity_id' => (string) $company['id'],
+            'old_values' => null,
+            'new_values' => json_encode([
+                'event' => 'IMPERSONATION_STARTED',
+                'super_admin_user_id' => $identity->userId(),
+                'target_company_id' => (int) $company['id'],
+                'target_company_name' => (string) $company['name'],
+                'user_agent' => (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+            ], JSON_THROW_ON_ERROR),
+            'ip_address' => $identity->ipAddress(),
+            'request_id' => $identity->requestId(),
+            'created_at' => $identity->requestedAt()->format('Y-m-d H:i:s.u'),
+        ]);
     }
 }

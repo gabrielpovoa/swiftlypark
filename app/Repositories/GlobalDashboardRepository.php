@@ -1,0 +1,138 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repositories;
+
+use PDO;
+
+final class GlobalDashboardRepository extends BaseRepository
+{
+    public function overview(): array
+    {
+        return $this->withoutTenantFilter(function (): array {
+            $statement = $this->prepareGlobalStatement(
+                'SELECT
+                    (SELECT COUNT(*) FROM companies WHERE deleted_at IS NULL) AS active_companies,
+                    (SELECT COUNT(*) FROM usuario WHERE deleted_at IS NULL) AS registered_users,
+                    (SELECT COUNT(*) FROM vagas_preenchidas WHERE hora_saida IS NULL) AS active_sessions,
+                    (SELECT COUNT(*) FROM vagas_preenchidas WHERE hora_entrada IS NOT NULL) AS completed_checkins,
+                    (SELECT COALESCE(SUM(valor), 0) FROM transacoes) AS total_revenue,
+                    (SELECT COUNT(*) FROM audit_logs
+                        WHERE action IN (
+                            \'CROSS_TENANT_ACCESS_ATTEMPT\',
+                            \'SYSTEMATIC_TENANT_SCAN_DETECTED\',
+                            \'UNAUTHORIZED_ACCESS_ATTEMPT\'
+                        )
+                        AND created_at >= UTC_TIMESTAMP(6) - INTERVAL 30 DAY
+                    ) AS active_investigations,
+                    (SELECT COUNT(*) FROM companies
+                        WHERE deleted_at IS NULL
+                          AND created_at >= UTC_TIMESTAMP(6) - INTERVAL 30 DAY
+                    ) AS monthly_growth'
+            );
+            $statement->execute();
+
+            $row = $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            return [
+                'active_companies' => (int) ($row['active_companies'] ?? 0),
+                'registered_users' => (int) ($row['registered_users'] ?? 0),
+                'active_sessions' => (int) ($row['active_sessions'] ?? 0),
+                'completed_checkins' => (int) ($row['completed_checkins'] ?? 0),
+                'total_revenue' => (float) ($row['total_revenue'] ?? 0),
+                'active_investigations' => (int) ($row['active_investigations'] ?? 0),
+                'monthly_growth' => (int) ($row['monthly_growth'] ?? 0),
+            ];
+        });
+    }
+
+    public function topCompaniesByUsage(int $limit = 5): array
+    {
+        $limit = max(1, min($limit, 10));
+
+        return $this->withoutTenantFilter(function () use ($limit): array {
+            $statement = $this->prepareGlobalStatement(
+                'SELECT
+                    c.id,
+                    c.name,
+                    COALESCE(usage_totals.checkins, 0) AS checkins,
+                    COALESCE(revenue_totals.revenue, 0) AS revenue
+                 FROM companies c
+                 LEFT JOIN (
+                    SELECT company_id, COUNT(*) AS checkins
+                    FROM vagas_preenchidas
+                    GROUP BY company_id
+                 ) usage_totals ON usage_totals.company_id = c.id
+                 LEFT JOIN (
+                    SELECT company_id, SUM(valor) AS revenue
+                    FROM transacoes
+                    GROUP BY company_id
+                 ) revenue_totals ON revenue_totals.company_id = c.id
+                 WHERE c.deleted_at IS NULL
+                 GROUP BY c.id, c.name, usage_totals.checkins, revenue_totals.revenue
+                 ORDER BY checkins DESC, revenue DESC, c.name ASC
+                 LIMIT ' . $limit
+            );
+            $statement->execute();
+
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
+        });
+    }
+
+    public function revenueByCompany(int $limit = 5): array
+    {
+        $limit = max(1, min($limit, 10));
+
+        return $this->withoutTenantFilter(function () use ($limit): array {
+            $statement = $this->prepareGlobalStatement(
+                'SELECT
+                    c.id,
+                    c.name,
+                    COALESCE(SUM(t.valor), 0) AS revenue
+                 FROM companies c
+                 LEFT JOIN transacoes t ON t.company_id = c.id
+                 WHERE c.deleted_at IS NULL
+                 GROUP BY c.id, c.name
+                 ORDER BY revenue DESC, c.name ASC
+                 LIMIT ' . $limit
+            );
+            $statement->execute();
+
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
+        });
+    }
+
+    public function recentSecurityAlerts(int $limit = 5): array
+    {
+        $limit = max(1, min($limit, 10));
+
+        return $this->withoutTenantFilter(function () use ($limit): array {
+            $statement = $this->prepareGlobalStatement(
+                'SELECT
+                    al.id,
+                    al.company_id,
+                    c.name AS company_name,
+                    al.actor_email,
+                    al.action,
+                    al.entity,
+                    al.entity_id,
+                    al.new_values,
+                    al.ip_address,
+                    al.created_at
+                 FROM audit_logs al
+                 LEFT JOIN companies c ON c.id = al.company_id
+                 WHERE al.action IN (
+                    \'CROSS_TENANT_ACCESS_ATTEMPT\',
+                    \'SYSTEMATIC_TENANT_SCAN_DETECTED\',
+                    \'UNAUTHORIZED_ACCESS_ATTEMPT\'
+                 )
+                 ORDER BY al.created_at DESC
+                 LIMIT ' . $limit
+            );
+            $statement->execute();
+
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
+        });
+    }
+}

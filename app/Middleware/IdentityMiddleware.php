@@ -45,19 +45,36 @@ final class IdentityMiddleware
             );
         }
 
-        $companyId = filter_var(
+        $tenantRepository = new TenantRepository($connection);
+        $resolver = new RolePermissionResolver(new RbacRepository($connection));
+        $requestedCompanyId = filter_var(
             $_SESSION['company_id'] ?? null,
             FILTER_VALIDATE_INT,
             ['options' => ['min_range' => 1]]
         );
-        $companyId = $companyId !== false
-            && (new TenantRepository($connection))->hasMembership($userId, (int) $companyId)
-                ? (int) $companyId
-                : null;
+        $companyId = null;
 
-        $authorization = (new RolePermissionResolver(
-            new RbacRepository($connection)
-        ))->resolve($userId, $companyId);
+        if ($requestedCompanyId !== false && $requestedCompanyId !== null) {
+            if ($tenantRepository->hasMembership($userId, (int) $requestedCompanyId)) {
+                $companyId = (int) $requestedCompanyId;
+            } else {
+                $globalAuthorization = $resolver->resolve($userId);
+                $impersonatedCompanyId = filter_var(
+                    $_SESSION['support_impersonation']['company_id'] ?? null,
+                    FILTER_VALIDATE_INT,
+                    ['options' => ['min_range' => 1]]
+                );
+
+                if ($this->hasPlatformAdminRole($globalAuthorization->roleSlugs())
+                    && $impersonatedCompanyId !== false
+                    && (int) $impersonatedCompanyId === (int) $requestedCompanyId
+                ) {
+                    $companyId = (int) $requestedCompanyId;
+                }
+            }
+        }
+
+        $authorization = $resolver->resolve($userId, $companyId);
         $_SESSION['permissions'] = $authorization->permissions();
         $_SESSION['role_slugs'] = $authorization->roleSlugs();
         $_SESSION['role_metadata'] = $authorization
@@ -100,6 +117,12 @@ final class IdentityMiddleware
         return filter_var($candidate, FILTER_VALIDATE_IP) !== false
             ? $candidate
             : '0.0.0.0';
+    }
+
+    private function hasPlatformAdminRole(array $roles): bool
+    {
+        return in_array('super-admin', $roles, true)
+            || in_array('master', $roles, true);
     }
 
     private function uuid(): string

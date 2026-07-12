@@ -18,11 +18,21 @@ final class AuthorizationService
     {
         $this->assertValidPermission($permission);
 
+        if ($permission === 'identity.manage'
+            && $this->hasAnyRole(['master', 'super-admin', 'admin'])) {
+            return true;
+        }
+
         return in_array(
             $permission,
             $this->identity->permissions(),
             true
         );
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return array_intersect($roles, $this->identity->roleSlugs()) !== [];
     }
 
     public function check(string $permission): void

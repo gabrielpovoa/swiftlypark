@@ -18,8 +18,22 @@ class ProfileController extends Controller
             exit;
         }
 
+        $identity = IdentityContext::current();
+        $roleSlugs = $identity->roleSlugs();
+        $canManageUsers = in_array('admin', $roleSlugs, true)
+            || in_array('master', $roleSlugs, true)
+            || in_array('super-admin', $roleSlugs, true);
+
+        $requestedUserId = filter_input(INPUT_GET, 'user_id', FILTER_VALIDATE_INT);
+        $targetUserId = $requestedUserId ?: (int) $_SESSION['user_id'];
+
+        if (!$canManageUsers && $targetUserId !== (int) $_SESSION['user_id']) {
+            http_response_code(403);
+            exit('Acesso negado.');
+        }
+
         $userModel = new User();
-        $user = $userModel->getUserById($_SESSION['user_id']);
+        $user = $userModel->getUserById($targetUserId);
 
         $this->renderProfile($user);
     }
@@ -59,6 +73,59 @@ class ProfileController extends Controller
 }
 
 
+
+    public function updateProfile(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            return;
+        }
+
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
+        $identity = IdentityContext::current();
+        $roleSlugs = $identity->roleSlugs();
+        $canManageUsers = in_array('admin', $roleSlugs, true)
+            || in_array('master', $roleSlugs, true)
+            || in_array('super-admin', $roleSlugs, true);
+
+        $targetUserId = (int) ($_POST['target_user_id'] ?? $_SESSION['user_id']);
+        if (!$canManageUsers && $targetUserId !== (int) $_SESSION['user_id']) {
+            http_response_code(403);
+            exit('Acesso negado.');
+        }
+
+        $nome = trim((string) ($_POST['nome'] ?? ''));
+        $email = trim((string) ($_POST['email'] ?? ''));
+
+        if ($nome === '' || $email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $userModel = new User();
+            $user = $userModel->getUserById($targetUserId);
+            $this->renderProfile($user, 'Nome e e-mail válidos são obrigatórios.');
+            return;
+        }
+
+        $result = (new User())->updateProfile($targetUserId, $nome, strtolower($email));
+
+        if ($result['success']) {
+            if ($targetUserId === (int) $_SESSION['user_id']) {
+                $_SESSION['user_name'] = $nome;
+                $_SESSION['user_email'] = strtolower($email);
+            }
+
+            $userModel = new User();
+            $user = $userModel->getUserById($targetUserId);
+            $this->renderProfile($user, $result['message']);
+            return;
+        }
+
+        $userModel = new User();
+        $user = $userModel->getUserById($targetUserId);
+        $this->renderProfile($user, $result['message']);
+    }
 
     public function uploadPhoto(): void
     {
@@ -156,18 +223,25 @@ class ProfileController extends Controller
         $authorization = new AuthorizationService($identity);
         $connection = (new Database())->connect();
 
+        $roleSlugs = $identity->roleSlugs();
+        $canManageUsers = in_array('admin', $roleSlugs, true)
+            || in_array('master', $roleSlugs, true)
+            || in_array('super-admin', $roleSlugs, true);
+
         $this->setView('Profile/profile', [
             'title' => 'Perfil - SwiftlyPark',
             'user' => $user,
             'message' => $message,
             'roleMetadata' => $identity->roleMetadata(),
-            'roleSlugs' => $identity->roleSlugs(),
+            'roleSlugs' => $roleSlugs,
             'permissionLabels' => (new RbacRepository($connection))
                 ->findPermissionLabels($identity->permissions()),
             'canChangePassword' => $authorization
                 ->can('profile.password.update'),
             'canChangePhoto' => $authorization
                 ->can('profile.photo.update'),
+            'canManageUsers' => $canManageUsers,
+            'targetUserId' => (int) ($user['id_usuario'] ?? 0),
         ]);
     }
 }

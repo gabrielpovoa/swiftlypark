@@ -12,6 +12,8 @@ $userFilters ??= [
 ];
 $activeUsersCount ??= count($users);
 $passwordResetUsersCount ??= 0;
+$activeUsers ??= [];
+$permissions ??= [];
 ?>
 
 <section class="min-h-screen bg-[#0b0e14] text-slate-300 p-5 md:p-10">
@@ -52,7 +54,7 @@ $passwordResetUsersCount ??= 0;
             <div class="mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 px-5 py-4 text-rose-400 font-bold"><?= $escape($error) ?></div>
         <?php endif; ?>
 
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        <div class="grid grid-cols-1 xl:col-span-2 gap-6 mb-6">
             <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6">
                 <div class="flex items-center justify-between gap-4 mb-6">
                     <div>
@@ -88,12 +90,145 @@ $passwordResetUsersCount ??= 0;
                     </a>
                 </form>
             </section>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+            <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6">
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="text-[10px] text-cyan-400 font-black uppercase tracking-widest">Vínculo</span>
+                        <h2 class="text-xl text-white font-black mt-1">Vincular usuário existente</h2>
+                    </div>
+                    <i data-lucide="user-round-plus" class="w-7 h-7 text-cyan-400"></i>
+                </div>
+
+                <form method="POST" action="/admin/users/link-company" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                    <div class="md:col-span-2">
+                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Usuário</label>
+                        <select name="user_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
+                            <option value="">Selecione</option>
+                            <?php foreach ($activeUsers as $activeUser): ?>
+                                <option value="<?= (int) $activeUser['id_usuario'] ?>"><?= $escape($activeUser['nome']) ?> · <?= $escape($activeUser['email']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Empresa</label>
+                        <select name="company_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
+                            <option value="">Selecione</option>
+                            <?php foreach ($companies as $company): ?>
+                                <option value="<?= (int) $company['id'] ?>"><?= $escape($company['name']) ?> · <?= $escape($company['slug']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Papel</label>
+                        <select name="role_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
+                            <option value="">Selecione</option>
+                            <?php foreach ($roles as $role): ?>
+                                <option value="<?= (int) $role['id'] ?>"><?= $escape($role['label'] ?: $role['name']) ?> · <?= $escape($role['slug']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <button class="md:col-span-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black px-5 py-3">
+                        Vincular à empresa
+                    </button>
+                </form>
+            </section>
 
             <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6">
                 <div class="flex items-center justify-between gap-4 mb-6">
                     <div>
+                        <span class="text-[10px] text-rose-400 font-black uppercase tracking-widest">Acesso</span>
+                        <h2 class="text-xl text-white font-black mt-1">Remover acesso a empresa</h2>
+                    </div>
+                    <i data-lucide="user-round-minus" class="w-7 h-7 text-rose-400"></i>
+                </div>
+
+                <form method="POST" action="/admin/users/remove-company" class="grid grid-cols-1 md:grid-cols-2 gap-4" onsubmit="return confirm('Remover o acesso deste usuário à empresa selecionada?');">
+                    <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                    <div class="md:col-span-2">
+                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Usuário</label>
+                        <select
+                            name="user_id"
+                            required
+                            data-remove-access-user
+                            class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
+                            <option value="">Selecione</option>
+                            <?php foreach ($activeUsers as $activeUser): ?>
+                                <?php
+                                $companyOptions = array_values(array_filter(array_map(
+                                    static function (string $access): ?array {
+                                        [$id, $name, $slug] = array_pad(explode('::', $access, 3), 3, '');
+
+                                        return $id !== ''
+                                            ? ['id' => (int) $id, 'name' => $name, 'slug' => $slug]
+                                            : null;
+                                    },
+                                    array_filter(explode('||', (string) ($activeUser['company_access'] ?? '')))
+                                )));
+                                ?>
+                                <option
+                                    value="<?= (int) $activeUser['id_usuario'] ?>"
+                                    data-companies="<?= $escape(json_encode($companyOptions, JSON_THROW_ON_ERROR)) ?>">
+                                    <?= $escape($activeUser['nome']) ?> · <?= $escape($activeUser['email']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Empresa</label>
+                        <select
+                            name="company_id"
+                            required
+                            data-remove-access-company
+                            class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
+                            <option value="">Selecione um usuário primeiro</option>
+                        </select>
+                    </div>
+                    <button class="md:col-span-2 rounded-xl bg-rose-500/10 hover:bg-rose-500 border border-rose-500/20 text-rose-400 hover:text-white font-black px-5 py-3">
+                        Remover acesso
+                    </button>
+                </form>
+            </section>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+            <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6 xl:col-span-2">
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="text-[10px] text-amber-400 font-black uppercase tracking-widest">Acesso</span>
+                        <h2 class="text-xl text-white font-black mt-1">Enviar senha temporária</h2>
+                    </div>
+                    <i data-lucide="shield-alert" class="w-7 h-7 text-amber-400"></i>
+                </div>
+
+                <form method="POST" action="/admin/users/send-temporary-password" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                    <div class="md:col-span-2">
+                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Usuário</label>
+                        <select name="user_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
+                            <option value="">Selecione</option>
+                            <?php foreach ($activeUsers as $activeUser): ?>
+                                <option value="<?= (int) $activeUser['id_usuario'] ?>"><?= $escape($activeUser['nome']) ?> · <?= $escape($activeUser['email']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200/90">
+                        A senha temporária será enviada por e-mail e o usuário será obrigado a alterá-la no próximo acesso.
+                    </div>
+                    <button class="md:col-span-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black px-5 py-3">
+                        Enviar senha temporária
+                    </button>
+                </form>
+            </section>
+
+            <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6 xl:col-span-2">
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <div>
                         <span class="text-[10px] text-blue-400 font-black uppercase tracking-widest">Acesso</span>
-                        <h2 class="text-xl text-white font-black mt-1">Adicionar usuário</h2>
+                        <h2 class="text-xl text-white font-black mt-1">Adicionar novo usuário</h2>
                     </div>
                     <i data-lucide="user-plus" class="w-7 h-7 text-blue-400"></i>
                 </div>
@@ -111,11 +246,6 @@ $passwordResetUsersCount ??= 0;
                                class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
                     </div>
                     <div>
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Senha inicial</label>
-                        <input type="password" name="password" required minlength="12" placeholder="Mínimo 12 caracteres"
-                               class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
-                    </div>
-                    <div>
                         <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Empresa</label>
                         <select name="company_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
                             <option value="">Selecione</option>
@@ -124,7 +254,7 @@ $passwordResetUsersCount ??= 0;
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="md:col-span-2">
+                    <div>
                         <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Papel</label>
                         <select name="role_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
                             <option value="">Selecione</option>
@@ -132,6 +262,9 @@ $passwordResetUsersCount ??= 0;
                                 <option value="<?= (int) $role['id'] ?>"><?= $escape($role['label'] ?: $role['name']) ?> · <?= $escape($role['slug']) ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div class="md:col-span-2 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-sm text-blue-100/90">
+                        A senha temporária será gerada automaticamente e enviada por e-mail.
                     </div>
                     <button class="md:col-span-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black px-5 py-3">
                         Provisionar usuário
@@ -206,6 +339,9 @@ $passwordResetUsersCount ??= 0;
                     <?php endif; ?>
 
                     <?php foreach ($users as $user): ?>
+                        <?php
+                        $companyAccess = array_filter(explode('||', (string) ($user['company_access'] ?? '')));
+                        ?>
                         <article class="rounded-xl bg-black/20 border border-white/5 p-4">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
@@ -217,7 +353,41 @@ $passwordResetUsersCount ??= 0;
                                 </span>
                             </div>
                             <div class="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
-                                <span class="rounded-lg bg-white/[0.04] text-slate-400 px-2 py-1"><?= $escape($user['company_name'] ?? 'sem empresa') ?></span>
+                                <?php if ($companyAccess === []): ?>
+                                    <span class="rounded-lg bg-white/[0.04] text-slate-400 px-2 py-1">sem empresa</span>
+                                <?php endif; ?>
+                                <?php foreach ($companyAccess as $access): ?>
+                                    <?php
+                                    [$companyId, $companyName, $roleSlug, $extraPermissionIds, $roleLabel] = array_pad(explode('::', $access, 5), 5, '');
+                                    $extraPermissionIds = array_values(array_filter(array_map(
+                                        'intval',
+                                        $extraPermissionIds !== '' ? explode(',', $extraPermissionIds) : []
+                                    )));
+                                    ?>
+                                    <div class="inline-flex items-center gap-2 rounded-lg bg-white/[0.04] text-slate-400 px-2 py-1">
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center gap-1 text-left hover:text-white transition-colors"
+                                            data-company-permissions-trigger
+                                            data-user-id="<?= (int) $user['id_usuario'] ?>"
+                                            data-user-name="<?= $escape($user['nome']) ?>"
+                                            data-company-id="<?= (int) $companyId ?>"
+                                            data-company-name="<?= $escape($companyName) ?>"
+                                            data-role-label="<?= $escape($roleLabel !== '' ? $roleLabel : $roleSlug) ?>"
+                                            data-permissions="<?= $escape(json_encode($extraPermissionIds, JSON_THROW_ON_ERROR)) ?>">
+                                            <?= $escape($companyName) ?> · <?= $escape($roleSlug) ?>
+                                            <i data-lucide="sliders-horizontal" class="h-3 w-3 text-blue-400"></i>
+                                        </button>
+                                        <form method="POST" action="/admin/users/remove-company" class="inline" onsubmit="return confirm('Remover este acesso à empresa?');">
+                                            <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                                            <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
+                                            <input type="hidden" name="company_id" value="<?= (int) $companyId ?>">
+                                            <button class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white" title="Remover acesso">
+                                                <i data-lucide="x" class="h-3 w-3"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
                                 <?php if ((int) ($user['password_reset_required'] ?? 0) === 1): ?>
                                     <span class="rounded-lg bg-amber-500/10 text-amber-400 px-2 py-1">troca de senha pendente</span>
                                 <?php endif; ?>
@@ -229,3 +399,146 @@ $passwordResetUsersCount ??= 0;
         </div>
     </div>
 </section>
+
+<div
+    id="company-permissions-modal"
+    class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+    aria-hidden="true">
+    <div class="w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0f141d] shadow-2xl">
+        <div class="flex items-start justify-between gap-4 border-b border-white/10 p-5">
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-widest text-blue-400">Permissões por empresa</span>
+                <h2 id="company-permissions-title" class="mt-1 text-xl font-black text-white">Perfil tenant</h2>
+                <p id="company-permissions-subtitle" class="mt-1 text-sm font-bold text-slate-500"></p>
+            </div>
+            <button
+                type="button"
+                data-company-permissions-close
+                class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.05] text-slate-300 hover:bg-white/[0.1] hover:text-white">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="/admin/users/company-permissions" class="p-5">
+            <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+            <input type="hidden" name="user_id" data-company-permissions-user-id>
+            <input type="hidden" name="company_id" data-company-permissions-company-id>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[22rem] overflow-y-auto pr-1 custom-scrollbar">
+                <?php foreach ($permissions as $permission): ?>
+                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-bold text-slate-300 hover:border-blue-500/30">
+                        <input
+                            type="checkbox"
+                            name="permissions[]"
+                            value="<?= (int) $permission['id'] ?>"
+                            data-company-permission-checkbox
+                            class="mt-1 h-4 w-4 rounded border-white/20 bg-black accent-blue-500">
+                        <span>
+                            <span class="block text-white"><?= $escape($permission['name']) ?></span>
+                            <span class="block text-[10px] uppercase tracking-widest text-slate-500"><?= $escape($permission['slug']) ?></span>
+                        </span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="mt-5 rounded-xl border border-blue-500/20 bg-blue-500/10 p-4 text-sm font-bold text-blue-100/90">
+                Estas permissões são extras e valem apenas para este usuário nesta empresa. As permissões herdadas pelo papel continuam vindo do role selecionado.
+            </div>
+
+            <div class="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                    type="button"
+                    data-company-permissions-close
+                    class="rounded-xl bg-white/[0.05] px-5 py-3 font-black text-slate-300 hover:bg-white/[0.08]">
+                    Cancelar
+                </button>
+                <button class="rounded-xl bg-blue-600 px-5 py-3 font-black text-white hover:bg-blue-500">
+                    Salvar permissões
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const userSelect = document.querySelector('[data-remove-access-user]');
+    const companySelect = document.querySelector('[data-remove-access-company]');
+    const modal = document.getElementById('company-permissions-modal');
+    const title = document.getElementById('company-permissions-title');
+    const subtitle = document.getElementById('company-permissions-subtitle');
+    const userIdInput = document.querySelector('[data-company-permissions-user-id]');
+    const companyIdInput = document.querySelector('[data-company-permissions-company-id]');
+    const permissionCheckboxes = Array.from(document.querySelectorAll('[data-company-permission-checkbox]'));
+
+    const renderCompanies = () => {
+        if (!userSelect || !companySelect) {
+            return;
+        }
+
+        const selected = userSelect.selectedOptions[0];
+        const companies = selected?.dataset.companies
+            ? JSON.parse(selected.dataset.companies)
+            : [];
+
+        companySelect.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = companies.length > 0
+            ? 'Selecione'
+            : 'Nenhuma empresa vinculada';
+        companySelect.appendChild(placeholder);
+
+        companies.forEach((company) => {
+            const option = document.createElement('option');
+            option.value = company.id;
+            option.textContent = `${company.name} · ${company.slug}`;
+            companySelect.appendChild(option);
+        });
+    };
+
+    if (userSelect && companySelect) {
+        userSelect.addEventListener('change', renderCompanies);
+        renderCompanies();
+    }
+
+    const closeModal = () => {
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.setAttribute('aria-hidden', 'true');
+    };
+
+    document.querySelectorAll('[data-company-permissions-close]').forEach((button) => {
+        button.addEventListener('click', closeModal);
+    });
+
+    document.querySelectorAll('[data-company-permissions-trigger]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!modal || !userIdInput || !companyIdInput) {
+                return;
+            }
+
+            const selectedPermissionIds = new Set(
+                JSON.parse(button.dataset.permissions || '[]').map((value) => String(value))
+            );
+
+            userIdInput.value = button.dataset.userId || '';
+            companyIdInput.value = button.dataset.companyId || '';
+            title.textContent = `${button.dataset.companyName || 'Empresa'} · ${button.dataset.roleLabel || 'Perfil'}`;
+            subtitle.textContent = button.dataset.userName || '';
+
+            permissionCheckboxes.forEach((checkbox) => {
+                checkbox.checked = selectedPermissionIds.has(String(checkbox.value));
+            });
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.setAttribute('aria-hidden', 'false');
+        });
+    });
+});
+</script>

@@ -113,4 +113,29 @@ class User
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
+    public function updateProfile(int $idUsuario, string $nome, string $email): array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'UPDATE usuario
+                 SET nome = :nome, email = :email
+                 WHERE id_usuario = :id'
+            );
+            $stmt->execute([
+                ':nome' => $nome,
+                ':email' => $email,
+                ':id' => $idUsuario,
+            ]);
+
+            return [
+                'success' => $stmt->rowCount() > 0,
+                'message' => $stmt->rowCount() > 0
+                    ? 'Perfil atualizado com sucesso.'
+                    : 'Nenhuma alteração foi aplicada.',
+            ];
+        } catch (PDOException $e) {
+            return ['success' => false, 'message' => 'Erro ao atualizar o perfil: ' . $e->getMessage()];
+        }
+    }
 }

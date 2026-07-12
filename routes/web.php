@@ -15,15 +15,19 @@ use App\Controllers\IdentityManagementController;
 use App\Controllers\FinanceController;
 use App\Controllers\AdminProvisioningController;
 use App\Controllers\ApiTenantController;
+use App\Controllers\DashboardGlobalController;
 use App\Exceptions\UnauthorizedException;
 use App\Exceptions\AccessRevokedException;
 use App\Exceptions\ForbiddenException;
+use App\Exceptions\SecurityCriticalException;
 use App\Context\IdentityContext;
 use App\Context\TenantContext;
 use App\Middleware\IdentityMiddleware;
 use App\Middleware\AuthorizeMiddleware;
 use App\Middleware\TenantMiddleware;
 use App\Middleware\RegistrationBlockedMiddleware;
+use App\Authorization\Repositories\RbacRepository;
+use App\Authorization\Services\RolePermissionResolver;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuthorizationService;
 use App\Services\SecurityAuditService;
@@ -45,6 +49,12 @@ function authRequired($callback)
         } catch (UnauthorizedException $exception) {
             header('Location: /login');
             exit;
+        } catch (ForbiddenException|SecurityCriticalException $exception) {
+            if ($exception instanceof SecurityCriticalException) {
+                auditSecurityCriticalException($exception);
+            }
+
+            (new Controller())->render403();
         }
     };
 }
@@ -68,6 +78,23 @@ function authIdentityRequired($callback)
     };
 }
 
+function auditSecurityCriticalException(SecurityCriticalException $exception): void
+{
+    try {
+        $identity = IdentityContext::current();
+        $connection = (new Database())->connect();
+        (new SecurityAuditService(
+            new AuditLogRepository($connection),
+            $identity
+        ))->recordCriticalQueryBlocked(
+            trim((string) ($_GET['url'] ?? $_SERVER['REQUEST_URI'] ?? ''), '/'),
+            $exception->securityCode(),
+            $exception->getMessage()
+        );
+    } catch (\Throwable) {
+    }
+}
+
 function permissionRequired(string $permission, string $route, $callback)
 {
     return authRequired(function () use ($permission, $route, $callback) {
@@ -85,8 +112,51 @@ function permissionRequired(string $permission, string $route, $callback)
             $middleware->handle($permission, $route, $callback);
         } catch (ForbiddenException $exception) {
             (new Controller())->render403();
+        } catch (SecurityCriticalException $exception) {
+            auditSecurityCriticalException($exception);
+            (new Controller())->render403();
         }
     });
+}
+
+function hasGlobalPlatformRole(int $userId): bool
+{
+    $authorization = (new RolePermissionResolver(
+        new RbacRepository((new Database())->connect())
+    ))->resolve($userId, null);
+    $roles = $authorization->roleSlugs();
+
+    return in_array('super-admin', $roles, true)
+        || in_array('master', $roles, true);
+}
+
+function superAdminRequired($callback)
+{
+    return function () use ($callback) {
+        try {
+            (new IdentityMiddleware())->handle(function () use ($callback) {
+                $identity = IdentityContext::current();
+
+                if (!hasGlobalPlatformRole($identity->userId())) {
+                    (new Controller())->render403();
+                }
+
+                $callback();
+            });
+        } catch (AccessRevokedException $exception) {
+            header('Location: /login?revoked=1');
+            exit;
+        } catch (UnauthorizedException $exception) {
+            header('Location: /login');
+            exit;
+        } catch (ForbiddenException|SecurityCriticalException $exception) {
+            if ($exception instanceof SecurityCriticalException) {
+                auditSecurityCriticalException($exception);
+            }
+
+            (new Controller())->render403();
+        }
+    };
 }
 
 // Rota raiz: login ou home conforme sessão
@@ -95,18 +165,30 @@ $router->get('', function () {
     if (!isset($_SESSION['user_id'])) {
         $controller = new LoginController();
     } else {
-        $protectedDashboard = permissionRequired(
-            'dashboard.view',
-            '',
-            function () {
-                (new HomeController())->index();
-            }
-        );
-        $protectedDashboard();
+        try {
+            (new IdentityMiddleware())->handle(function () {
+                $identity = IdentityContext::current();
+                $isPlatformAdmin = hasGlobalPlatformRole($identity->userId());
+
+                header('Location: ' . ($isPlatformAdmin ? '/admin/dashboard' : '/operational/dashboard'));
+                exit;
+            });
+        } catch (AccessRevokedException $exception) {
+            header('Location: /login?revoked=1');
+            exit;
+        } catch (UnauthorizedException $exception) {
+            header('Location: /login');
+            exit;
+        }
+
         return;
     }
     $controller->index();
 });
+
+$router->get('operational/dashboard', permissionRequired('dashboard.view', 'operational/dashboard', function () {
+    (new HomeController())->index();
+}));
 
 // Login
 $router->get('login', function () {
@@ -165,6 +247,10 @@ $router->get('Profile', authRequired(function () {
     $controller = new ProfileController();
     $controller->index();
 }));
+$router->post('Profile/updateProfile', authRequired(function () {
+    $controller = new ProfileController();
+    $controller->updateProfile();
+}));
 $router->get('Profile/changePassword', permissionRequired('profile.password.update', 'Profile/changePassword', function () {
     $controller = new ProfileController();
     $controller->changePassword();
@@ -220,7 +306,7 @@ $router->get('logs/print', permissionRequired('report.view', 'logs/print', funct
     $controller->print();
 }));
 
-$router->get('audit', permissionRequired('audit.view', 'audit', function () {
+$router->get('audit', authRequired(function () {
     (new AuditController())->index();
 }));
 
@@ -230,12 +316,18 @@ $router->get('identity', permissionRequired('identity.view', 'identity', functio
 $router->post('identity/revoke', permissionRequired('identity.manage', 'identity/revoke', function () {
     (new IdentityManagementController())->revoke();
 }));
+$router->post('identity/reactivate', permissionRequired('identity.manage', 'identity/reactivate', function () {
+    (new IdentityManagementController())->reactivate();
+}));
 $router->post('identity/permissions', permissionRequired('identity.manage', 'identity/permissions', function () {
     (new IdentityManagementController())->permissions();
 }));
 
 $router->get('admin', permissionRequired('identity.manage', 'admin', function () {
     (new AdminProvisioningController())->index();
+}));
+$router->get('admin/dashboard', superAdminRequired(function () {
+    (new DashboardGlobalController())->index();
 }));
 $router->get('admin/companies', permissionRequired('identity.manage', 'admin/companies', function () {
     (new AdminProvisioningController())->companiesIndex();
@@ -251,6 +343,18 @@ $router->post('admin/companies/deactivate', authRequired(function () {
 }));
 $router->post('admin/users/create', authRequired(function () {
     (new AdminProvisioningController())->createUser();
+}));
+$router->post('admin/users/link-company', authRequired(function () {
+    (new AdminProvisioningController())->linkExistingUser();
+}));
+$router->post('admin/users/send-temporary-password', authRequired(function () {
+    (new AdminProvisioningController())->sendTemporaryPassword();
+}));
+$router->post('admin/users/remove-company', authRequired(function () {
+    (new AdminProvisioningController())->removeCompanyAccess();
+}));
+$router->post('admin/users/company-permissions', authRequired(function () {
+    (new AdminProvisioningController())->syncCompanyPermissions();
 }));
 
 $router->get('finance', permissionRequired('finance.view', 'finance', function () {

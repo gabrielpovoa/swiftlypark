@@ -9,6 +9,8 @@ use App\Identity\Services\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
 use App\Exceptions\ForbiddenException;
 use App\Services\AuditService;
+use App\Services\PasswordGeneratorService;
+use App\Services\PasswordRecoveryMailer;
 use Config\Database;
 use Core\Controller;
 use DateTimeImmutable;
@@ -21,7 +23,7 @@ final class AdminProvisioningController extends Controller
     public function index(): void
     {
         $this->startSession();
-        $this->assertMaster();
+        $this->assertGovernanceAdmin();
 
         $connection = (new Database())->connect();
         $filters = $this->userFilters();
@@ -30,6 +32,8 @@ final class AdminProvisioningController extends Controller
             'title' => 'Governança SaaS - SwiftlyPark',
             'companies' => $this->companies($connection),
             'roles' => $this->assignableRoles($connection),
+            'permissions' => $this->permissions($connection),
+            'activeUsers' => $this->activeUsers($connection),
             'users' => $this->users($connection, $filters),
             'userFilters' => $filters,
             'activeUsersCount' => $this->activeUsersCount($connection),
@@ -40,6 +44,83 @@ final class AdminProvisioningController extends Controller
         ]);
 
         unset($_SESSION['admin_success'], $_SESSION['admin_error']);
+    }
+
+    public function sendTemporaryPassword(): void
+    {
+        $this->startSession();
+
+        if (!$this->hasValidAdminCsrf()) {
+            $_SESSION['admin_error'] = 'A sessão expirou. Tente novamente.';
+            $this->redirect();
+        }
+
+        $payload = $this->payload();
+        $connection = (new Database())->connect();
+
+        try {
+            $this->assertGovernanceAdmin();
+
+            $userId = (int) ($payload['user_id'] ?? 0);
+            if ($userId <= 0) {
+                throw new DomainException('Selecione um usuário válido.');
+            }
+
+            $user = $this->userForPasswordReset($connection, $userId);
+            if ($user === null || $user['deleted_at'] !== null) {
+                throw new DomainException('Usuário indisponível para redefinição.');
+            }
+
+            $temporaryPassword = (new PasswordGeneratorService())->temporary();
+            $passwordHash = password_hash($temporaryPassword, PASSWORD_DEFAULT);
+
+            $connection->beginTransaction();
+            try {
+                $updateUser = $connection->prepare(
+                    'UPDATE usuario
+                     SET senha_hash = :password_hash,
+                         password_reset_required = 1
+                     WHERE id_usuario = :user_id'
+                );
+                $updateUser->execute([
+                    'password_hash' => $passwordHash,
+                    'user_id' => $userId,
+                ]);
+
+                if ($updateUser->rowCount() !== 1) {
+                    throw new DomainException('Não foi possível atualizar a senha do usuário.');
+                }
+
+                $updateLogin = $connection->prepare(
+                    'UPDATE login
+                     SET senha = :password_hash
+                     WHERE id_login = :login_id'
+                );
+                $updateLogin->execute([
+                    'password_hash' => $passwordHash,
+                    'login_id' => $user['id_login'],
+                ]);
+
+                $mailer = new PasswordRecoveryMailer();
+                $mailer->sendTemporaryPassword($user['email'], $temporaryPassword);
+
+                $connection->commit();
+                $_SESSION['admin_success'] = 'Senha temporária enviada com sucesso.';
+            } catch (Throwable $throwable) {
+                if ($connection->inTransaction()) {
+                    $connection->rollBack();
+                }
+
+                throw $throwable;
+            }
+        } catch (DomainException $exception) {
+            $_SESSION['admin_error'] = $exception->getMessage();
+        } catch (Throwable $throwable) {
+            error_log($throwable->getMessage());
+            $_SESSION['admin_error'] = 'Não foi possível enviar a senha temporária.';
+        }
+
+        $this->redirect();
     }
 
     public function createUser(): void
@@ -61,13 +142,84 @@ final class AdminProvisioningController extends Controller
             $userId = $service->create(
                 (string) ($payload['name'] ?? ''),
                 (string) ($payload['email'] ?? ''),
-                (string) ($payload['password'] ?? ''),
                 (int) ($payload['company_id'] ?? 0),
                 (int) ($payload['role_id'] ?? 0)
             );
 
             return ['user_id' => $userId];
         }, 'Usuário provisionado com sucesso.');
+    }
+
+    public function linkExistingUser(): void
+    {
+        $this->respond(function (): array {
+            $this->assertValidFormRequest();
+            $payload = $this->payload();
+            $connection = (new Database())->connect();
+            $identity = IdentityContext::current();
+            $service = new UserProvisioningService(
+                $connection,
+                $identity,
+                new AuditService(
+                    new AuditLogRepository($connection),
+                    $identity
+                )
+            );
+
+            $service->linkExistingUserToCompany(
+                (int) ($payload['user_id'] ?? 0),
+                (int) ($payload['company_id'] ?? 0),
+                (int) ($payload['role_id'] ?? 0)
+            );
+
+            return ['linked' => true];
+        }, 'Usuário vinculado à empresa com sucesso.');
+    }
+
+    public function removeCompanyAccess(): void
+    {
+        $this->respond(function (): array {
+            $this->assertValidFormRequest();
+            $payload = $this->payload();
+            $connection = (new Database())->connect();
+            $identity = IdentityContext::current();
+            $service = new UserProvisioningService(
+                $connection,
+                $identity,
+                new AuditService(
+                    new AuditLogRepository($connection),
+                    $identity
+                )
+            );
+
+            $service->removeCompanyAccess(
+                (int) ($payload['user_id'] ?? 0),
+                (int) ($payload['company_id'] ?? 0)
+            );
+
+            return ['removed' => true];
+        }, 'Acesso à empresa removido com sucesso.');
+    }
+
+    public function syncCompanyPermissions(): void
+    {
+        $this->respond(function (): array {
+            $this->assertValidFormRequest();
+            $payload = $this->payload();
+            $connection = (new Database())->connect();
+            $userId = (int) ($payload['user_id'] ?? 0);
+            $companyId = (int) ($payload['company_id'] ?? 0);
+            $permissionIds = $payload['permissions'] ?? [];
+
+            $this->syncTenantPermissionOverrides(
+                $connection,
+                $userId,
+                $companyId,
+                is_array($permissionIds) ? $permissionIds : []
+            );
+
+            return ['updated' => true];
+        }, 'Permissões do perfil na empresa atualizadas com sucesso.');
     }
 
     public function createCompany(): void
@@ -108,7 +260,7 @@ final class AdminProvisioningController extends Controller
     public function companiesIndex(): void
     {
         $this->startSession();
-        $this->assertMaster();
+        $this->assertGovernanceAdmin();
 
         $connection = (new Database())->connect();
         $filters = $this->companyFilters();
@@ -247,6 +399,20 @@ final class AdminProvisioningController extends Controller
         }, 'Empresa inativada e acessos do tenant revogados.');
     }
 
+    private function userForPasswordReset(\PDO $connection, int $userId): ?array
+    {
+        $statement = $connection->prepare(
+            'SELECT id_usuario, id_login, email, deleted_at
+             FROM usuario
+             WHERE id_usuario = :user_id
+             LIMIT 1'
+        );
+        $statement->execute(['user_id' => $userId]);
+        $user = $statement->fetch(\PDO::FETCH_ASSOC);
+
+        return $user === false ? null : $user;
+    }
+
     private function companies(\PDO $connection): array
     {
         return $connection->query(
@@ -257,6 +423,43 @@ final class AdminProvisioningController extends Controller
              WHERE c.deleted_at IS NULL
              GROUP BY c.id, c.name, c.slug, c.logo_path
              ORDER BY c.name ASC'
+        )->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    private function permissions(\PDO $connection): array
+    {
+        return $connection->query(
+            'SELECT id, slug, name
+             FROM permissions
+             WHERE is_active = 1
+             ORDER BY name ASC, slug ASC'
+        )->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    private function activeUsers(\PDO $connection): array
+    {
+        return $connection->query(
+            'SELECT
+                u.id_usuario,
+                u.nome,
+                u.email,
+                GROUP_CONCAT(
+                    DISTINCT CONCAT(c.id, \'::\', c.name, \'::\', c.slug)
+                    ORDER BY c.name
+                    SEPARATOR \'||\'
+                ) AS company_access
+             FROM usuario u
+             LEFT JOIN (
+                SELECT user_id, company_id, MAX(role_id) AS role_id
+                FROM company_user
+                GROUP BY user_id, company_id
+             ) cu ON cu.user_id = u.id_usuario
+             LEFT JOIN roles r ON r.id = cu.role_id AND r.is_active = 1
+             LEFT JOIN companies c ON c.id = cu.company_id AND c.deleted_at IS NULL
+                AND r.id IS NOT NULL
+             WHERE u.deleted_at IS NULL
+             GROUP BY u.id_usuario, u.nome, u.email
+             ORDER BY u.nome ASC, u.email ASC'
         )->fetchAll(\PDO::FETCH_ASSOC);
     }
 
@@ -358,11 +561,40 @@ final class AdminProvisioningController extends Controller
                 u.password_reset_required,
                 GROUP_CONCAT(DISTINCT c.name ORDER BY c.name SEPARATOR \', \') AS company_name,
                 GROUP_CONCAT(DISTINCT c.slug ORDER BY c.slug SEPARATOR \', \') AS company_slug,
-                GROUP_CONCAT(DISTINCT r.slug ORDER BY r.slug SEPARATOR \', \') AS role_slug
+                GROUP_CONCAT(DISTINCT r.slug ORDER BY r.slug SEPARATOR \', \') AS role_slug,
+                GROUP_CONCAT(
+                    DISTINCT CONCAT(
+                        c.id,
+                        \'::\',
+                        c.name,
+                        \'::\',
+                        COALESCE(r.slug, \'sem papel\'),
+                        \'::\',
+                        COALESCE(extra_permissions.permission_ids, \'\'),
+                        \'::\',
+                        COALESCE(r.label, r.name, r.slug, \'Sem papel\')
+                    )
+                    ORDER BY c.name
+                    SEPARATOR \'||\'
+                ) AS company_access
              FROM usuario u
-             LEFT JOIN company_user cu ON cu.user_id = u.id_usuario
+             LEFT JOIN (
+                SELECT user_id, company_id, MAX(role_id) AS role_id
+                FROM company_user
+                GROUP BY user_id, company_id
+             ) cu ON cu.user_id = u.id_usuario
              LEFT JOIN companies c ON c.id = cu.company_id
              LEFT JOIN roles r ON r.id = cu.role_id
+             LEFT JOIN (
+                SELECT
+                    user_id,
+                    company_id,
+                    GROUP_CONCAT(permission_id ORDER BY permission_id SEPARATOR \',\') AS permission_ids
+                FROM company_user_permissions
+                GROUP BY user_id, company_id
+             ) extra_permissions
+                ON extra_permissions.user_id = u.id_usuario
+               AND extra_permissions.company_id = c.id
              WHERE ' . implode(' AND ', $where) . '
              GROUP BY u.id_usuario, u.nome, u.email, u.password_reset_required
              ORDER BY u.id_usuario DESC
@@ -385,6 +617,128 @@ final class AdminProvisioningController extends Controller
         return (int) $connection
             ->query('SELECT COUNT(*) FROM usuario WHERE deleted_at IS NULL')
             ->fetchColumn();
+    }
+
+    private function syncTenantPermissionOverrides(
+        \PDO $connection,
+        int $userId,
+        int $companyId,
+        array $permissionIds
+    ): void {
+        if ($userId <= 0 || $companyId <= 0) {
+            throw new DomainException('Selecione usuário e empresa válidos.');
+        }
+
+        $membership = $connection->prepare(
+            'SELECT 1
+             FROM company_user cu
+             INNER JOIN usuario u ON u.id_usuario = cu.user_id AND u.deleted_at IS NULL
+             INNER JOIN companies c ON c.id = cu.company_id AND c.deleted_at IS NULL
+             WHERE cu.user_id = :user_id
+               AND cu.company_id = :company_id
+               AND cu.role_id IS NOT NULL
+             LIMIT 1'
+        );
+        $membership->execute([
+            'user_id' => $userId,
+            'company_id' => $companyId,
+        ]);
+
+        if ($membership->fetchColumn() === false) {
+            throw new DomainException('Este usuário não possui vínculo ativo com a empresa selecionada.');
+        }
+
+        $permissionIds = array_values(array_unique(array_filter(
+            array_map('intval', $permissionIds),
+            static fn (int $permissionId): bool => $permissionId > 0
+        )));
+        $before = $this->companyPermissionIds($connection, $userId, $companyId);
+
+        $connection->beginTransaction();
+        try {
+            $delete = $connection->prepare(
+                'DELETE FROM company_user_permissions
+                 WHERE user_id = :user_id AND company_id = :company_id'
+            );
+            $delete->execute([
+                'user_id' => $userId,
+                'company_id' => $companyId,
+            ]);
+
+            $insert = $connection->prepare(
+                'INSERT INTO company_user_permissions (
+                    user_id, company_id, permission_id, granted_by
+                 )
+                 SELECT :user_id, :company_id, id, :granted_by
+                 FROM permissions
+                 WHERE id = :permission_id AND is_active = 1'
+            );
+
+            foreach ($permissionIds as $permissionId) {
+                $insert->execute([
+                    'user_id' => $userId,
+                    'company_id' => $companyId,
+                    'permission_id' => $permissionId,
+                    'granted_by' => IdentityContext::current()->userId(),
+                ]);
+            }
+
+            $after = $this->companyPermissionIds($connection, $userId, $companyId);
+            $this->auditCompany($connection, 'USER_PERMISSIONS_UPDATED', $companyId, [
+                'scope' => 'company_user',
+                'target_user_id' => $userId,
+                'target_company_id' => $companyId,
+                'permissions_added' => $this->permissionSlugs(
+                    $connection,
+                    array_values(array_diff($after, $before))
+                ),
+                'permissions_removed' => $this->permissionSlugs(
+                    $connection,
+                    array_values(array_diff($before, $after))
+                ),
+            ]);
+
+            $connection->commit();
+        } catch (Throwable $throwable) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+
+            throw $throwable;
+        }
+    }
+
+    private function companyPermissionIds(\PDO $connection, int $userId, int $companyId): array
+    {
+        $statement = $connection->prepare(
+            'SELECT permission_id
+             FROM company_user_permissions
+             WHERE user_id = :user_id AND company_id = :company_id'
+        );
+        $statement->execute([
+            'user_id' => $userId,
+            'company_id' => $companyId,
+        ]);
+
+        return array_map('intval', $statement->fetchAll(\PDO::FETCH_COLUMN));
+    }
+
+    private function permissionSlugs(\PDO $connection, array $permissionIds): array
+    {
+        if ($permissionIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($permissionIds), '?'));
+        $statement = $connection->prepare(
+            'SELECT slug
+             FROM permissions
+             WHERE id IN (' . $placeholders . ')
+             ORDER BY slug ASC'
+        );
+        $statement->execute(array_values($permissionIds));
+
+        return $statement->fetchAll(\PDO::FETCH_COLUMN);
     }
 
     private function passwordResetUsersCount(\PDO $connection): int
@@ -442,7 +796,7 @@ final class AdminProvisioningController extends Controller
         $connection = (new Database())->connect();
 
         try {
-            $this->assertMaster();
+            $this->assertGovernanceAdmin();
             $action($connection, $this->payload());
             $_SESSION['admin_success'] = $successMessage;
         } catch (DomainException $exception) {
@@ -595,7 +949,7 @@ final class AdminProvisioningController extends Controller
         $this->startSession();
 
         try {
-            $this->assertMaster();
+            $this->assertGovernanceAdmin();
             $action();
             $_SESSION['admin_success'] = $successMessage;
         } catch (DomainException $exception) {
@@ -613,7 +967,7 @@ final class AdminProvisioningController extends Controller
         header('Content-Type: application/json; charset=UTF-8');
 
         try {
-            $this->assertMaster();
+            $this->assertGovernanceAdmin();
             http_response_code(201);
             echo json_encode($action(), JSON_THROW_ON_ERROR);
         } catch (ForbiddenException $exception) {
@@ -685,14 +1039,15 @@ final class AdminProvisioningController extends Controller
         exit;
     }
 
-    private function assertMaster(): void
+    private function assertGovernanceAdmin(): void
     {
         $roles = IdentityContext::current()->roleSlugs();
         if (!in_array('master', $roles, true)
-            && !in_array('super-admin', $roles, true)) {
+            && !in_array('super-admin', $roles, true)
+            && !in_array('admin', $roles, true)) {
             throw new ForbiddenException(
                 'admin.provision',
-                'Apenas usuários MASTER podem provisionar acessos.'
+                'Apenas usuários MASTER ou ADMIN podem provisionar acessos.'
             );
         }
     }

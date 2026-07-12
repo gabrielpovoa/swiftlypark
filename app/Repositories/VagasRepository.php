@@ -14,7 +14,7 @@ final class VagasRepository extends BaseRepository
         $parameters = [];
         $this->applyTenantFilter($query, $parameters, 'company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -26,7 +26,7 @@ final class VagasRepository extends BaseRepository
         $parameters = [];
         $this->applyTenantFilter($query, $parameters, 'company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);

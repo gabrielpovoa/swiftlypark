@@ -40,7 +40,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
                AND t.payment_date < :end_at';
         $this->applyTenantFilter($query, $parameters, 't.company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetch(PDO::FETCH_ASSOC);
@@ -56,7 +56,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
              ORDER BY day";
         $this->applyTenantFilter($query, $parameters, 'company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -74,7 +74,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
              ORDER BY total DESC';
         $this->applyTenantFilter($query, $parameters, 'company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -108,7 +108,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
              LIMIT ' . $limit;
         $this->applyTenantFilter($query, $parameters, 'vp.company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -148,7 +148,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
                AND (vp.hora_saida IS NULL OR vp.hora_saida >= :start_c)';
         $this->applyTenantFilter($query, $parameters, 'vp.company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
         $row = $statement->fetch(PDO::FETCH_ASSOC);
         $capacity = (float) ($row['capacity_seconds'] ?? 0);
@@ -173,7 +173,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
         $parameters = [];
         $this->applyTenantFilter($query, $parameters, 't.company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -187,7 +187,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
             return $exists;
         }
 
-        $statement = $this->connection->prepare(
+        $statement = $this->prepareSystemStatement(
             'SELECT COUNT(*)
              FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE()

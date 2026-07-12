@@ -65,19 +65,23 @@ final class RbacRepository implements RbacRepositoryInterface
                 r.icon_slug,
                 r.display_priority,
                 p.slug AS permission_slug
-             FROM user_roles ur
-             INNER JOIN roles r ON r.id = ur.role_id AND r.is_active = 1
-             LEFT JOIN role_permissions rp ON rp.role_id = r.id
-             LEFT JOIN permissions p
-                ON p.id = rp.permission_id AND p.is_active = 1
-             WHERE ur.user_id = :global_user_id
-               AND r.slug IN (\'master\', \'super-admin\')
+             FROM company_user cu
+             INNER JOIN roles r ON r.id = cu.role_id AND r.is_active = 1
+             INNER JOIN company_user_permissions cup
+                ON cup.user_id = cu.user_id
+               AND cup.company_id = cu.company_id
+             INNER JOIN permissions p
+                ON p.id = cup.permission_id AND p.is_active = 1
+             WHERE cu.user_id = :extra_tenant_user_id
+               AND cu.company_id = :extra_company_id
+               AND cu.role_id IS NOT NULL
              ORDER BY display_priority ASC, role_slug ASC, permission_slug ASC'
         );
         $statement->execute([
             'tenant_user_id' => $userId,
             'company_id' => $companyId,
-            'global_user_id' => $userId,
+            'extra_tenant_user_id' => $userId,
+            'extra_company_id' => $companyId,
         ]);
 
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);

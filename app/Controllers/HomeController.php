@@ -9,6 +9,8 @@
     class HomeController extends Controller {
         public function index()
         {
+            $identity = IdentityContext::current();
+
             $localTimezone = new \DateTimeZone('America/Sao_Paulo');
             $utcTimezone = new \DateTimeZone('UTC');
             $monthStart = new \DateTimeImmutable('first day of this month 00:00:00', $localTimezone);
@@ -23,9 +25,7 @@
                 $monthStart->format('Y-m-d H:i:s'),
                 $nextMonthStart->format('Y-m-d H:i:s')
             );
-            $authorization = new AuthorizationService(
-                IdentityContext::current()
-            );
+            $authorization = new AuthorizationService($identity);
 
             $this->setView('HomeDash/homedash', [
                 'title' => 'Dashboard SwiftlyPark',

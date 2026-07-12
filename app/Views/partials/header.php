@@ -1,5 +1,7 @@
 <?php
 use App\Authorization\Services\NavigationService;
+use App\Authorization\Repositories\RbacRepository;
+use App\Authorization\Services\RolePermissionResolver;
 use App\Context\IdentityContext;
 use App\Context\TenantContext;
 use App\Repositories\TenantRepository;
@@ -19,12 +21,42 @@ $navigation = new NavigationService(new AuthorizationService($identity));
 $tenantContext = TenantContext::instance();
 $currentCompany = $tenantContext->getCompany();
 $currentCompanyId = $tenantContext->getCompanyId();
-$tenantRepository = new TenantRepository((new Database())->connect());
-$tenants = $tenantRepository->findCompaniesForUser($identity->userId());
+$connection = (new Database())->connect();
+$tenantRepository = new TenantRepository($connection);
 $roleSlugs = $identity->roleSlugs();
+$globalAuthorization = (new RolePermissionResolver(
+    new RbacRepository($connection)
+))->resolve($identity->userId(), null);
+$globalRoleSlugs = $globalAuthorization->roleSlugs();
+$isPlatformAdmin = in_array('master', $globalRoleSlugs, true)
+    || in_array('super-admin', $globalRoleSlugs, true);
+$supportCompanyId = filter_var(
+    $_SESSION['support_impersonation']['company_id'] ?? null,
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 1]]
+);
+
+if ($isPlatformAdmin && $supportCompanyId !== false && $supportCompanyId !== null) {
+    $currentCompanyId = (int) $supportCompanyId;
+    $supportCompany = $tenantRepository->findCompanyById((int) $supportCompanyId);
+
+    if ($supportCompany !== null && ($currentCompany === null || $currentCompany->id() !== (int) $supportCompanyId)) {
+        $currentCompany = new \App\Models\Company(
+            (int) $supportCompany['id'],
+            (string) $supportCompany['name'],
+            (string) $supportCompany['slug'],
+            $supportCompany['logo_path'] !== null ? (string) $supportCompany['logo_path'] : null
+        );
+    }
+}
+$tenants = $isPlatformAdmin
+    ? $tenantRepository->findSwitchableCompaniesForPlatformUser($identity->userId())
+    : $tenantRepository->findCompaniesForUser($identity->userId());
 $showTenantSwitcher = count($tenants) > 1
-    || in_array('master', $roleSlugs, true)
-    || in_array('super-admin', $roleSlugs, true);
+    || $isPlatformAdmin;
+$showGlobalPlaceholder = $isPlatformAdmin
+    && ($currentCompanyId === null || $currentCompanyId === '')
+    && ($supportCompanyId === false || $supportCompanyId === null);
 $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
 
@@ -43,9 +75,11 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
                      class="w-full h-full object-contain">
             </div>
         <?php endif; ?>
-        <div class="ml-4 flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-            <span class="text-white font-black tracking-tighter text-xl italic">Swiftly<span class="text-blue-500">Park</span></span>
-            <span class="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold -mt-1"><?= $escape($currentCompany?->name() ?? 'Management') ?></span>
+        <div class="ml-4 flex min-w-0 flex-1 flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span class="text-white font-black tracking-tighter text-xl italic leading-tight">Swiftly<span class="text-blue-500">Park</span></span>
+            <span class="mt-1 max-w-[12rem] text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold leading-relaxed break-words whitespace-normal">
+                <?= $escape($currentCompany?->name() ?? 'Management') ?>
+            </span>
         </div>
     </div>
 
@@ -92,15 +126,25 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
                         <i data-lucide="building-2" class="h-4 w-4"></i>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <span class="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Empresa</span>
+                        <span class="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-500"><?= $isPlatformAdmin ? 'Suporte' : 'Empresa' ?></span>
                         <select
                             id="tenant-switcher-select"
                             class="tenant-switcher__select mt-1 w-full rounded-lg border border-white/10 bg-[#111827] px-2 py-1.5 text-xs font-bold text-white outline-none transition focus:border-blue-500 disabled:opacity-60">
+                            <?php if ($showGlobalPlaceholder): ?>
+                                <option value="" selected disabled>Dashboard global</option>
+                            <?php endif; ?>
                             <?php foreach ($tenants as $tenant): ?>
+                                <?php
+                                $hasMembership = (bool) ($tenant['has_membership'] ?? true);
+                                $roleLabel = trim((string) ($tenant['role_label'] ?? $tenant['role_slug'] ?? ''));
+                                $contextLabel = $hasMembership && $roleLabel !== ''
+                                    ? $roleLabel
+                                    : 'Suporte';
+                                ?>
                                 <option
                                     value="<?= (int) $tenant['id'] ?>"
                                     <?= (int) $tenant['id'] === (int) $currentCompanyId ? 'selected' : '' ?>>
-                                    <?= $escape($tenant['name']) ?>
+                                    <?= $escape($tenant['name']) ?> · <?= $escape($contextLabel) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -158,12 +202,18 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
 <script>
     window.SwiftlyParkTenant = Object.assign(window.SwiftlyParkTenant || {}, {
         currentCompanyId: <?= json_encode($currentCompanyId, JSON_THROW_ON_ERROR) ?>,
+        supportImpersonation: <?= json_encode($supportCompanyId !== false && $supportCompanyId !== null, JSON_THROW_ON_ERROR) ?>,
         tenants: <?= json_encode(array_map(
             fn (array $tenant): array => [
                 'id' => (int) $tenant['id'],
                 'name' => (string) $tenant['name'],
                 'slug' => (string) $tenant['slug'],
                 'logo_path' => $tenant['logo_path'] !== null ? (string) $tenant['logo_path'] : null,
+                'has_membership' => (bool) ($tenant['has_membership'] ?? true),
+                'role' => $tenant['role_slug'] !== null ? [
+                    'slug' => (string) $tenant['role_slug'],
+                    'label' => (string) $tenant['role_label'],
+                ] : null,
             ],
             $tenants
         ), JSON_THROW_ON_ERROR) ?>

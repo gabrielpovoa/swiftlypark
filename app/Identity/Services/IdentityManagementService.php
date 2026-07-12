@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Identity\Services;
 
 use App\Context\RequestIdentity;
+use App\Contracts\PasswordRecoveryMailerInterface;
 use App\Context\TenantContext;
 use App\Exceptions\ForbiddenException;
+use App\Identity\Events\UserReactivatedEvent;
 use App\Identity\Repositories\IdentityManagementRepository;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuthorizationService;
+use App\Services\PasswordGeneratorService;
+use App\Services\PasswordRecoveryMailer;
 use App\Transactions\TransactionManager;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -22,9 +26,13 @@ final class IdentityManagementService
         private AuditLogRepository $auditLogs,
         private TransactionManager $transactions,
         private RequestIdentity $identity,
-        private ?TenantContext $tenantContext = null
+        private ?TenantContext $tenantContext = null,
+        private ?PasswordGeneratorService $passwords = null,
+        private ?PasswordRecoveryMailerInterface $mailer = null
     ) {
         $this->tenantContext ??= TenantContext::instance();
+        $this->passwords ??= new PasswordGeneratorService();
+        $this->mailer ??= new PasswordRecoveryMailer();
     }
 
     public function revoke(int $targetUserId): void
@@ -114,6 +122,62 @@ final class IdentityManagementService
         });
     }
 
+    public function reactivate(int $targetUserId): void
+    {
+        (new AuthorizationService($this->identity))->check('identity.manage');
+
+        if ($targetUserId === $this->identity->userId()) {
+            throw new ForbiddenException(
+                'identity.manage',
+                'Você não pode reativar o próprio acesso.'
+            );
+        }
+
+        $temporaryPassword = $this->passwords->temporary();
+        $passwordHash = password_hash($temporaryPassword, PASSWORD_DEFAULT);
+        $target = null;
+
+        $this->transactions->run(function () use (
+            $targetUserId,
+            $passwordHash,
+            &$target
+        ): void {
+            $target = $this->users->findUserForUpdate($targetUserId);
+
+            if ($target === null) {
+                throw new RuntimeException('Usuário não encontrado.');
+            }
+
+            if ($target['deleted_at'] === null) {
+                throw new RuntimeException('A ação de reativação está disponível apenas para usuários inativos.');
+            }
+
+            $this->users->reactivate($targetUserId, $passwordHash);
+            $this->users->updateLoginPassword((int) $target['id_login'], $passwordHash);
+            $this->audit('UPDATE', $targetUserId, [
+                'message' => sprintf(
+                    '[Audit] User %d reactivated by administrator %d',
+                    $targetUserId,
+                    $this->identity->userId()
+                ),
+                'target_user_id' => $targetUserId,
+                'target_email' => $target['email'],
+                'reactivated_by' => $this->identity->userId(),
+                'password_reset_required' => true,
+            ]);
+        });
+
+        $this->dispatch(new UserReactivatedEvent(
+            $targetUserId,
+            (string) $target['email'],
+            $this->identity->userId()
+        ));
+        $this->mailer->sendReactivationPassword(
+            (string) $target['email'],
+            $temporaryPassword
+        );
+    }
+
     private function audit(string $action, int $targetId, array $payload): void
     {
         $this->auditLogs->insert([
@@ -130,5 +194,10 @@ final class IdentityManagementService
             'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))
                 ->format('Y-m-d H:i:s.u'),
         ]);
+    }
+
+    private function dispatch(object $event): void
+    {
+        // Hook central para plugar um EventBus sem espalhar acoplamento pela camada de domínio.
     }
 }

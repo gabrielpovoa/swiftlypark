@@ -14,6 +14,12 @@ final class SecurityAuditService
 {
     public const UNAUTHORIZED_ACCESS_ATTEMPT =
         'UNAUTHORIZED_ACCESS_ATTEMPT';
+    public const CROSS_TENANT_ACCESS_ATTEMPT =
+        'CROSS_TENANT_ACCESS_ATTEMPT';
+    public const SYSTEMATIC_TENANT_SCAN_DETECTED =
+        'SYSTEMATIC_TENANT_SCAN_DETECTED';
+
+    private const TENANT_SCAN_THRESHOLD = 5;
 
     public function __construct(
         private AuditLogRepository $auditLogs,
@@ -53,6 +59,104 @@ final class SecurityAuditService
             'entity_id' => (string) $this->identity->userId(),
             'old_values' => null,
             'new_values' => $context,
+            'ip_address' => $this->identity->ipAddress(),
+            'request_id' => $this->identity->requestId(),
+            'created_at' => $this->identity
+                ->requestedAt()
+                ->format('Y-m-d H:i:s.u'),
+        ]);
+    }
+
+    public function recordCrossTenantAccess(
+        string $route,
+        int $attemptedCompanyId,
+        string $reason
+    ): void {
+        $this->recordSecurityEvent(
+            self::CROSS_TENANT_ACCESS_ATTEMPT,
+            'tenant',
+            (string) $attemptedCompanyId,
+            [
+                'severity' => 'CRITICAL',
+                'route' => $route,
+                'user_id' => $this->identity->userId(),
+                'ip_address' => $this->identity->ipAddress(),
+                'active_company_id' => $this->tenantContext->getCompanyId(),
+                'attempted_company_id' => $attemptedCompanyId,
+                'reason' => $reason,
+                'error_code' => \App\Exceptions\SecurityCriticalException::CODE_CROSS_TENANT_ACCESS,
+            ]
+        );
+
+        if ($this->auditLogs->countSecurityEvents(
+            self::CROSS_TENANT_ACCESS_ATTEMPT,
+            $this->identity->userId(),
+            $this->identity->ipAddress()
+        ) >= self::TENANT_SCAN_THRESHOLD) {
+            $this->recordSecurityEvent(
+                self::SYSTEMATIC_TENANT_SCAN_DETECTED,
+                'tenant_intrusion_detection',
+                (string) $this->identity->userId(),
+                [
+                    'severity' => 'CRITICAL',
+                    'route' => $route,
+                    'user_id' => $this->identity->userId(),
+                    'ip_address' => $this->identity->ipAddress(),
+                    'attempted_company_id' => $attemptedCompanyId,
+                    'threshold' => self::TENANT_SCAN_THRESHOLD,
+                    'window_minutes' => 10,
+                    'alert_target' => 'MASTER',
+                ]
+            );
+        }
+    }
+
+    public function recordCriticalQueryBlocked(
+        string $route,
+        string $securityCode,
+        string $reason
+    ): void {
+        $this->recordSecurityEvent(
+            self::CROSS_TENANT_ACCESS_ATTEMPT,
+            'fail_closed_guard',
+            $securityCode,
+            [
+                'severity' => 'CRITICAL',
+                'route' => $route,
+                'user_id' => $this->identity->userId(),
+                'ip_address' => $this->identity->ipAddress(),
+                'active_company_id' => $this->tenantContext->getCompanyId(),
+                'error_code' => $securityCode,
+                'reason' => $reason,
+            ]
+        );
+    }
+
+    private function recordSecurityEvent(
+        string $action,
+        string $entity,
+        string $entityId,
+        array $context
+    ): void {
+        try {
+            $payload = json_encode($context, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new AuditLogException(
+                'Falha ao serializar o evento de segurança.',
+                $this->identity->requestId(),
+                $exception
+            );
+        }
+
+        $this->auditLogs->insert([
+            'user_id' => $this->identity->userId(),
+            'company_id' => $this->tenantContext->getCompanyId(),
+            'actor_email' => $this->identity->email(),
+            'action' => $action,
+            'entity' => $entity,
+            'entity_id' => $entityId,
+            'old_values' => null,
+            'new_values' => $payload,
             'ip_address' => $this->identity->ipAddress(),
             'request_id' => $this->identity->requestId(),
             'created_at' => $this->identity

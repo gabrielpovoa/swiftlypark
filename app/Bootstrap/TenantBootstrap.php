@@ -25,7 +25,6 @@ final class TenantBootstrap
         $companyId = $this->ensureSwiftlyParkCompany($connection);
         $this->backfillOperationalTenantData($connection, $companyId);
         $this->backfillFinanceTenantData($connection, $companyId);
-        $this->ensureLegacyMemberships($connection, $companyId);
     }
 
     private function ensureTenantSchema(PDO $connection): void
@@ -107,6 +106,38 @@ final class TenantBootstrap
             $connection->exec(
                 'ALTER TABLE usuario
                     ADD COLUMN password_reset_required TINYINT(1) NOT NULL DEFAULT 0 AFTER deleted_at'
+            );
+        }
+
+        if ($this->tableExists($connection, 'companies')
+            && $this->tableExists($connection, 'permissions')
+            && $this->tableExists($connection, 'company_user')
+            && !$this->tableExists($connection, 'company_user_permissions')) {
+            $connection->exec(
+                "CREATE TABLE company_user_permissions (
+                    user_id INT NOT NULL,
+                    company_id BIGINT UNSIGNED NOT NULL,
+                    permission_id BIGINT UNSIGNED NOT NULL,
+                    granted_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                    granted_by INT NOT NULL,
+                    PRIMARY KEY (user_id, company_id, permission_id),
+                    CONSTRAINT fk_company_user_permissions_user
+                        FOREIGN KEY (user_id)
+                        REFERENCES usuario (id_usuario)
+                        ON UPDATE RESTRICT ON DELETE CASCADE,
+                    CONSTRAINT fk_company_user_permissions_company
+                        FOREIGN KEY (company_id)
+                        REFERENCES companies (id)
+                        ON UPDATE RESTRICT ON DELETE CASCADE,
+                    CONSTRAINT fk_company_user_permissions_permission
+                        FOREIGN KEY (permission_id)
+                        REFERENCES permissions (id)
+                        ON UPDATE RESTRICT ON DELETE CASCADE,
+                    CONSTRAINT fk_company_user_permissions_granted_by
+                        FOREIGN KEY (granted_by)
+                        REFERENCES usuario (id_usuario)
+                        ON UPDATE RESTRICT ON DELETE RESTRICT
+                ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             );
         }
     }
@@ -207,6 +238,37 @@ final class TenantBootstrap
                     ADD INDEX idx_audit_logs_company_created (company_id, created_at)'
             );
         }
+
+        $actionCheckIsCurrent = $this->checkConstraintContains(
+            $connection,
+            'chk_audit_logs_action',
+            'SYSTEMATIC_TENANT_SCAN_DETECTED'
+        );
+
+        if ($this->constraintExists($connection, 'audit_logs', 'chk_audit_logs_action')
+            && !$actionCheckIsCurrent) {
+            $connection->exec('ALTER TABLE audit_logs DROP CHECK chk_audit_logs_action');
+        }
+
+        if (!$actionCheckIsCurrent) {
+            $connection->exec(
+                "ALTER TABLE audit_logs
+                    ADD CONSTRAINT chk_audit_logs_action
+                    CHECK (
+                        action IN (
+                            'CREATE',
+                            'UPDATE',
+                            'DELETE',
+                            'UNAUTHORIZED_ACCESS_ATTEMPT',
+                            'ACCESS_REVOKED',
+                            'USER_PERMISSIONS_UPDATED',
+                            'FINANCIAL_ADJUSTMENT',
+                            'CROSS_TENANT_ACCESS_ATTEMPT',
+                            'SYSTEMATIC_TENANT_SCAN_DETECTED'
+                        )
+                    )"
+            );
+        }
     }
 
     private function ensureFinanceTenantSchema(PDO $connection): void
@@ -232,26 +294,6 @@ final class TenantBootstrap
                     ADD INDEX idx_financial_adjustments_company_created (company_id, created_at)'
             );
         }
-    }
-
-    private function ensureLegacyMemberships(PDO $connection, int $companyId): void
-    {
-        $activeCondition = $this->columnExists($connection, 'usuario', 'deleted_at')
-            ? ' AND u.deleted_at IS NULL'
-            : '';
-        $insert = $connection->prepare(
-            'INSERT INTO company_user (company_id, user_id, role_id, created_at)
-             SELECT :company_id_select, u.id_usuario, NULL, NOW()
-             FROM usuario u
-             LEFT JOIN company_user cu
-                ON cu.company_id = :company_id_join
-               AND cu.user_id = u.id_usuario
-             WHERE cu.id IS NULL' . $activeCondition
-        );
-        $insert->execute([
-            'company_id_select' => $companyId,
-            'company_id_join' => $companyId,
-        ]);
     }
 
     private function backfillOperationalTenantData(PDO $connection, int $companyId): void
@@ -396,5 +438,20 @@ final class TenantBootstrap
         ]);
 
         return (int) $statement->fetchColumn() > 0;
+    }
+
+    private function checkConstraintContains(PDO $connection, string $constraint, string $needle): bool
+    {
+        $statement = $connection->prepare(
+            'SELECT CHECK_CLAUSE
+             FROM information_schema.CHECK_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = DATABASE()
+               AND CONSTRAINT_NAME = :constraint_name
+             LIMIT 1'
+        );
+        $statement->execute(['constraint_name' => $constraint]);
+        $clause = $statement->fetchColumn();
+
+        return is_string($clause) && str_contains($clause, $needle);
     }
 }

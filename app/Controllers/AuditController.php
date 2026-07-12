@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Authorization\Repositories\RbacRepository;
+use App\Authorization\Services\RolePermissionResolver;
 use App\Context\IdentityContext;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\TenantRepository;
 use App\Services\AuthorizationService;
 use App\Services\AuditLogPresenter;
 use Config\Database;
@@ -17,25 +20,53 @@ final class AuditController extends Controller
 {
     public function index(): void
     {
-        (new AuthorizationService(IdentityContext::current()))
-            ->check('audit.view');
-
         $connection = (new Database())->connect();
         $repository = new AuditLogRepository($connection);
         $filters = $this->filters();
         $presenter = new AuditLogPresenter();
         $identity = IdentityContext::current();
-        $isMaster = in_array('master', $identity->roleSlugs(), true);
-        $companyId = filter_var(
-            $_GET['company_id'] ?? null,
-            FILTER_VALIDATE_INT,
-            ['options' => ['min_range' => 1]]
-        );
+        $canViewGlobalAudit = $this->hasGlobalPlatformRole($connection, $identity->userId());
+
+        if (!$canViewGlobalAudit) {
+            (new AuthorizationService($identity))->check('audit.view');
+        }
+
+        $scope = $canViewGlobalAudit
+            ? (string) ($_GET['scope'] ?? 'global')
+            : 'current';
+        $scope = in_array($scope, ['global', 'company', 'current'], true)
+            ? $scope
+            : 'global';
+        $companyId = null;
+
+        if ($canViewGlobalAudit && $scope === 'company') {
+            $companyId = filter_var(
+                $_GET['company_id'] ?? null,
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1]]
+            );
+        }
+
+        $requiresCompanySelection = $canViewGlobalAudit
+            && $scope === 'company'
+            && ($companyId === false || $companyId === null);
         $rawLogs = match (true) {
-            $isMaster && ($_GET['scope'] ?? '') === 'global' => $repository
-                ->getGlobalLogs(),
-            $isMaster && $companyId !== false && $companyId !== null => $repository
-                ->getLogsByCompany((int) $companyId),
+            $requiresCompanySelection => [],
+            $canViewGlobalAudit && $scope === 'global' => $repository
+                ->getGlobalLogs(
+                    $filters['actor'],
+                    $filters['start_at'],
+                    $filters['end_at'],
+                    $filters['order']
+                ),
+            $canViewGlobalAudit && $scope === 'company' && $companyId !== false && $companyId !== null => $repository
+                ->getLogsByCompany(
+                    (int) $companyId,
+                    $filters['actor'],
+                    $filters['start_at'],
+                    $filters['end_at'],
+                    $filters['order']
+                ),
             default => $repository->findFiltered(
                 $filters['actor'],
                 $filters['start_at'],
@@ -47,12 +78,24 @@ final class AuditController extends Controller
             [$presenter, 'present'],
             $rawLogs
         );
+        $actors = match (true) {
+            $requiresCompanySelection => [],
+            $canViewGlobalAudit && $scope === 'global' => $repository->findGlobalActors(),
+            $canViewGlobalAudit && $scope === 'company' && $companyId !== false && $companyId !== null => $repository->findActorsByCompany((int) $companyId),
+            default => $repository->findActors(),
+        };
 
         $this->setView('Audit/index', [
             'title' => 'Auditoria - SwiftlyPark',
             'logs' => $logs,
-            'actors' => $repository->findActors(),
+            'actors' => $actors,
             'filters' => $filters,
+            'canViewGlobalAudit' => $canViewGlobalAudit,
+            'auditScope' => $scope,
+            'selectedCompanyId' => $companyId !== false && $companyId !== null ? (int) $companyId : null,
+            'companies' => $canViewGlobalAudit
+                ? (new TenantRepository($connection))->findActiveCompanies()
+                : [],
         ]);
     }
 
@@ -96,5 +139,16 @@ final class AuditController extends Controller
         return $parsed !== false && $parsed->format('Y-m-d') === $date
             ? $date
             : null;
+    }
+
+    private function hasGlobalPlatformRole(\PDO $connection, int $userId): bool
+    {
+        $authorization = (new RolePermissionResolver(
+            new RbacRepository($connection)
+        ))->resolve($userId, null);
+        $roles = $authorization->roleSlugs();
+
+        return in_array('master', $roles, true)
+            || in_array('super-admin', $roles, true);
     }
 }

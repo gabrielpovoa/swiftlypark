@@ -14,7 +14,7 @@ final class TransacaoRepository extends BaseRepository
         $parameters = ['vacancy_id' => $vacancyId];
         $this->applyTenantFilter($query, $parameters, 'company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return $statement->fetchAll(PDO::FETCH_ASSOC);

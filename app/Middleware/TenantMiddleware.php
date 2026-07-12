@@ -7,9 +7,12 @@ namespace App\Middleware;
 use App\Context\IdentityContext;
 use App\Context\TenantContext;
 use App\Exceptions\ForbiddenException;
+use App\Exceptions\SecurityCriticalException;
 use App\Exceptions\UnauthorizedException;
 use App\Models\Company;
+use App\Repositories\AuditLogRepository;
 use App\Repositories\TenantRepository;
+use App\Services\SecurityAuditService;
 use Config\Database;
 use PDO;
 
@@ -44,8 +47,23 @@ final class TenantMiddleware
             throw new ForbiddenException('tenant.access', 'A empresa solicitada não foi localizada.');
         }
 
-        if (!$repository->hasMembership($identity->userId(), $companyId)) {
-            throw new ForbiddenException('tenant.access', 'Você não possui acesso a esta empresa.');
+        if (!$repository->hasMembership($identity->userId(), $companyId)
+            && !$this->isValidSupportImpersonation($connection, $identity->userId(), $companyId)
+        ) {
+            (new SecurityAuditService(
+                new AuditLogRepository($connection),
+                $identity,
+                $this->tenantContext
+            ))->recordCrossTenantAccess(
+                $this->route(),
+                $companyId,
+                'Usuário autenticado tentou operar em empresa sem vínculo.'
+            );
+
+            throw new SecurityCriticalException(
+                SecurityCriticalException::CODE_CROSS_TENANT_ACCESS,
+                'Você não possui acesso a esta empresa.'
+            );
         }
 
         $this->tenantContext->setCompany(
@@ -61,6 +79,18 @@ final class TenantMiddleware
 
         try {
             $next();
+        } catch (SecurityCriticalException $exception) {
+            (new SecurityAuditService(
+                new AuditLogRepository($connection),
+                $identity,
+                $this->tenantContext
+            ))->recordCriticalQueryBlocked(
+                $this->route(),
+                $exception->securityCode(),
+                $exception->getMessage()
+            );
+
+            throw $exception;
         } finally {
             $this->tenantContext->clear();
         }
@@ -68,6 +98,16 @@ final class TenantMiddleware
 
     private function resolveCompanyId(TenantRepository $repository, int $userId): ?int
     {
+        $impersonatedCompanyId = filter_var(
+            $_SESSION['support_impersonation']['company_id'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+
+        if ($impersonatedCompanyId !== false && $impersonatedCompanyId !== null) {
+            return (int) $impersonatedCompanyId;
+        }
+
         $headerCompanyId = $this->resolveCompanyIdFromHeaders();
         if ($headerCompanyId !== null) {
             return $headerCompanyId;
@@ -116,5 +156,38 @@ final class TenantMiddleware
         }
 
         return null;
+    }
+
+    private function route(): string
+    {
+        return trim((string) ($_GET['url'] ?? $_SERVER['REQUEST_URI'] ?? ''), '/');
+    }
+
+    private function isValidSupportImpersonation(PDO $connection, int $userId, int $companyId): bool
+    {
+        $isPlatformAdmin = $this->hasGlobalPlatformRole($connection, $userId);
+        $impersonatedCompanyId = filter_var(
+            $_SESSION['support_impersonation']['company_id'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+
+        return $isPlatformAdmin
+            && $impersonatedCompanyId !== false
+            && (int) $impersonatedCompanyId === $companyId;
+    }
+
+    private function hasGlobalPlatformRole(PDO $connection, int $userId): bool
+    {
+        try {
+            $authorization = (new \App\Authorization\Services\RolePermissionResolver(
+                new \App\Authorization\Repositories\RbacRepository($connection)
+            ))->resolve($userId, null);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return in_array('super-admin', $authorization->roleSlugs(), true)
+            || in_array('master', $authorization->roleSlugs(), true);
     }
 }

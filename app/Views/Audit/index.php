@@ -10,6 +10,10 @@ $actionStyles = [
     'DELETE' => ['rose', 'trash-2'],
     'UNAUTHORIZED_ACCESS_ATTEMPT' => ['amber', 'shield-alert'],
 ];
+$canViewGlobalAudit ??= false;
+$auditScope ??= 'current';
+$companies ??= [];
+$selectedCompanyId ??= null;
 ?>
 
 <section class="min-h-screen bg-[#0b0e14] text-slate-300 p-5 md:p-10">
@@ -27,7 +31,32 @@ $actionStyles = [
         </header>
 
         <form method="GET" action="/audit"
-              class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 p-5 mb-8 rounded-3xl bg-white/[0.03] border border-white/10">
+              class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-<?= $canViewGlobalAudit ? '7' : '5' ?> gap-4 p-5 mb-8 rounded-3xl bg-white/[0.03] border border-white/10">
+            <?php if ($canViewGlobalAudit): ?>
+                <div>
+                    <label for="scope" class="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Escopo</label>
+                    <select id="scope" name="scope"
+                            class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-sm text-white">
+                        <option value="global" <?= $auditScope === 'global' ? 'selected' : '' ?>>Global</option>
+                        <option value="company" <?= $auditScope === 'company' ? 'selected' : '' ?>>Empresa específica</option>
+                        <option value="current" <?= $auditScope === 'current' ? 'selected' : '' ?>>Empresa atual</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="company_id" class="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Empresa</label>
+                    <select id="company_id" name="company_id"
+                            class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-sm text-white">
+                        <option value="">Selecione</option>
+                        <?php foreach ($companies as $company): ?>
+                            <option
+                                value="<?= (int) $company['id'] ?>"
+                                <?= (int) $company['id'] === (int) ($selectedCompanyId ?? 0) ? 'selected' : '' ?>>
+                                <?= $escape($company['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
             <div>
                 <label for="start_date" class="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Data inicial</label>
                 <input id="start_date" name="start_date" type="date"
@@ -78,7 +107,17 @@ $actionStyles = [
             <div class="rounded-3xl border border-dashed border-white/10 p-16 text-center">
                 <i data-lucide="search-x" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
                 <h2 class="text-white font-bold">Nenhum evento encontrado</h2>
-                <p class="text-sm text-slate-600 mt-2">Altere ou limpe os filtros para tentar novamente.</p>
+                <p class="text-sm text-slate-600 mt-2">
+                    <?php if ($canViewGlobalAudit && $auditScope === 'company'): ?>
+                        <?= $selectedCompanyId === null
+                            ? 'Selecione uma empresa para consultar a auditoria daquele tenant.'
+                            : 'Esta empresa ainda não possui eventos de auditoria no período selecionado.' ?>
+                    <?php elseif ($canViewGlobalAudit && $auditScope === 'global'): ?>
+                        Nenhum evento global foi encontrado para os filtros selecionados.
+                    <?php else: ?>
+                        Altere ou limpe os filtros para tentar novamente.
+                    <?php endif; ?>
+                </p>
             </div>
         <?php else: ?>
             <div class="space-y-4">

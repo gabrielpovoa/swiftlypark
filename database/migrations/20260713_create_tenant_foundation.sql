@@ -63,10 +63,11 @@ ALTER TABLE transacoes
 INSERT INTO company_user (company_id, user_id, role_id, created_at)
 SELECT @default_company_id, u.id_usuario, NULL, NOW()
 FROM usuario u
-LEFT JOIN company_user cu
-    ON cu.company_id = @default_company_id
-   AND cu.user_id = u.id_usuario
-WHERE cu.id IS NULL;
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM company_user existing
+    WHERE existing.user_id = u.id_usuario
+);
 
 ALTER TABLE audit_logs
     ADD CONSTRAINT fk_audit_logs_company

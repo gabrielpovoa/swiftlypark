@@ -18,7 +18,7 @@ final class FinancialAdjustmentRepository extends \App\Repositories\BaseReposito
              FOR UPDATE';
         $this->applyTenantFilter($query, $parameters, 'company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
         $transaction = $statement->fetch(PDO::FETCH_ASSOC);
 
@@ -33,7 +33,7 @@ final class FinancialAdjustmentRepository extends \App\Repositories\BaseReposito
              WHERE transaction_id = :transaction_id';
         $this->applyTenantFilter($query, $parameters, 'company_id');
 
-        $statement = $this->connection->prepare($query);
+        $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
 
         return (float) $statement->fetchColumn();
@@ -48,21 +48,22 @@ final class FinancialAdjustmentRepository extends \App\Repositories\BaseReposito
     ): int {
         $companyId = $this->assertTenantContext();
 
-        $statement = $this->connection->prepare(
-            'INSERT INTO financial_adjustments (
+        $query = 'INSERT INTO financial_adjustments (
                 company_id, transaction_id, adjustment_type, amount, reason, created_by
              ) VALUES (
                 :company_id, :transaction_id, :type, :amount, :reason, :created_by
-             )'
-        );
-        $statement->execute([
+             )';
+        $parameters = [
             'company_id' => $companyId,
             'transaction_id' => $transactionId,
             'type' => $type,
             'amount' => $amount,
             'reason' => $reason,
             'created_by' => $createdBy,
-        ]);
+        ];
+
+        $statement = $this->prepareTenantStatement($query, $parameters);
+        $statement->execute($parameters);
 
         return (int) $this->connection->lastInsertId();
     }

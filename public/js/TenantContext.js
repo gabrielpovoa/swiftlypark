@@ -26,7 +26,11 @@
         root.currentCompanyId = Number.parseInt(normalized, 10);
     }
 
-    setCurrentCompanyId(root.currentCompanyId || localStorage.getItem(STORAGE_KEY));
+    if (Object.prototype.hasOwnProperty.call(root, 'currentCompanyId')) {
+        setCurrentCompanyId(root.currentCompanyId);
+    } else {
+        setCurrentCompanyId(localStorage.getItem(STORAGE_KEY));
+    }
 
     const originalFetch = window.fetch ? window.fetch.bind(window) : null;
     if (originalFetch) {
@@ -108,14 +112,29 @@
                 return;
             }
 
+            const renderedCompanyId = normalizeCompanyId(container.dataset.currentCompanyId);
+            if (renderedCompanyId && select.querySelector(`option[value="${renderedCompanyId}"]`)) {
+                select.value = renderedCompanyId;
+                setCurrentCompanyId(renderedCompanyId);
+            }
+
             select.dataset.bound = 'true';
             select.addEventListener('change', async () => {
+                if (!normalizeCompanyId(select.value)) {
+                    return;
+                }
+
                 const previousCompanyId = getCurrentCompanyId();
 
                 setSwitcherLoading(container, true);
 
                 try {
-                    await switchTenant(select.value);
+                    const payload = await switchTenant(select.value);
+                    if (payload.redirect_url) {
+                        window.location.href = payload.redirect_url;
+                        return;
+                    }
+
                     window.location.reload();
                 } catch (error) {
                     if (previousCompanyId) {

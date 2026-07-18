@@ -5,6 +5,9 @@
     use App\Context\IdentityContext;
     use App\Context\TenantContext;
     use App\Exceptions\TenantNotSetException;
+    use App\Finance\Repositories\PricingRepository;
+    use App\Finance\Repositories\MonthlyContractRepository;
+    use App\Finance\Services\PriceCalculator;
     use App\Repositories\AuditLogRepository;
     use App\Repositories\Decorators\TransactionalAuditDecorator;
     use App\Services\AuditService;
@@ -113,10 +116,19 @@
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
-        /**
-         * Reserva a vaga, insere em vagas_preenchidas e transacoes e marca como preenchida
-         */
-        public function ocuparVagaComPagamento($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo, $paymentMethod)
+        public function isMonthlyCompany(): bool
+        {
+            return (new PricingRepository($this->db))->isMonthlyCompany($this->companyId());
+        }
+
+        public function ocuparVaga(
+            int $idVaga,
+            string $horaEntrada,
+            string $ownerName,
+            string $phone,
+            string $plate,
+            string $tipoVeiculo
+        ): int
         {
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vehicle.checkin');
@@ -124,19 +136,28 @@
             return $this->transactions->run(function () use (
                 $idVaga,
                 $horaEntrada,
-                $horaSaida,
                 $ownerName,
                 $phone,
                 $plate,
-                $valorPago,
-                $tipoVeiculo,
-                $paymentMethod
+                $tipoVeiculo
             ) {
-                $idVagaPreenchida = $this->insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $valorPago, $tipoVeiculo);
-                $this->insertTransacao(
-                    $idVagaPreenchida,
-                    $valorPago,
-                    $paymentMethod
+                $hasMonthlyContract = $this->isMonthlyCompany()
+                    && (new MonthlyContractRepository($this->db))->activeForVehicle(
+                        $this->companyId(),
+                        $plate,
+                        $tipoVeiculo
+                    ) !== null;
+
+                $idVagaPreenchida = $this->insertVagaPreenchida(
+                    $idVaga,
+                    $horaEntrada,
+                    null,
+                    $ownerName,
+                    $phone,
+                    $plate,
+                    0.0,
+                    $tipoVeiculo,
+                    $hasMonthlyContract ? 'MONTHLY' : 'ROTATING'
                 );
                 $this->updateVagaStatus($idVaga, 'reservada');
 
@@ -160,13 +181,13 @@
         }
 
 
-        private function insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $paidAmount, $tipoVeiculo)
+        private function insertVagaPreenchida($idVaga, $horaEntrada, $horaSaida, $ownerName, $phone, $plate, $paidAmount, $tipoVeiculo, $billingModel)
         {
             $userId = IdentityContext::current()->userId();
             $sql = "INSERT INTO vagas_preenchidas 
-        (company_id, id_vaga, hora_entrada, hora_saida, nome_cliente, telefone, placa, valor_pago, tipo_veiculo, created_by, updated_by)
+        (company_id, id_vaga, hora_entrada, hora_saida, nome_cliente, telefone, placa, valor_pago, tipo_veiculo, billing_model, created_by, updated_by)
         VALUES 
-        (:company_id, :id_vaga, :hora_entrada, :hora_saida, :nome, :telefone, :placa, :valor_pago, :tipo_veiculo, :created_by, :updated_by)";
+        (:company_id, :id_vaga, :hora_entrada, :hora_saida, :nome, :telefone, :placa, :valor_pago, :tipo_veiculo, :billing_model, :created_by, :updated_by)";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
@@ -179,6 +200,7 @@
                 'placa' => strtoupper($plate),
                 'valor_pago' => (float)$paidAmount,
                 'tipo_veiculo' => $tipoVeiculo,
+                'billing_model' => $billingModel,
                 'created_by' => $userId,
                 'updated_by' => $userId
             ]);
@@ -195,10 +217,10 @@
 
 
         private function insertTransacao(
-            $idVagaPreenchida,
-            $valorPago,
+            int $idVagaPreenchida,
+            float $valorPago,
             string $paymentMethod
-        )
+        ): int
         {
             $userId = IdentityContext::current()->userId();
             $sql = "INSERT INTO transacoes 
@@ -221,6 +243,8 @@
                 $id,
                 fn (): array => $this->findTransaction($id)
             );
+
+            return $id;
         }
 
         private function updateVagaStatus($idVaga, $status)
@@ -248,7 +272,7 @@
 
         public function getVagasFiltradas($categoria = null, $placa = null)
         {
-            $sql = "SELECT v.*, p.placa, p.hora_entrada, p.id_vaga_preenchida
+            $sql = "SELECT v.*, p.placa, p.hora_entrada, p.id_vaga_preenchida, p.billing_model
         FROM vagas_disponiveis v
         LEFT JOIN vagas_preenchidas p 
           ON v.id_vaga = p.id_vaga
@@ -277,75 +301,79 @@
 
         }
 
-        public function finalizarVaga($idVaga, $horaSaida)
+        public function finalizarVaga(
+            int $idVaga,
+            string $horaSaida,
+            ?string $paymentMethod
+        ): array
         {
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vehicle.checkout');
 
-            // Buscar a vaga ativa (sem hora de saída)
-            $sql = "SELECT * FROM vagas_preenchidas
-            WHERE id_vaga = :id
-              AND hora_saida IS NULL
-              AND company_id = :company_id
-            ORDER BY id_vaga_preenchida DESC
-            LIMIT 1";
-
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                'id' => $idVaga,
-                'company_id' => $this->companyId(),
-            ]);
-
-            $vagaPreenchida = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$vagaPreenchida) {
-                throw new Exception("Não foi encontrada uma vaga ativa para finalizar.");
+            if (preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $horaSaida) !== 1) {
+                throw new Exception('A hora de saída é inválida.');
             }
 
-            // Hora de entrada real salva no banco
-            $horaEntrada = new DateTime($vagaPreenchida['hora_entrada']);
+            $companyId = $this->companyId();
+            $pricingRepository = new PricingRepository($this->db);
 
-            // Hora de saída enviada pelo SweetAlert (HH:mm)
-            $horaSaidaInput = new DateTime(date('Y-m-d'));
-            [$hora, $minuto] = explode(':', $horaSaida);
-            $horaSaidaInput->setTime((int)$hora, (int)$minuto, 0);
+            return $this->transactions->run(function () use (
+                $companyId,
+                $idVaga,
+                $horaSaida,
+                $paymentMethod,
+                $pricingRepository
+            ): array {
+                $this->findAvailableVacancyForUpdate($idVaga);
+                $vagaPreenchida = $this->findActiveFilledVacancyForUpdate($idVaga);
+                if ($vagaPreenchida === []) {
+                    throw new Exception('Não foi encontrada uma vaga ativa para finalizar.');
+                }
 
-            // Se saída menor que entrada → passou da meia-noite
-            if ($horaSaidaInput < $horaEntrada) {
-                $horaSaidaInput->modify('+1 day');
-            }
+                $horaEntrada = new DateTime((string) $vagaPreenchida['hora_entrada']);
+                $horaSaidaInput = new DateTime($horaEntrada->format('Y-m-d'));
+                [$hora, $minuto] = explode(':', $horaSaida);
+                $horaSaidaInput->setTime((int) $hora, (int) $minuto);
+                if ($horaSaidaInput < $horaEntrada) {
+                    $horaSaidaInput->modify('+1 day');
+                }
 
-            $intervalo = $horaEntrada->diff($horaSaidaInput);
+                $durationSeconds = $horaSaidaInput->getTimestamp() - $horaEntrada->getTimestamp();
+                $durationMinutes = (int) ceil($durationSeconds / 60);
+                $hours = intdiv($durationSeconds, 3600);
+                $minutes = intdiv($durationSeconds % 3600, 60);
+                $seconds = $durationSeconds % 60;
+                $tempoTotal = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+                $isMonthly = ($vagaPreenchida['billing_model'] ?? 'ROTATING') === 'MONTHLY';
+                $calculation = null;
+                $transactionId = null;
 
-            /**
-             * CORREÇÃO PRINCIPAL:
-             * MySQL espera TIME e não texto
-             *
-             * Exemplo válido:
-             * 00:15:00
-             * 02:30:00
-             */
-            $tempoTotal = sprintf(
-                '%02d:%02d:%02d',
-                ($intervalo->days * 24) + $intervalo->h,
-                $intervalo->i,
-                $intervalo->s
-            );
+                if (!$isMonthly) {
+                    $normalizedPaymentMethod = strtoupper(trim((string) $paymentMethod));
+                    if (!in_array($normalizedPaymentMethod, ['PIX', 'CARD', 'CASH'], true)) {
+                        throw new Exception('Selecione uma forma de pagamento válida.');
+                    }
 
-            $this->transactions->run(function () use (
-                $vagaPreenchida,
-                $horaSaidaInput,
-                $tempoTotal,
-                $idVaga
-            ) {
+                    $calculation = (new PriceCalculator($pricingRepository))->calculateDetails(
+                        $companyId,
+                        (string) $vagaPreenchida['tipo_veiculo'],
+                        $durationMinutes
+                    );
+                    $transactionId = $this->insertTransacao(
+                        (int) $vagaPreenchida['id_vaga_preenchida'],
+                        (float) $calculation['total'],
+                        $normalizedPaymentMethod
+                    );
+                }
+
                 $lockedFilledVacancy = $this->findFilledVacancyForUpdate(
                     (int) $vagaPreenchida['id_vaga_preenchida']
                 );
-                // Atualiza a vaga preenchida corretamente
                 $sqlUpdate = "UPDATE vagas_preenchidas
                       SET
                           hora_saida = :hora_saida,
                           tempo_total = :tempo_total,
+                          valor_pago = :valor_pago,
                           updated_by = :updated_by
                       WHERE id_vaga_preenchida = :id
                         AND company_id = :company_id";
@@ -354,6 +382,7 @@
                 $stmtUpdate->execute([
                     'hora_saida' => $horaSaidaInput->format('Y-m-d H:i:s'),
                     'tempo_total' => $tempoTotal,
+                    'valor_pago' => $calculation['total'] ?? 0,
                     'updated_by' => IdentityContext::current()->userId(),
                     'id' => $vagaPreenchida['id_vaga_preenchida'],
                     'company_id' => $this->companyId(),
@@ -368,9 +397,51 @@
                     )
                 );
 
-                // Libera a vaga novamente
                 $this->updateVagaStatus($idVaga, 'livre');
+
+                (new AuditService(
+                    new AuditLogRepository($this->db),
+                    IdentityContext::current()
+                ))->log(AuditService::UPDATE, [
+                    'entity' => 'pricing_checkout',
+                    'entity_id' => (int) $vagaPreenchida['id_vaga_preenchida'],
+                    'new_values' => [
+                        'operator_user_id' => IdentityContext::current()->userId(),
+                        'company_id' => $companyId,
+                        'entry_at' => $horaEntrada->format('Y-m-d H:i:s'),
+                        'exit_at' => $horaSaidaInput->format('Y-m-d H:i:s'),
+                        'billing_model' => $isMonthly ? 'MONTHLY' : 'ROTATING',
+                        'transaction_id' => $transactionId,
+                        'calculation' => $calculation,
+                    ],
+                ]);
+
+                return [
+                    'monthly' => $isMonthly,
+                    'duration_minutes' => $durationMinutes,
+                    'amount' => $calculation['total'] ?? 0.0,
+                    'transaction_id' => $transactionId,
+                ];
             });
+        }
+
+        private function findActiveFilledVacancyForUpdate(int $idVaga): array
+        {
+            $statement = $this->db->prepare(
+                'SELECT * FROM vagas_preenchidas
+                 WHERE id_vaga = :id_vaga
+                   AND hora_saida IS NULL
+                   AND company_id = :company_id
+                 ORDER BY id_vaga_preenchida DESC
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $statement->execute([
+                'id_vaga' => $idVaga,
+                'company_id' => $this->companyId(),
+            ]);
+
+            return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
         }
 
         private function findAvailableVacancyForUpdate(int $id): array

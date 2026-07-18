@@ -24,11 +24,38 @@
 
             if (isset($this->routes[$method][$path])) {
                 call_user_func($this->routes[$method][$path]);
-            } else {
-                // Resposta 404 com página personalizada
-                http_response_code(404);
-                $controller = new Controller();
-                $controller->render404();
+                return;
             }
+
+            foreach ($this->routes[$method] ?? [] as $route => $callback) {
+                if (!str_contains($route, '{')) {
+                    continue;
+                }
+
+                $patternSource = preg_replace_callback(
+                    '/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/',
+                    static function (): string {
+                        return '___ROUTE_INTEGER___';
+                    },
+                    $route
+                );
+                $pattern = str_replace(
+                    '___ROUTE_INTEGER___',
+                    '([0-9]+)',
+                    preg_quote((string) $patternSource, '#')
+                );
+
+                if (preg_match('#^' . $pattern . '$#', $path, $matches) !== 1) {
+                    continue;
+                }
+
+                array_shift($matches);
+                call_user_func_array($callback, array_map('intval', $matches));
+                return;
+            }
+
+            http_response_code(404);
+            $controller = new Controller();
+            $controller->render404();
         }
     }

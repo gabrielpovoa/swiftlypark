@@ -17,6 +17,8 @@ use DateTimeImmutable;
 use DateTimeZone;
 use DomainException;
 use Throwable;
+use App\Security\InputSanitizer;
+use App\Finance\Repositories\MonthlyContractRepository;
 
 final class AdminProvisioningController extends Controller
 {
@@ -337,6 +339,323 @@ final class AdminProvisioningController extends Controller
                 throw $throwable;
             }
         }, 'Empresa atualizada com sucesso.');
+    }
+
+    public function companyPricing(?int $routeCompanyId = null): void
+    {
+        $this->startSession();
+        $this->assertGovernanceAdmin();
+
+        $companyId = filter_var(
+            $routeCompanyId ?? $_GET['company_id'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+        if ($companyId === false) {
+            $this->redirectCompanies();
+        }
+
+        $connection = (new Database())->connect();
+        $statement = $connection->prepare(
+            'SELECT id, name, legal_name, trade_name, cnpj, slug, logo_path, is_mensalista, deleted_at
+             FROM companies
+             WHERE id = :company_id AND deleted_at IS NULL
+             LIMIT 1'
+        );
+        $statement->execute(['company_id' => (int) $companyId]);
+        $company = $statement->fetch(\PDO::FETCH_ASSOC);
+        if ($company === false) {
+            $this->redirectCompanies();
+        }
+
+        $tariffsStatement = $connection->prepare(
+            'SELECT tipo_veiculo, valor_base, valor_adicional,
+                    tolerancia_minutos, frequencia_adicional
+             FROM tarifarios
+             WHERE company_id = :company_id
+             ORDER BY FIELD(tipo_veiculo, "carro", "moto", "caminhao", "app")'
+        );
+        $tariffsStatement->execute(['company_id' => (int) $companyId]);
+        $tariffs = [];
+        foreach ($tariffsStatement->fetchAll(\PDO::FETCH_ASSOC) as $tariff) {
+            $tariffs[(string) $tariff['tipo_veiculo']] = $tariff;
+        }
+
+        $this->setView('Admin/company-pricing', [
+            'title' => 'Cobrança de ' . $company['name'],
+            'company' => $company,
+            'tariffs' => $tariffs,
+            'monthlyContracts' => (new MonthlyContractRepository($connection))
+                ->listForCompany((int) $companyId),
+            'csrfToken' => $this->csrfToken(),
+            'success' => $_SESSION['pricing_success'] ?? null,
+            'error' => $_SESSION['pricing_error'] ?? null,
+        ]);
+        unset($_SESSION['pricing_success'], $_SESSION['pricing_error']);
+    }
+
+    public function updateCompanyPricing(?int $routeCompanyId = null): void
+    {
+        $this->startSession();
+        $companyId = (int) ($routeCompanyId ?? $_POST['company_id'] ?? 0);
+
+        if (!$this->hasValidAdminCsrf()) {
+            $_SESSION['pricing_error'] = 'A sessão expirou. Tente novamente.';
+            $this->redirectCompanyPricing($companyId);
+        }
+
+        try {
+            $this->assertGovernanceAdmin();
+            if ($companyId < 1) {
+                throw new DomainException('Empresa inválida.');
+            }
+
+            $billingModel = (new InputSanitizer())->text($_POST['billing_model'] ?? '', 20);
+            if (!in_array($billingModel, ['monthly', 'rotating'], true)) {
+                throw new DomainException('Selecione um modelo de cobrança válido.');
+            }
+            $isMonthly = $billingModel === 'monthly';
+            $sanitizer = new InputSanitizer();
+            $legalName = $sanitizer->text($_POST['legal_name'] ?? '', 255);
+            $tradeName = $sanitizer->text($_POST['trade_name'] ?? '', 255);
+            $slug = strtolower($sanitizer->text($_POST['slug'] ?? '', 120));
+            if ($tradeName === '') {
+                throw new DomainException('O nome fantasia é obrigatório.');
+            }
+            if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
+                throw new DomainException('Informe um slug válido usando letras minúsculas, números e hífens.');
+            }
+            $logoPath = $this->storeCompanyLogo($_FILES['logo'] ?? null);
+            $tariffPayload = is_array($_POST['tariffs'] ?? null) ? $_POST['tariffs'] : [];
+            $vehicleTypes = ['carro', 'moto', 'caminhao', 'app'];
+            $validatedTariffs = [];
+
+            foreach ($vehicleTypes as $vehicleType) {
+                $row = is_array($tariffPayload[$vehicleType] ?? null)
+                    ? $tariffPayload[$vehicleType]
+                    : [];
+
+                $validatedTariffs[$vehicleType] = $this->validateTariff($vehicleType, $row);
+            }
+
+            if (count($validatedTariffs) !== count($vehicleTypes)) {
+                throw new DomainException('Configure todos os tipos de veículo para receber veículos avulsos.');
+            }
+
+            $connection = (new Database())->connect();
+            $connection->beginTransaction();
+            try {
+                $company = $this->companyForUpdate($connection, $companyId);
+                if ($company === null || $company['deleted_at'] !== null) {
+                    throw new DomainException('Empresa indisponível para configuração.');
+                }
+                $this->assertCompanySlugAvailable($connection, $slug, $companyId);
+
+                $updateCompany = $connection->prepare(
+                    'UPDATE companies
+                     SET name = :display_name,
+                         legal_name = :legal_name,
+                         trade_name = :trade_name,
+                         slug = :slug,
+                         logo_path = COALESCE(:logo_path, logo_path),
+                         is_mensalista = :is_mensalista,
+                         updated_at = NOW(6)
+                     WHERE id = :company_id'
+                );
+                $updateCompany->execute([
+                    'display_name' => $tradeName,
+                    'legal_name' => $legalName !== '' ? $legalName : null,
+                    'trade_name' => $tradeName,
+                    'slug' => $slug,
+                    'logo_path' => $logoPath,
+                    'is_mensalista' => $isMonthly ? 1 : 0,
+                    'company_id' => $companyId,
+                ]);
+
+                $upsert = $connection->prepare(
+                    'INSERT INTO tarifarios (
+                        company_id, tipo_veiculo, valor_base, valor_adicional,
+                        tolerancia_minutos, frequencia_adicional
+                     ) VALUES (
+                        :company_id, :tipo_veiculo, :valor_base, :valor_adicional,
+                        :tolerancia_minutos, :frequencia_adicional
+                     )
+                     ON DUPLICATE KEY UPDATE
+                        valor_base = VALUES(valor_base),
+                        valor_adicional = VALUES(valor_adicional),
+                        tolerancia_minutos = VALUES(tolerancia_minutos),
+                        frequencia_adicional = VALUES(frequencia_adicional)'
+                );
+                foreach ($validatedTariffs as $vehicleType => $tariff) {
+                    $upsert->execute(['company_id' => $companyId] + $tariff);
+                }
+
+                $this->auditCompany($connection, 'UPDATE', $companyId, [
+                    'event' => 'COMPANY_PRICING_UPDATED',
+                    'legal_name' => $legalName,
+                    'trade_name' => $tradeName,
+                    'slug' => $slug,
+                    'logo_path' => $logoPath ?? $company['logo_path'],
+                    'billing_model' => $isMonthly ? 'monthly' : 'rotating',
+                    'tariffs' => $validatedTariffs,
+                ]);
+                $connection->commit();
+            } catch (Throwable $throwable) {
+                if ($connection->inTransaction()) {
+                    $connection->rollBack();
+                }
+                throw $throwable;
+            }
+
+            $_SESSION['pricing_success'] = 'Modelo de cobrança e tarifários atualizados.';
+        } catch (DomainException $exception) {
+            $_SESSION['pricing_error'] = $exception->getMessage();
+        } catch (Throwable $throwable) {
+            error_log($throwable->getMessage());
+            $_SESSION['pricing_error'] = 'Não foi possível atualizar a configuração de cobrança.';
+        }
+
+        $this->redirectCompanyPricing($companyId);
+    }
+
+    public function createMonthlyContract(int $companyId): void
+    {
+        $this->handleMonthlyContractRequest($companyId, function (\PDO $connection) use ($companyId): void {
+            $data = $this->monthlyContractPayload();
+            $userId = IdentityContext::current()->userId();
+            $end = (new DateTimeImmutable($data['starts_at']))->modify('+1 month -1 day');
+
+            $statement = $connection->prepare(
+                'INSERT INTO monthly_contracts (
+                    company_id, customer_name, vehicle_plate, vehicle_type, monthly_amount,
+                    starts_at, expires_at, status, created_by, updated_by
+                 ) VALUES (
+                    :company_id, :customer_name, :vehicle_plate, :vehicle_type, :monthly_amount,
+                    :starts_at, :expires_at, "ACTIVE", :created_by, :updated_by
+                 )'
+            );
+            $statement->execute([
+                'company_id' => $companyId,
+                'customer_name' => $data['customer_name'],
+                'vehicle_plate' => $data['vehicle_plate'],
+                'vehicle_type' => $data['vehicle_type'],
+                'monthly_amount' => $data['monthly_amount'],
+                'starts_at' => $data['starts_at'],
+                'expires_at' => $end->format('Y-m-d'),
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+            $contractId = (int) $connection->lastInsertId();
+            $this->insertMonthlyPayment(
+                $connection,
+                $companyId,
+                $contractId,
+                $data['monthly_amount'],
+                $data['payment_method'],
+                $data['starts_at'],
+                $end->format('Y-m-d')
+            );
+            $this->auditCompany($connection, 'CREATE', $companyId, [
+                'event' => 'MONTHLY_CONTRACT_CREATED',
+                'contract_id' => $contractId,
+                'vehicle_plate' => $data['vehicle_plate'],
+                'period_end' => $end->format('Y-m-d'),
+            ]);
+        }, 'Contrato mensalista criado e primeira mensalidade registrada.');
+    }
+
+    public function renewMonthlyContract(int $companyId): void
+    {
+        $this->handleMonthlyContractRequest($companyId, function (\PDO $connection) use ($companyId): void {
+            $contractId = filter_var($_POST['contract_id'] ?? null, FILTER_VALIDATE_INT);
+            $repository = new MonthlyContractRepository($connection);
+            $contract = $contractId ? $repository->findForUpdate($companyId, (int) $contractId) : null;
+            if ($contract === null) {
+                throw new DomainException('Contrato mensalista inválido.');
+            }
+
+            $amount = $this->positiveMoney($_POST['monthly_amount'] ?? $contract['monthly_amount']);
+            $method = $this->paymentMethod($_POST['payment_method'] ?? '');
+            $today = new DateTimeImmutable('today');
+            $afterCurrentPeriod = (new DateTimeImmutable((string) $contract['expires_at']))->modify('+1 day');
+            $start = $afterCurrentPeriod > $today ? $afterCurrentPeriod : $today;
+            $end = $start->modify('+1 month -1 day');
+
+            $update = $connection->prepare(
+                'UPDATE monthly_contracts
+                 SET monthly_amount = :amount, starts_at = :starts_at, expires_at = :expires_at,
+                     status = "ACTIVE", updated_by = :updated_by
+                 WHERE id = :contract_id AND company_id = :company_id'
+            );
+            $update->execute([
+                'amount' => $amount,
+                'starts_at' => $start->format('Y-m-d'),
+                'expires_at' => $end->format('Y-m-d'),
+                'updated_by' => IdentityContext::current()->userId(),
+                'contract_id' => $contractId,
+                'company_id' => $companyId,
+            ]);
+            $this->insertMonthlyPayment($connection, $companyId, (int) $contractId, $amount, $method, $start->format('Y-m-d'), $end->format('Y-m-d'));
+            $this->auditCompany($connection, 'UPDATE', $companyId, [
+                'event' => 'MONTHLY_CONTRACT_RENEWED',
+                'contract_id' => (int) $contractId,
+                'period_start' => $start->format('Y-m-d'),
+                'period_end' => $end->format('Y-m-d'),
+            ]);
+        }, 'Contrato renovado e pagamento registrado.');
+    }
+
+    public function cancelMonthlyContract(int $companyId): void
+    {
+        $this->handleMonthlyContractRequest($companyId, function (\PDO $connection) use ($companyId): void {
+            $contractId = filter_var($_POST['contract_id'] ?? null, FILTER_VALIDATE_INT);
+            $contract = $contractId
+                ? (new MonthlyContractRepository($connection))->findForUpdate($companyId, (int) $contractId)
+                : null;
+            if ($contract === null) {
+                throw new DomainException('Contrato mensalista inválido.');
+            }
+            $statement = $connection->prepare(
+                'UPDATE monthly_contracts SET status = "CANCELLED", updated_by = :updated_by
+                 WHERE id = :contract_id AND company_id = :company_id'
+            );
+            $statement->execute([
+                'updated_by' => IdentityContext::current()->userId(),
+                'contract_id' => $contractId,
+                'company_id' => $companyId,
+            ]);
+            $this->auditCompany($connection, 'UPDATE', $companyId, [
+                'event' => 'MONTHLY_CONTRACT_CANCELLED',
+                'contract_id' => (int) $contractId,
+            ]);
+        }, 'Contrato mensalista cancelado.');
+    }
+
+    private function validateTariff(string $vehicleType, array $row): array
+    {
+        $sanitizer = new InputSanitizer();
+        $base = $sanitizer->text($row['valor_base'] ?? '', 20);
+        $additional = $sanitizer->text($row['valor_adicional'] ?? '', 20);
+        $tolerance = filter_var($row['tolerancia_minutos'] ?? null, FILTER_VALIDATE_INT);
+        $frequency = filter_var($row['frequencia_adicional'] ?? null, FILTER_VALIDATE_INT);
+
+        if (preg_match('/^\d{1,8}(?:[.,]\d{1,2})?$/', $base) !== 1
+            || preg_match('/^\d{1,8}(?:[.,]\d{1,2})?$/', $additional) !== 1
+            || $tolerance === false
+            || $tolerance < 0
+            || $frequency === false
+            || $frequency < 1
+        ) {
+            throw new DomainException('Tarifário inválido para ' . $vehicleType . '.');
+        }
+
+        return [
+            'tipo_veiculo' => $vehicleType,
+            'valor_base' => str_replace(',', '.', $base),
+            'valor_adicional' => str_replace(',', '.', $additional),
+            'tolerancia_minutos' => (int) $tolerance,
+            'frequencia_adicional' => (int) $frequency,
+        ];
     }
 
     public function deactivateCompany(): void
@@ -938,6 +1257,131 @@ final class AdminProvisioningController extends Controller
         ]);
     }
 
+    private function handleMonthlyContractRequest(
+        int $companyId,
+        callable $operation,
+        string $successMessage
+    ): never {
+        $this->startSession();
+        if (!$this->hasValidAdminCsrf()) {
+            $_SESSION['pricing_error'] = 'A sessão expirou. Tente novamente.';
+            $this->redirectCompanyPricing($companyId);
+        }
+
+        try {
+            $this->assertGovernanceAdmin();
+            if ($companyId < 1) {
+                throw new DomainException('Empresa inválida.');
+            }
+            $connection = (new Database())->connect();
+            $connection->beginTransaction();
+            try {
+                if ($this->companyForUpdate($connection, $companyId) === null) {
+                    throw new DomainException('Empresa indisponível.');
+                }
+                $operation($connection);
+                $connection->commit();
+            } catch (Throwable $throwable) {
+                if ($connection->inTransaction()) {
+                    $connection->rollBack();
+                }
+                throw $throwable;
+            }
+            $_SESSION['pricing_success'] = $successMessage;
+        } catch (DomainException $exception) {
+            $_SESSION['pricing_error'] = $exception->getMessage();
+        } catch (\PDOException $exception) {
+            error_log($exception->getMessage());
+            $_SESSION['pricing_error'] = str_contains($exception->getMessage(), 'uq_monthly_contract_company_plate')
+                ? 'Já existe um contrato para esta placa. Renove o contrato existente.'
+                : 'Não foi possível salvar o contrato mensalista.';
+        } catch (Throwable $throwable) {
+            error_log($throwable->getMessage());
+            $_SESSION['pricing_error'] = 'Não foi possível salvar o contrato mensalista.';
+        }
+
+        $this->redirectCompanyPricing($companyId);
+    }
+
+    private function monthlyContractPayload(): array
+    {
+        $sanitizer = new InputSanitizer();
+        $name = $sanitizer->text($_POST['customer_name'] ?? '', 120);
+        $plate = strtoupper($sanitizer->text($_POST['vehicle_plate'] ?? '', 10));
+        $plate = preg_replace('/[^A-Z0-9-]/', '', $plate) ?? '';
+        $vehicleType = $sanitizer->text($_POST['vehicle_type'] ?? '', 30);
+        $startsAt = $sanitizer->text($_POST['starts_at'] ?? '', 10);
+
+        if ($name === '' || preg_match('/^[A-Z0-9]{3}-?[A-Z0-9]{4}$/', $plate) !== 1) {
+            throw new DomainException('Informe o cliente e uma placa válida.');
+        }
+        if (!in_array($vehicleType, ['carro', 'moto', 'caminhao', 'app'], true)) {
+            throw new DomainException('Selecione um tipo de veículo válido.');
+        }
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $startsAt);
+        if ($date === false || $date->format('Y-m-d') !== $startsAt) {
+            throw new DomainException('Informe uma data inicial válida.');
+        }
+
+        return [
+            'customer_name' => $name,
+            'vehicle_plate' => $plate,
+            'vehicle_type' => $vehicleType,
+            'monthly_amount' => $this->positiveMoney($_POST['monthly_amount'] ?? null),
+            'starts_at' => $startsAt,
+            'payment_method' => $this->paymentMethod($_POST['payment_method'] ?? ''),
+        ];
+    }
+
+    private function positiveMoney(mixed $value): string
+    {
+        $normalized = str_replace(',', '.', trim((string) $value));
+        if (!is_numeric($normalized) || (float) $normalized <= 0 || (float) $normalized > 99999999.99) {
+            throw new DomainException('Informe um valor mensal válido.');
+        }
+
+        return number_format((float) $normalized, 2, '.', '');
+    }
+
+    private function paymentMethod(mixed $value): string
+    {
+        $method = strtoupper((new InputSanitizer())->text($value, 10));
+        if (!in_array($method, ['PIX', 'CARD', 'CASH'], true)) {
+            throw new DomainException('Selecione uma forma de pagamento válida.');
+        }
+
+        return $method;
+    }
+
+    private function insertMonthlyPayment(
+        \PDO $connection,
+        int $companyId,
+        int $contractId,
+        string $amount,
+        string $method,
+        string $periodStart,
+        string $periodEnd
+    ): void {
+        $statement = $connection->prepare(
+            'INSERT INTO monthly_contract_payments (
+                company_id, contract_id, amount, payment_method,
+                period_start, period_end, created_by
+             ) VALUES (
+                :company_id, :contract_id, :amount, :payment_method,
+                :period_start, :period_end, :created_by
+             )'
+        );
+        $statement->execute([
+            'company_id' => $companyId,
+            'contract_id' => $contractId,
+            'amount' => $amount,
+            'payment_method' => $method,
+            'period_start' => $periodStart,
+            'period_end' => $periodEnd,
+            'created_by' => IdentityContext::current()->userId(),
+        ]);
+    }
+
     private function respond(callable $action, string $successMessage): void
     {
         if ($this->expectsJson()) {
@@ -1036,6 +1480,16 @@ final class AdminProvisioningController extends Controller
     private function redirectCompanies(): never
     {
         header('Location: /admin/companies');
+        exit;
+    }
+
+    private function redirectCompanyPricing(int $companyId): never
+    {
+        if ($companyId < 1) {
+            $this->redirectCompanies();
+        }
+
+        header('Location: /admin/companies/company_id=' . $companyId);
         exit;
     }
 

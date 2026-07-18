@@ -50,6 +50,10 @@ final class FinancialReportService
             'metrics' => [
                 'gross_revenue' => $gross,
                 'net_revenue' => $gross - $adjustments,
+                'rotating_revenue' => (float) $current['rotating_revenue'],
+                'monthly_revenue' => (float) $current['monthly_revenue'],
+                'rotating_transactions' => (int) $current['rotating_transaction_count'],
+                'monthly_payments' => (int) $current['monthly_payment_count'],
                 'average_ticket' => (float) $current['average_ticket'],
                 'occupancy_rate' => round($this->reports->occupancyRate(
                     $start->format('Y-m-d H:i:s'),
@@ -61,9 +65,8 @@ final class FinancialReportService
                     : null,
             ],
             'charts' => [
-                'daily_revenue' => $this->chart(
-                    $this->reports->revenueByDay($startUtc, $endUtc),
-                    'day'
+                'daily_revenue' => $this->dailyRevenueChart(
+                    $this->reports->revenueByDay($startUtc, $endUtc)
                 ),
                 'payment_methods' => $this->paymentMethodChart(
                     $this->reports->revenueByPaymentMethod($startUtc, $endUtc)
@@ -75,11 +78,13 @@ final class FinancialReportService
         ];
     }
 
-    private function chart(array $rows, string $labelKey): array
+    private function dailyRevenueChart(array $rows): array
     {
         return [
-            'labels' => array_column($rows, $labelKey),
-            'values' => array_map('floatval', array_column($rows, 'total')),
+            'labels' => array_column($rows, 'day'),
+            'total' => array_map('floatval', array_column($rows, 'total')),
+            'rotating' => array_map('floatval', array_column($rows, 'rotating_total')),
+            'monthly' => array_map('floatval', array_column($rows, 'monthly_total')),
         ];
     }
 

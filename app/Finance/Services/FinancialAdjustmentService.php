@@ -9,6 +9,7 @@ use App\Finance\Repositories\FinancialAdjustmentRepository;
 use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;
 use DomainException;
+use App\Security\InputSanitizer;
 
 final class FinancialAdjustmentService
 {
@@ -26,7 +27,7 @@ final class FinancialAdjustmentService
         string $reason
     ): int {
         (new AuthorizationService($this->identity))->check('finance.adjust');
-        $reason = trim($reason);
+        $reason = (new InputSanitizer())->text($reason, 1000);
 
         if ($transactionId < 1 || $amount <= 0 || strlen($reason) < 10) {
             throw new DomainException(

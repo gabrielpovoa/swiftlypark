@@ -38,6 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
             currency.format(data.metrics.gross_revenue);
         document.getElementById("net-revenue").textContent =
             currency.format(data.metrics.net_revenue);
+        document.getElementById("rotating-revenue").textContent =
+            currency.format(data.metrics.rotating_revenue);
+        document.getElementById("monthly-revenue").textContent =
+            currency.format(data.metrics.monthly_revenue);
         document.getElementById("average-ticket").textContent =
             currency.format(data.metrics.average_ticket);
         document.getElementById("occupancy-rate").textContent =
@@ -52,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dailyChart?.destroy();
         methodChart?.destroy();
         if (window.Chart) {
-            dailyChart = chart("daily-chart", "line", data.charts.daily_revenue);
+            dailyChart = dailyRevenueChart("daily-chart", data.charts.daily_revenue);
             methodChart = chart("method-chart", "doughnut", data.charts.payment_methods);
         }
         renderOperatorRanking(data.operators.top_parking);
@@ -156,6 +160,53 @@ document.addEventListener("DOMContentLoaded", () => {
                         y: { ticks: { color: "#64748b" }, grid: { color: "rgba(255,255,255,.04)" } },
                     }
                     : {},
+            },
+        }
+    );
+
+    const dailyRevenueChart = (id, source) => new Chart(
+        document.getElementById(id),
+        {
+            type: "line",
+            data: {
+                labels: source.labels,
+                datasets: [
+                    {
+                        label: "Receita rotativa",
+                        data: source.rotating,
+                        borderColor: "#10b981",
+                        backgroundColor: "rgba(16,185,129,.12)",
+                        fill: true,
+                        tension: .35,
+                    },
+                    {
+                        label: "Receita mensalista",
+                        data: source.monthly,
+                        borderColor: "#f59e0b",
+                        backgroundColor: "rgba(245,158,11,.08)",
+                        fill: true,
+                        tension: .35,
+                    },
+                    {
+                        label: "Receita total",
+                        data: source.total,
+                        borderColor: "#60a5fa",
+                        backgroundColor: "transparent",
+                        borderDash: [6, 5],
+                        fill: false,
+                        tension: .35,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: { legend: { labels: { color: "#94a3b8" } } },
+                scales: {
+                    x: { ticks: { color: "#64748b" }, grid: { color: "rgba(255,255,255,.04)" } },
+                    y: { ticks: { color: "#64748b", callback: value => currency.format(value) }, grid: { color: "rgba(255,255,255,.04)" } },
+                },
             },
         }
     );

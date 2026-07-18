@@ -1,22 +1,18 @@
 function openConfirmationModal() {
-    // Pegar os valores dos inputs
-    const plate = document.getElementsByName('plate')[0].value;
-    const time = document.getElementsByName('entry_time')[0].value;
-    const price = document.getElementsByName('paid_amount')[0].value;
+    const form = document.querySelector('form[action="/vacancy/apply"]');
+    const modal = document.getElementById('confirmModal');
+    const plateInput = form?.elements.namedItem('plate');
+    const timeInput = form?.elements.namedItem('entry_time');
+    const plate = String(plateInput?.value || '').trim();
+    const time = String(timeInput?.value || '').trim();
 
-    // Validar se não estão vazios antes de abrir
-    if(!plate || !time || !price) {
-        alert("Por favor, preencha todos os campos obrigatórios.");
+    if (!form || !modal || !plate || !time || !form.reportValidity()) {
         return;
     }
 
-    // Injetar no Modal
     document.getElementById('reviewPlate').innerText = plate;
     document.getElementById('reviewTime').innerText = time;
-    document.getElementById('reviewPrice').innerText = 'R$ ' + parseFloat(price).toLocaleString('pt-br', {minimumFractionDigits: 2});
-
-    // Mostrar modal
-    document.getElementById('confirmModal').classList.remove('hidden');
+    modal.classList.remove('hidden');
 }
 
 function closeConfirmationModal() {
@@ -24,6 +20,8 @@ function closeConfirmationModal() {
 }
 
 function submitRealForm() {
-    // Pegar o formulário real pelo ID ou Nome e enviar
-    document.querySelector('form').submit();
+    const form = document.querySelector('form[action="/vacancy/apply"]');
+    if (form?.reportValidity()) {
+        form.requestSubmit();
+    }
 }

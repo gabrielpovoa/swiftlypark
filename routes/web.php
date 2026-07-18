@@ -38,10 +38,12 @@ $router = new Router();
 // Função para proteger rotas privadas
 function authRequired($callback)
 {
-    return function () use ($callback) {
+    return function (...$arguments) use ($callback) {
         try {
-            (new IdentityMiddleware())->handle(function () use ($callback) {
-                (new TenantMiddleware())->handle($callback);
+            (new IdentityMiddleware())->handle(function () use ($callback, $arguments) {
+                (new TenantMiddleware())->handle(
+                    static fn () => $callback(...$arguments)
+                );
             });
         } catch (AccessRevokedException $exception) {
             header('Location: /login?revoked=1');
@@ -61,9 +63,11 @@ function authRequired($callback)
 
 function authIdentityRequired($callback)
 {
-    return function () use ($callback) {
+    return function (...$arguments) use ($callback) {
         try {
-            (new IdentityMiddleware())->handle($callback);
+            (new IdentityMiddleware())->handle(
+                static fn () => $callback(...$arguments)
+            );
         } catch (AccessRevokedException $exception) {
             header('Content-Type: application/json; charset=UTF-8');
             http_response_code(403);
@@ -97,7 +101,7 @@ function auditSecurityCriticalException(SecurityCriticalException $exception): v
 
 function permissionRequired(string $permission, string $route, $callback)
 {
-    return authRequired(function () use ($permission, $route, $callback) {
+    return authRequired(function (...$arguments) use ($permission, $route, $callback) {
         $identity = IdentityContext::current();
         $connection = (new Database())->connect();
         $middleware = new AuthorizeMiddleware(
@@ -109,7 +113,11 @@ function permissionRequired(string $permission, string $route, $callback)
         );
 
         try {
-            $middleware->handle($permission, $route, $callback);
+            $middleware->handle(
+                $permission,
+                $route,
+                static fn () => $callback(...$arguments)
+            );
         } catch (ForbiddenException $exception) {
             (new Controller())->render403();
         } catch (SecurityCriticalException $exception) {
@@ -332,11 +340,32 @@ $router->get('admin/dashboard', superAdminRequired(function () {
 $router->get('admin/companies', permissionRequired('identity.manage', 'admin/companies', function () {
     (new AdminProvisioningController())->companiesIndex();
 }));
+$router->get('admin/companies/pricing', permissionRequired('identity.manage', 'admin/companies/pricing', function () {
+    (new AdminProvisioningController())->companyPricing();
+}));
+$router->get('admin/companies/company_id={company_id}', permissionRequired('identity.manage', 'admin/companies/company', function (int $companyId) {
+    (new AdminProvisioningController())->companyPricing($companyId);
+}));
 $router->post('admin/companies/create', authRequired(function () {
     (new AdminProvisioningController())->createCompany();
 }));
 $router->post('admin/companies/update', authRequired(function () {
     (new AdminProvisioningController())->updateCompany();
+}));
+$router->post('admin/companies/pricing', authRequired(function () {
+    (new AdminProvisioningController())->updateCompanyPricing();
+}));
+$router->post('admin/companies/company_id={company_id}', authRequired(function (int $companyId) {
+    (new AdminProvisioningController())->updateCompanyPricing($companyId);
+}));
+$router->post('admin/companies/company_id={company_id}/contracts/create', authRequired(function (int $companyId) {
+    (new AdminProvisioningController())->createMonthlyContract($companyId);
+}));
+$router->post('admin/companies/company_id={company_id}/contracts/renew', authRequired(function (int $companyId) {
+    (new AdminProvisioningController())->renewMonthlyContract($companyId);
+}));
+$router->post('admin/companies/company_id={company_id}/contracts/cancel', authRequired(function (int $companyId) {
+    (new AdminProvisioningController())->cancelMonthlyContract($companyId);
 }));
 $router->post('admin/companies/deactivate', authRequired(function () {
     (new AdminProvisioningController())->deactivateCompany();

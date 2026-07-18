@@ -25,22 +25,27 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
 };
 ?>
 
-<section class="min-h-screen bg-[#0b0e14] text-slate-300 p-5 md:p-10">
-    <div class="max-w-7xl mx-auto">
+<section class="relative min-h-screen overflow-hidden bg-[#080b11] text-slate-300 p-5 md:p-10">
+    <div class="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-blue-600/10 blur-[120px]"></div>
+    <div class="pointer-events-none absolute -right-40 top-80 h-96 w-96 rounded-full bg-violet-600/10 blur-[120px]"></div>
+    <div class="relative mx-auto max-w-7xl">
         <header class="flex flex-col xl:flex-row xl:items-end justify-between gap-5 mb-8">
             <div>
-                <span class="text-blue-500 text-xs font-black uppercase tracking-[0.3em]">Administração Master</span>
-                <h1 class="text-4xl font-black text-white mt-2">Gestão de Identidade</h1>
-                <p class="text-slate-500 mt-2">Revogue acessos, encontre usuários e conceda permissões adicionais sem alterar o papel principal.</p>
+                <a href="/admin" class="mb-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 hover:text-blue-300">
+                    <i data-lucide="arrow-left" class="h-4 w-4"></i>Governança
+                </a>
+                <span class="block text-blue-400 text-xs font-black uppercase tracking-[0.3em]">Administração Master</span>
+                <h1 class="mt-2 text-4xl font-black tracking-tight text-white md:text-5xl">Gestão de Identidade</h1>
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Controle quem acessa a plataforma, acompanhe vínculos empresariais e conceda permissões adicionais com rastreabilidade.</p>
             </div>
-            <div class="grid grid-cols-2 gap-3 text-right">
-                <div class="rounded-2xl bg-white/[0.03] border border-white/10 px-5 py-4">
-                    <span class="block text-[10px] uppercase tracking-widest text-slate-500 font-black">Na lista</span>
-                    <strong class="text-2xl text-white"><?= count($users) ?></strong>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="min-w-36 rounded-2xl border border-blue-500/20 bg-blue-500/[0.07] px-5 py-4">
+                    <div class="flex items-center justify-between gap-4"><span class="text-[10px] uppercase tracking-widest text-blue-300 font-black">Resultados</span><i data-lucide="users" class="h-4 w-4 text-blue-400"></i></div>
+                    <strong class="mt-2 block text-3xl text-white"><?= count($users) ?></strong>
                 </div>
-                <div class="rounded-2xl bg-white/[0.03] border border-white/10 px-5 py-4">
-                    <span class="block text-[10px] uppercase tracking-widest text-slate-500 font-black">Página</span>
-                    <strong class="text-2xl text-white"><?= (int) $page ?>/<?= (int) $totalPages ?></strong>
+                <div class="min-w-36 rounded-2xl border border-violet-500/20 bg-violet-500/[0.07] px-5 py-4">
+                    <div class="flex items-center justify-between gap-4"><span class="text-[10px] uppercase tracking-widest text-violet-300 font-black">Página</span><i data-lucide="files" class="h-4 w-4 text-violet-400"></i></div>
+                    <strong class="mt-2 block text-3xl text-white"><?= (int) $page ?><span class="text-base text-slate-600">/<?= (int) $totalPages ?></span></strong>
                 </div>
             </div>
         </header>
@@ -51,7 +56,11 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
             <div class="mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 px-5 py-4 text-rose-400 font-bold"><?= $escape($error) ?></div>
         <?php endif; ?>
 
-        <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-5 md:p-6 mb-6">
+        <section class="mb-6 rounded-3xl border border-white/10 bg-[#11151e]/90 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-6">
+            <div class="mb-5 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10"><i data-lucide="list-filter" class="h-5 w-5 text-blue-400"></i></div>
+                <div><h2 class="font-black text-white">Localizar usuários</h2><p class="text-xs text-slate-600">Combine os filtros para encontrar um acesso específico.</p></div>
+            </div>
             <form method="GET" action="/identity" class="grid grid-cols-1 lg:grid-cols-[minmax(240px,1fr)_240px_170px_auto_auto] gap-3 items-end">
                 <div>
                     <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Usuário</label>
@@ -61,13 +70,13 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                             name="q"
                             value="<?= $escape($filters['query']) ?>"
                             placeholder="buscar por nome ou e-mail"
-                            class="w-full rounded-xl bg-[#131720] border border-white/10 pl-10 pr-4 py-3 text-white outline-none focus:border-blue-500">
+                            class="w-full rounded-xl bg-[#090c12] border border-white/10 pl-10 pr-4 py-3 text-white outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Empresa</label>
-                    <select name="company_id" class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white outline-none focus:border-blue-500">
+                    <select name="company_id" class="w-full rounded-xl bg-[#090c12] border border-white/10 px-4 py-3 text-white outline-none focus:border-blue-500">
                         <option value="">Todas</option>
                         <?php foreach ($companies as $company): ?>
                             <option
@@ -81,15 +90,15 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
 
                 <div>
                     <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Status</label>
-                    <select name="status" class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white outline-none focus:border-blue-500">
+                    <select name="status" class="w-full rounded-xl bg-[#090c12] border border-white/10 px-4 py-3 text-white outline-none focus:border-blue-500">
                         <option value="all" <?= $filters['status'] === 'all' ? 'selected' : '' ?>>Todos</option>
                         <option value="active" <?= $filters['status'] === 'active' ? 'selected' : '' ?>>Ativos</option>
                         <option value="revoked" <?= $filters['status'] === 'revoked' ? 'selected' : '' ?>>Revogados</option>
                     </select>
                 </div>
 
-                <button class="h-[46px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black px-5 py-3">
-                    Filtrar
+                <button class="inline-flex h-[46px] items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black px-5 py-3 shadow-lg shadow-blue-600/20">
+                    <i data-lucide="search" class="h-4 w-4"></i>Filtrar
                 </button>
                 <a href="/identity" class="inline-flex h-[46px] items-center justify-center rounded-xl bg-white/[0.05] hover:bg-white/[0.08] text-slate-300 text-center font-black px-5 py-3">
                     Limpar
@@ -111,12 +120,23 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                     'trim',
                     explode(',', (string) ($user['companies'] ?? ''))
                 ));
+                $nameParts = preg_split('/\s+/', trim((string) $user['nome'])) ?: [];
+                $initials = mb_strtoupper(
+                    mb_substr((string) ($nameParts[0] ?? 'U'), 0, 1)
+                    . mb_substr((string) ($nameParts[count($nameParts) - 1] ?? ''), 0, 1)
+                );
                 ?>
-                <article class="rounded-3xl border border-white/10 bg-white/[0.025] p-5 md:p-6">
+                <article class="group overflow-hidden rounded-3xl border border-white/10 bg-[#11151e]/85 shadow-xl shadow-black/10 transition hover:border-blue-500/20 hover:bg-[#131824]">
+                    <div class="h-1 bg-gradient-to-r <?= $isRevoked ? 'from-rose-500/70 via-rose-400/20' : 'from-blue-500/70 via-violet-500/30' ?> to-transparent"></div>
+                    <div class="p-5 md:p-6">
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                        <div>
+                        <div class="flex min-w-0 items-start gap-4">
+                            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border <?= $isRevoked ? 'border-rose-500/20 bg-rose-500/10 text-rose-300' : 'border-blue-500/20 bg-gradient-to-br from-blue-500/15 to-violet-500/10 text-blue-300' ?> text-lg font-black">
+                                <?= $escape($initials) ?>
+                            </div>
+                            <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="text-lg font-black text-white"><?= $escape($user['nome']) ?></h2>
+                                <h2 class="truncate text-lg font-black text-white"><?= $escape($user['nome']) ?></h2>
                                 <?php foreach ($user['role_slugs'] as $role): ?>
                                     <span class="px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-[9px] font-black uppercase tracking-widest"><?= $escape($role) ?></span>
                                 <?php endforeach; ?>
@@ -124,16 +144,17 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                                     <?= $isRevoked ? 'Acesso revogado' : 'Ativo' ?>
                                 </span>
                             </div>
-                            <p class="text-sm text-slate-500 mt-1"><?= $escape($user['email']) ?></p>
+                            <p class="mt-1 flex items-center gap-2 text-sm text-slate-500"><i data-lucide="mail" class="h-3.5 w-3.5"></i><?= $escape($user['email']) ?></p>
                             <div class="mt-3 flex flex-wrap gap-2">
                                 <?php if ($linkedCompanies === []): ?>
                                     <span class="rounded-lg bg-white/[0.04] text-slate-500 px-2 py-1 text-[10px] font-black uppercase tracking-widest">sem empresa vinculada</span>
                                 <?php endif; ?>
                                 <?php foreach ($linkedCompanies as $linkedCompany): ?>
-                                    <span class="rounded-lg bg-emerald-500/10 text-emerald-400 px-2 py-1 text-[10px] font-black uppercase tracking-widest">
-                                        <?= $escape($linkedCompany) ?>
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/10 bg-emerald-500/[0.07] text-emerald-400 px-2 py-1 text-[10px] font-black uppercase tracking-widest">
+                                        <i data-lucide="building-2" class="h-3 w-3"></i><?= $escape($linkedCompany) ?>
                                     </span>
                                 <?php endforeach; ?>
+                            </div>
                             </div>
                         </div>
 
@@ -142,8 +163,8 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                                   onsubmit="return confirm('Confirma a revogação deste acesso?');">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
                                 <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
-                                <button class="px-5 py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 text-xs font-black transition-colors">
-                                    Revogar acesso
+                                <button class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 text-xs font-black transition-colors">
+                                    <i data-lucide="user-x" class="h-4 w-4"></i>Revogar acesso
                                 </button>
                             </form>
                         <?php elseif (!$isSelf && $isRevoked): ?>
@@ -151,8 +172,8 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                                   onsubmit="return confirm('Reativar este usuário e enviar uma nova senha temporária?');">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
                                 <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
-                                <button class="px-5 py-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-xs font-black transition-colors">
-                                    Reativar
+                                <button class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-xs font-black transition-colors">
+                                    <i data-lucide="user-check" class="h-4 w-4"></i>Reativar
                                 </button>
                             </form>
                         <?php endif; ?>
@@ -160,8 +181,8 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
 
                     <?php if (!$isSelf && !$isRevoked): ?>
                         <details class="mt-5 border-t border-white/5 pt-4">
-                            <summary class="cursor-pointer text-xs font-black uppercase tracking-widest text-slate-500 hover:text-white">
-                                Gerenciar permissões extras
+                            <summary class="flex cursor-pointer list-none items-center justify-between rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-white/[0.03] hover:text-white">
+                                <span class="flex items-center gap-2"><i data-lucide="shield-check" class="h-4 w-4 text-blue-400"></i>Gerenciar permissões extras</span><i data-lucide="chevron-down" class="h-4 w-4"></i>
                             </summary>
                             <form method="POST" action="/identity/permissions" class="mt-4">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
@@ -216,8 +237,8 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                         </details>
                     <?php elseif ($isSelf && !$isRevoked): ?>
                         <details class="mt-5 border-t border-white/5 pt-4">
-                            <summary class="cursor-pointer text-xs font-black uppercase tracking-widest text-slate-500 hover:text-white">
-                                Gerenciar minhas permissões extras
+                            <summary class="flex cursor-pointer list-none items-center justify-between rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-white/[0.03] hover:text-white">
+                                <span class="flex items-center gap-2"><i data-lucide="shield-check" class="h-4 w-4 text-blue-400"></i>Gerenciar minhas permissões extras</span><i data-lucide="chevron-down" class="h-4 w-4"></i>
                             </summary>
                             <form method="POST" action="/identity/permissions" class="mt-4">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
@@ -271,17 +292,18 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                             </form>
                         </details>
                     <?php endif; ?>
+                    </div>
                 </article>
             <?php endforeach; ?>
         </div>
 
-        <nav class="flex items-center justify-center gap-3 mt-8">
+        <nav class="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3">
             <?php if ($page > 1): ?>
-                <a href="<?= $escape($pageUrl($page - 1)) ?>" class="px-4 py-2 rounded-xl bg-white/5 border border-white/10">Anterior</a>
+                <a href="<?= $escape($pageUrl($page - 1)) ?>" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10"><i data-lucide="chevron-left" class="h-4 w-4"></i>Anterior</a>
             <?php endif; ?>
             <span class="text-xs text-slate-500">Página <?= $page ?> de <?= $totalPages ?></span>
             <?php if ($page < $totalPages): ?>
-                <a href="<?= $escape($pageUrl($page + 1)) ?>" class="px-4 py-2 rounded-xl bg-white/5 border border-white/10">Próxima</a>
+                <a href="<?= $escape($pageUrl($page + 1)) ?>" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10">Próxima<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
             <?php endif; ?>
         </nav>
     </div>

@@ -1,21 +1,42 @@
 document.querySelectorAll('.finalizar').forEach(button => {
     button.addEventListener('click', function () {
         const idVaga = this.dataset.id;
+        const isMonthly = this.dataset.monthly === '1';
+        const csrfToken = this.dataset.csrf || '';
 
         Swal.fire({
             title: 'Finalizar Vaga',
-            text: 'Digite a hora de saída:',
-            input: 'time',
-            inputLabel: 'Hora de Saída',
-            inputPlaceholder: 'HH:mm',
+            html: `
+                <label for="checkout-time" class="swal2-input-label">Hora de saída</label>
+                <input id="checkout-time" class="swal2-input" type="time" required>
+                ${isMonthly ? '' : `
+                    <label for="checkout-payment" class="swal2-input-label">Forma de pagamento</label>
+                    <select id="checkout-payment" class="swal2-select" required>
+                        <option value="">Selecione</option>
+                        <option value="PIX">Pix</option>
+                        <option value="CARD">Cartão</option>
+                        <option value="CASH">Dinheiro</option>
+                    </select>
+                `}
+            `,
             showCancelButton: true,
             confirmButtonText: 'Finalizar',
             cancelButtonText: 'Cancelar',
-            preConfirm: (horaSaida) => {
+            preConfirm: () => {
+                const horaSaida = document.getElementById('checkout-time').value;
+                const paymentMethod = isMonthly
+                    ? null
+                    : document.getElementById('checkout-payment').value;
                 if (!horaSaida) {
                     Swal.showValidationMessage('Você precisa informar a hora de saída!');
+                    return false;
                 }
-                return horaSaida;
+                if (!isMonthly && !paymentMethod) {
+                    Swal.showValidationMessage('Selecione a forma de pagamento.');
+                    return false;
+                }
+
+                return { horaSaida, paymentMethod };
             }
         }).then(async (result) => {
             if (!result.isConfirmed) return;
@@ -23,7 +44,11 @@ document.querySelectorAll('.finalizar').forEach(button => {
             // Envio como FormData (PHP lê em $_POST)
             const formData = new FormData();
             formData.append('id_vaga', idVaga);
-            formData.append('hora_saida', result.value); // "HH:mm"
+            formData.append('hora_saida', result.value.horaSaida);
+            formData.append('csrf_token', csrfToken);
+            if (result.value.paymentMethod) {
+                formData.append('payment_method', result.value.paymentMethod);
+            }
 
             try {
                 const res = await fetch('/vacancy/finish', {
@@ -60,7 +85,14 @@ document.querySelectorAll('.finalizar').forEach(button => {
                 }
 
                 if (data.success) {
-                    await Swal.fire('Finalizado!', 'A vaga foi liberada com sucesso.', 'success');
+                    const amount = Number(data.amount || 0).toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                    });
+                    const message = data.monthly
+                        ? 'Estadia mensalista encerrada sem nova cobrança.'
+                        : `Pagamento de ${amount} registrado e vaga liberada.`;
+                    await Swal.fire('Finalizado!', message, 'success');
                     window.location.reload();
                 } else {
                     Swal.fire('Erro', data.message || 'Falha ao finalizar.', 'error');

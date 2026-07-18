@@ -11,6 +11,7 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
 
     public function summary(string $startUtc, string $endUtc): array
     {
+        $companyId = $this->assertTenantContext();
         $adjustmentsExpression = '0';
         $parameters = [
             'start_at' => $startUtc,
@@ -30,15 +31,32 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
             $parameters['adjustment_company_id'] = $this->assertTenantContext();
         }
 
+        $parameters['company_id'] = $companyId;
+        $parameters['monthly_company_id'] = $companyId;
+        $parameters['monthly_start_at'] = $startUtc;
+        $parameters['monthly_end_at'] = $endUtc;
         $query = 'SELECT
-                COALESCE(SUM(t.valor), 0) AS gross_revenue,
-                COALESCE(AVG(t.valor), 0) AS average_ticket,
+                COALESCE(SUM(revenue.amount), 0) AS gross_revenue,
+                COALESCE(SUM(CASE WHEN revenue.origin = "ROTATING" THEN revenue.amount ELSE 0 END), 0) AS rotating_revenue,
+                COALESCE(SUM(CASE WHEN revenue.origin = "MONTHLY" THEN revenue.amount ELSE 0 END), 0) AS monthly_revenue,
+                COALESCE(AVG(revenue.amount), 0) AS average_ticket,
+                SUM(CASE WHEN revenue.origin = "ROTATING" THEN 1 ELSE 0 END) AS rotating_transaction_count,
+                SUM(CASE WHEN revenue.origin = "MONTHLY" THEN 1 ELSE 0 END) AS monthly_payment_count,
                 COUNT(*) AS transaction_count,
                 COALESCE(' . $adjustmentsExpression . ', 0) AS adjustments
-             FROM transacoes t
-             WHERE t.payment_date >= :start_at
-               AND t.payment_date < :end_at';
-        $this->applyTenantFilter($query, $parameters, 't.company_id');
+             FROM (
+                SELECT t.valor AS amount, "ROTATING" AS origin
+                FROM transacoes t
+                WHERE t.payment_date >= :start_at
+                  AND t.payment_date < :end_at
+                  AND t.company_id = :company_id
+                UNION ALL
+                SELECT mp.amount, "MONTHLY" AS origin
+                FROM monthly_contract_payments mp
+                WHERE mp.payment_date >= :monthly_start_at
+                  AND mp.payment_date < :monthly_end_at
+                  AND mp.company_id = :monthly_company_id
+             ) revenue';
 
         $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
@@ -48,14 +66,31 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
 
     public function revenueByDay(string $startUtc, string $endUtc): array
     {
-        $parameters = ['start_at' => $startUtc, 'end_at' => $endUtc];
-        $localPaymentDate = "DATE(CONVERT_TZ(payment_date, '+00:00', '-03:00'))";
-        $query = "SELECT {$localPaymentDate} AS day, SUM(valor) AS total
-             FROM transacoes
-             WHERE payment_date >= :start_at AND payment_date < :end_at
-             GROUP BY {$localPaymentDate}
+        $companyId = $this->assertTenantContext();
+        $parameters = [
+            'start_at' => $startUtc, 'end_at' => $endUtc, 'company_id' => $companyId,
+            'monthly_start_at' => $startUtc, 'monthly_end_at' => $endUtc,
+            'monthly_company_id' => $companyId,
+        ];
+        $query = "SELECT revenue.day,
+                    SUM(CASE WHEN revenue.origin = 'ROTATING' THEN revenue.amount ELSE 0 END) AS rotating_total,
+                    SUM(CASE WHEN revenue.origin = 'MONTHLY' THEN revenue.amount ELSE 0 END) AS monthly_total,
+                    SUM(revenue.amount) AS total
+             FROM (
+                SELECT DATE(CONVERT_TZ(t.payment_date, '+00:00', '-03:00')) AS day,
+                       t.valor AS amount, 'ROTATING' AS origin
+                FROM transacoes t
+                WHERE t.payment_date >= :start_at AND t.payment_date < :end_at
+                  AND t.company_id = :company_id
+                UNION ALL
+                SELECT DATE(CONVERT_TZ(mp.payment_date, '+00:00', '-03:00')) AS day,
+                       mp.amount, 'MONTHLY' AS origin
+                FROM monthly_contract_payments mp
+                WHERE mp.payment_date >= :monthly_start_at AND mp.payment_date < :monthly_end_at
+                  AND mp.company_id = :monthly_company_id
+             ) revenue
+             GROUP BY revenue.day
              ORDER BY day";
-        $this->applyTenantFilter($query, $parameters, 'company_id');
 
         $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);
@@ -67,13 +102,28 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
         string $startUtc,
         string $endUtc
     ): array {
-        $parameters = ['start_at' => $startUtc, 'end_at' => $endUtc];
-        $query = 'SELECT payment_method, SUM(valor) AS total, COUNT(*) AS quantity
-             FROM transacoes
-             WHERE payment_date >= :start_at AND payment_date < :end_at
-             GROUP BY payment_method
+        $companyId = $this->assertTenantContext();
+        $parameters = [
+            'start_at' => $startUtc, 'end_at' => $endUtc, 'company_id' => $companyId,
+            'monthly_start_at' => $startUtc, 'monthly_end_at' => $endUtc,
+            'monthly_company_id' => $companyId,
+        ];
+        $query = 'SELECT revenue.payment_method, SUM(revenue.amount) AS total, COUNT(*) AS quantity
+             FROM (
+                SELECT CAST(t.payment_method AS CHAR) COLLATE utf8mb4_unicode_ci AS payment_method,
+                       t.valor AS amount
+                FROM transacoes t
+                WHERE t.payment_date >= :start_at AND t.payment_date < :end_at
+                  AND t.company_id = :company_id
+                UNION ALL
+                SELECT CAST(mp.payment_method AS CHAR) COLLATE utf8mb4_unicode_ci AS payment_method,
+                       mp.amount
+                FROM monthly_contract_payments mp
+                WHERE mp.payment_date >= :monthly_start_at AND mp.payment_date < :monthly_end_at
+                  AND mp.company_id = :monthly_company_id
+             ) revenue
+             GROUP BY revenue.payment_method
              ORDER BY total DESC';
-        $this->applyTenantFilter($query, $parameters, 'company_id');
 
         $statement = $this->prepareTenantStatement($query, $parameters);
         $statement->execute($parameters);

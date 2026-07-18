@@ -7,7 +7,7 @@
                 <?php if (!empty($companyBrand['logo_path'])): ?>
                     <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
                          alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
-                         class="h-14 w-14 rounded-2xl border border-white/10 bg-white object-contain p-2">
+                         class="h-14 w-14 object-contain">
                 <?php endif; ?>
                 <div>
                 <span class="text-emerald-500 text-xs font-black uppercase tracking-[0.3em]">Business Intelligence</span>
@@ -44,10 +44,12 @@
             <div class="mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 p-4 text-rose-400 font-bold"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <?php foreach ([
                 ['gross-revenue', 'Faturamento bruto', 'banknote'],
                 ['net-revenue', 'Receita líquida', 'circle-dollar-sign'],
+                ['rotating-revenue', 'Receita rotativa', 'car-front'],
+                ['monthly-revenue', 'Receita mensalista', 'calendar-check-2'],
                 ['average-ticket', 'Ticket médio', 'receipt'],
                 ['occupancy-rate', 'Taxa de ocupação', 'gauge'],
                 ['adjustments-total', 'Ajustes financeiros', 'rotate-ccw'],
@@ -63,7 +65,10 @@
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
             <article class="xl:col-span-2 rounded-3xl bg-white/[0.03] border border-white/10 p-6">
-                <h2 class="text-white font-black mb-5">Faturamento por dia</h2>
+                <div class="mb-5">
+                    <h2 class="text-white font-black">Faturamento por dia e origem</h2>
+                    <p class="mt-1 text-xs text-slate-500">Rotativo reconhecido no checkout; mensalista na contratação ou renovação.</p>
+                </div>
                 <div class="h-72"><canvas id="daily-chart"></canvas></div>
             </article>
             <article class="rounded-3xl bg-white/[0.03] border border-white/10 p-6">

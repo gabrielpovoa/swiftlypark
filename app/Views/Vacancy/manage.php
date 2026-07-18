@@ -90,7 +90,9 @@
                                     <span class="text-blue-400 font-mono font-bold"><?= date('H:i', strtotime($vaga['hora_entrada'])) ?></span>
                                 </div>
                                 <button class="finalizar w-full py-2.5 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-xl text-xs font-bold transition-all duration-300 border border-rose-500/20"
-                                        data-id="<?= $vaga['id_vaga'] ?>">
+                                        data-id="<?= $vaga['id_vaga'] ?>"
+                                        data-monthly="<?= ($vaga['billing_model'] ?? 'ROTATING') === 'MONTHLY' ? '1' : '0' ?>"
+                                        data-csrf="<?= htmlspecialchars((string) $checkoutCsrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                     Finalizar Estadia
                                 </button>
                             </div>

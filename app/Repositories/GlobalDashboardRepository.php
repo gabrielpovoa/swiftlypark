@@ -25,10 +25,33 @@ final class GlobalDashboardRepository extends BaseRepository
                         INNER JOIN companies c ON c.id = vp.company_id AND c.deleted_at IS NULL
                         WHERE vp.hora_entrada IS NOT NULL
                     ) AS completed_checkins,
-                    (SELECT COALESCE(SUM(t.valor), 0)
+                    ((SELECT COALESCE(SUM(t.valor), 0)
                         FROM transacoes t
                         INNER JOIN companies c ON c.id = t.company_id AND c.deleted_at IS NULL
-                    ) AS total_revenue,
+                    ) + (SELECT COALESCE(SUM(mp.amount), 0)
+                        FROM monthly_contract_payments mp
+                        INNER JOIN companies c ON c.id = mp.company_id AND c.deleted_at IS NULL
+                    )) AS total_revenue,
+                    (SELECT COUNT(*)
+                        FROM monthly_contracts mc
+                        INNER JOIN companies c ON c.id = mc.company_id AND c.deleted_at IS NULL
+                        WHERE mc.status = \'ACTIVE\'
+                          AND mc.starts_at <= CURRENT_DATE()
+                          AND mc.expires_at >= CURRENT_DATE()
+                    ) AS active_monthly_contracts,
+                    (SELECT COALESCE(SUM(mc.monthly_amount), 0)
+                        FROM monthly_contracts mc
+                        INNER JOIN companies c ON c.id = mc.company_id AND c.deleted_at IS NULL
+                        WHERE mc.status = \'ACTIVE\'
+                          AND mc.starts_at <= CURRENT_DATE()
+                          AND mc.expires_at >= CURRENT_DATE()
+                    ) AS monthly_recurring_revenue,
+                    (SELECT COALESCE(SUM(mp.amount), 0)
+                        FROM monthly_contract_payments mp
+                        INNER JOIN companies c ON c.id = mp.company_id AND c.deleted_at IS NULL
+                        WHERE mp.payment_date >= DATE_FORMAT(CURRENT_DATE(), \'%Y-%m-01\')
+                          AND mp.payment_date < DATE_FORMAT(CURRENT_DATE() + INTERVAL 1 MONTH, \'%Y-%m-01\')
+                    ) AS monthly_revenue_received,
                     (SELECT COUNT(*) FROM audit_logs
                         WHERE action IN (
                             \'CROSS_TENANT_ACCESS_ATTEMPT\',
@@ -52,6 +75,9 @@ final class GlobalDashboardRepository extends BaseRepository
                 'active_sessions' => (int) ($row['active_sessions'] ?? 0),
                 'completed_checkins' => (int) ($row['completed_checkins'] ?? 0),
                 'total_revenue' => (float) ($row['total_revenue'] ?? 0),
+                'active_monthly_contracts' => (int) ($row['active_monthly_contracts'] ?? 0),
+                'monthly_recurring_revenue' => (float) ($row['monthly_recurring_revenue'] ?? 0),
+                'monthly_revenue_received' => (float) ($row['monthly_revenue_received'] ?? 0),
                 'active_investigations' => (int) ($row['active_investigations'] ?? 0),
                 'monthly_growth' => (int) ($row['monthly_growth'] ?? 0),
             ];
@@ -76,9 +102,13 @@ final class GlobalDashboardRepository extends BaseRepository
                     GROUP BY company_id
                  ) usage_totals ON usage_totals.company_id = c.id
                  LEFT JOIN (
-                    SELECT company_id, SUM(valor) AS revenue
-                    FROM transacoes
-                    GROUP BY company_id
+                    SELECT revenue.company_id, SUM(revenue.amount) AS revenue
+                    FROM (
+                        SELECT company_id, valor AS amount FROM transacoes
+                        UNION ALL
+                        SELECT company_id, amount FROM monthly_contract_payments
+                    ) revenue
+                    GROUP BY revenue.company_id
                  ) revenue_totals ON revenue_totals.company_id = c.id
                  WHERE c.deleted_at IS NULL
                  GROUP BY c.id, c.name, usage_totals.checkins, revenue_totals.revenue
@@ -100,9 +130,17 @@ final class GlobalDashboardRepository extends BaseRepository
                 'SELECT
                     c.id,
                     c.name,
-                    COALESCE(SUM(t.valor), 0) AS revenue
+                    COALESCE(MAX(revenue_totals.revenue), 0) AS revenue
                  FROM companies c
-                 LEFT JOIN transacoes t ON t.company_id = c.id
+                 LEFT JOIN (
+                    SELECT revenue.company_id, SUM(revenue.amount) AS revenue
+                    FROM (
+                        SELECT company_id, valor AS amount FROM transacoes
+                        UNION ALL
+                        SELECT company_id, amount FROM monthly_contract_payments
+                    ) revenue
+                    GROUP BY revenue.company_id
+                 ) revenue_totals ON revenue_totals.company_id = c.id
                  WHERE c.deleted_at IS NULL
                  GROUP BY c.id, c.name
                  ORDER BY revenue DESC, c.name ASC

@@ -9,6 +9,7 @@ use App\Context\TenantContext;
 use App\Exceptions\AuditLogException;
 use App\Repositories\AuditLogRepository;
 use JsonException;
+use App\Security\InputSanitizer;
 
 final class AuditService
 {
@@ -169,15 +170,23 @@ final class AuditService
             return null;
         }
 
-        return array_intersect_key(
+        $allowed = array_intersect_key(
             $values,
             array_flip(self::ALLOWED_FIELDS[$entity])
         );
+
+        return (new InputSanitizer())->payload($allowed);
     }
 
     private function encodePayload(mixed $payload): ?string
     {
-        if ($payload === null || is_string($payload)) {
+        if ($payload === null) {
+            return null;
+        }
+
+        $payload = (new InputSanitizer())->payload($payload);
+
+        if (is_string($payload)) {
             return $payload;
         }
 

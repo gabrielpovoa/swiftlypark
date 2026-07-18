@@ -94,7 +94,13 @@ $footerShellClass = isset($_SESSION['user_id'])
 <script src="/js/TenantContext.js"></script>
 <script src="/js/ReportLog.js"></script>
 <script src="/js/GetFilterVacancy.js"></script>
-<script src="/js/modalApplyVacancy.js"></script>
+<?php
+$modalApplyVacancyScript = __DIR__ . '/../../../public/js/modalApplyVacancy.js';
+$modalApplyVacancyVersion = is_file($modalApplyVacancyScript)
+    ? (string) filemtime($modalApplyVacancyScript)
+    : '1';
+?>
+<script src="/js/modalApplyVacancy.js?v=<?= htmlspecialchars($modalApplyVacancyVersion, ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="/js/FinishVacancy.js"></script>
 <script src="/js/changePassword.js"></script>
 </body>

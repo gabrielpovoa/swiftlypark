@@ -133,12 +133,14 @@ final class FinanceController extends Controller
 
         fputcsv($output, [], ';');
         fputcsv($output, ['Faturamento por dia'], ';');
-        fputcsv($output, ['Data', 'Valor'], ';');
+        fputcsv($output, ['Data', 'Total', 'Rotativo', 'Mensalista'], ';');
 
         foreach ($data['charts']['daily_revenue']['labels'] as $index => $day) {
             fputcsv($output, [
                 $day,
-                (string) $data['charts']['daily_revenue']['values'][$index],
+                (string) $data['charts']['daily_revenue']['total'][$index],
+                (string) $data['charts']['daily_revenue']['rotating'][$index],
+                (string) $data['charts']['daily_revenue']['monthly'][$index],
             ], ';');
         }
 
@@ -221,6 +223,10 @@ final class FinanceController extends Controller
         return match ($metric) {
             'gross_revenue' => 'Faturamento bruto',
             'net_revenue' => 'Faturamento líquido',
+            'rotating_revenue' => 'Receita rotativa',
+            'monthly_revenue' => 'Receita mensalista',
+            'rotating_transactions' => 'Checkouts rotativos pagos',
+            'monthly_payments' => 'Mensalidades pagas',
             'average_ticket' => 'Ticket médio',
             'occupancy_rate' => 'Taxa de ocupação',
             'adjustments_total' => 'Ajustes financeiros',

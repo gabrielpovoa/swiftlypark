@@ -2,6 +2,10 @@
 $metricLabels = [
     'gross_revenue' => 'Faturamento bruto',
     'net_revenue' => 'Faturamento líquido',
+    'rotating_revenue' => 'Receita rotativa',
+    'monthly_revenue' => 'Receita mensalista',
+    'rotating_transactions' => 'Checkouts rotativos pagos',
+    'monthly_payments' => 'Mensalidades pagas',
     'average_ticket' => 'Ticket médio',
     'occupancy_rate' => 'Taxa de ocupação (%)',
     'adjustments_total' => 'Ajustes financeiros',
@@ -24,7 +28,7 @@ $metricLabels = [
                 <?php if (!empty($companyBrand['logo_path'])): ?>
                     <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
                          alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
-                         class="h-14 w-14 rounded-2xl border object-contain p-2">
+                         class="h-14 w-14 object-contain">
                 <?php endif; ?>
                 <div>
                     <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-black">SwiftlyPark</p>
@@ -62,7 +66,9 @@ $metricLabels = [
                 <thead>
                     <tr class="bg-slate-100">
                         <th class="text-left border p-3">Data</th>
-                        <th class="text-left border p-3">Valor</th>
+                        <th class="text-left border p-3">Total</th>
+                        <th class="text-left border p-3">Rotativo</th>
+                        <th class="text-left border p-3">Mensalista</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,7 +76,13 @@ $metricLabels = [
                         <tr>
                             <td class="border p-3"><?= htmlspecialchars($day) ?></td>
                             <td class="border p-3">
-                                R$ <?= number_format((float) $data['charts']['daily_revenue']['values'][$index], 2, ',', '.') ?>
+                                R$ <?= number_format((float) $data['charts']['daily_revenue']['total'][$index], 2, ',', '.') ?>
+                            </td>
+                            <td class="border p-3">
+                                R$ <?= number_format((float) $data['charts']['daily_revenue']['rotating'][$index], 2, ',', '.') ?>
+                            </td>
+                            <td class="border p-3">
+                                R$ <?= number_format((float) $data['charts']['daily_revenue']['monthly'][$index], 2, ',', '.') ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

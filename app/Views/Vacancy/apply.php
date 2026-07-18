@@ -8,8 +8,9 @@ $vehicleTypes = [
         'app' => ['icon' => 'smartphone', 'title' => 'App', 'color' => 'text-emerald-400', 'bg' => 'bg-emerald-400/10'],
 ];
 
-$type = $_GET['type'] ?? 'carro';
+$type = $selectedType ?? $_GET['type'] ?? 'carro';
 $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
+$formData = is_array($formData ?? null) ? $formData : [];
 ?>
 
 <section class="min-h-screen w-full bg-[#0b0e14] flex items-center justify-center p-4 md:p-10 relative overflow-hidden">
@@ -45,13 +46,6 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                 <div class="h-1 w-20 bg-blue-600 mt-2 mx-auto md:ml-0 rounded-full"></div>
             </header>
 
-            <?php if (!empty($errorMessage)): ?>
-                <div class="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 px-5 py-4 rounded-2xl mb-8 text-sm font-bold animate-pulse">
-                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-                    <?= htmlspecialchars($errorMessage) ?>
-                </div>
-            <?php endif; ?>
-
             <form action="/vacancy/apply" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <input type="hidden" name="type" value="<?= htmlspecialchars($type) ?>" />
                 <input type="hidden" name="id_vaga" value="<?= htmlspecialchars($id_vaga) ?>">
@@ -61,6 +55,7 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                     <div class="relative group">
                         <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
                         <input type="text" name="owner_name" required
+                               value="<?= htmlspecialchars((string) ($formData['ownerName'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                placeholder="Digite o nome completo">
                     </div>
@@ -71,6 +66,7 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                     <div class="relative group">
                         <i data-lucide="phone" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
                         <input type="tel" name="phone" required
+                               value="<?= htmlspecialchars((string) ($formData['phone'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                placeholder="(00) 00000-0000">
                     </div>
@@ -81,22 +77,13 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                     <div class="relative group">
                         <i data-lucide="hash" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
                         <input type="text" name="plate" required maxlength="8"
+                               value="<?= htmlspecialchars((string) ($formData['plate'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm uppercase font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                placeholder="BRA-2E19">
                     </div>
                 </div>
 
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Pagamento Antecipado (R$)</label>
-                    <div class="relative group">
-                        <i data-lucide="dollar-sign" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-500 transition-colors w-5 h-5"></i>
-                        <input type="number" name="paid_amount" required step="0.01"
-                               class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
-                               placeholder="0,00">
-                    </div>
-                </div>
-
-                <div class="space-y-2">
+                <div class="md:col-span-2 space-y-2">
                     <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Hora de Início</label>
                     <div class="relative group">
                         <i data-lucide="clock" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors w-5 h-5"></i>
@@ -106,23 +93,9 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                                name="entry_time"
                                id="entry_time"
                                required
-                               value="<?php echo date('H:i'); ?>"
+                               value="<?= htmlspecialchars((string) ($formData['entryTime'] ?? date('H:i')), ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                         />
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Forma de Pagamento</label>
-                    <div class="relative group">
-                        <i data-lucide="wallet-cards" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
-                        <select name="payment_method" required
-                                class="w-full pl-12 pr-4 py-4 rounded-2xl bg-[#111722] border border-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
-                            <option value="">Selecione</option>
-                            <option value="PIX">Pix</option>
-                            <option value="CARD">Cartão</option>
-                            <option value="CASH">Dinheiro</option>
-                        </select>
                     </div>
                 </div>
 
@@ -155,14 +128,9 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
                     <span class="text-slate-500 font-bold uppercase text-[10px]">Entrada:</span>
                     <span id="reviewTime" class="text-white font-mono italic"></span>
                 </div>
-                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Valor:</span>
-                    <span id="reviewPrice" class="text-emerald-400 font-black"></span>
-                </div>
-                <div class="flex justify-between text-sm border-t border-white/5 pt-4">
-                    <span class="text-slate-500 font-bold uppercase text-[10px]">Pagamento:</span>
-                    <span id="reviewPaymentMethod" class="text-white font-black"></span>
-                </div>
+                <p class="border-t border-white/5 pt-4 text-xs text-slate-400">
+                    O valor será calculado automaticamente no checkout conforme o tempo de permanência.
+                </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -176,37 +144,18 @@ $vehicle = $vehicleTypes[$type] ?? $vehicleTypes['carro'];
         </div>
     </div>
 
-    <script>
-        function openConfirmationModal() {
-            // Pegar os valores dos inputs
-            const plate = document.getElementsByName('plate')[0].value;
-            const time = document.getElementsByName('entry_time')[0].value;
-            const price = document.getElementsByName('paid_amount')[0].value;
-            const payment = document.getElementsByName('payment_method')[0];
-
-            // Validar se não estão vazios antes de abrir
-            if(!plate || !time || !price || !payment.value) {
-                alert("Por favor, preencha todos os campos obrigatórios.");
-                return;
-            }
-
-            // Injetar no Modal
-            document.getElementById('reviewPlate').innerText = plate;
-            document.getElementById('reviewTime').innerText = time;
-            document.getElementById('reviewPrice').innerText = 'R$ ' + parseFloat(price).toLocaleString('pt-br', {minimumFractionDigits: 2});
-            document.getElementById('reviewPaymentMethod').innerText = payment.options[payment.selectedIndex].text;
-
-            // Mostrar modal
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmationModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-        }
-
-        function submitRealForm() {
-            // Pegar o formulário real pelo ID ou Nome e enviar
-            document.querySelector('form').submit();
-        }
-    </script>
 </section>
+
+<?php if (!empty($alert) && is_array($alert)): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Swal.fire({
+                icon: <?= json_encode($alert['icon'] ?? 'info', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                title: <?= json_encode($alert['title'] ?? 'Atenção', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                text: <?= json_encode($alert['message'] ?? '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                confirmButtonText: 'Entendi',
+                confirmButtonColor: '#2563eb'
+            });
+        });
+    </script>
+<?php endif; ?>

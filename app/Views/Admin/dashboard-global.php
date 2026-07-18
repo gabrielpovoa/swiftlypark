@@ -9,6 +9,9 @@ $cards = [
     ['label' => 'Sessões ativas', 'value' => $formatNumber($kpis['active_sessions'] ?? 0), 'icon' => 'activity', 'tone' => 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'],
     ['label' => 'Check-ins totais', 'value' => $formatNumber($kpis['completed_checkins'] ?? 0), 'icon' => 'badge-check', 'tone' => 'text-amber-300 bg-amber-500/10 border-amber-500/20'],
     ['label' => 'Faturamento total', 'value' => $formatCurrency($kpis['total_revenue'] ?? 0), 'icon' => 'banknote', 'tone' => 'text-lime-300 bg-lime-500/10 border-lime-500/20'],
+    ['label' => 'Mensalistas ativos', 'value' => $formatNumber($kpis['active_monthly_contracts'] ?? 0), 'icon' => 'calendar-check-2', 'tone' => 'text-amber-300 bg-amber-500/10 border-amber-500/20'],
+    ['label' => 'Receita recorrente mensal', 'value' => $formatCurrency($kpis['monthly_recurring_revenue'] ?? 0), 'icon' => 'repeat-2', 'tone' => 'text-orange-300 bg-orange-500/10 border-orange-500/20'],
+    ['label' => 'Mensalidades recebidas no mês', 'value' => $formatCurrency($kpis['monthly_revenue_received'] ?? 0), 'icon' => 'wallet-cards', 'tone' => 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'],
     ['label' => 'Investigações ativas', 'value' => $formatNumber($kpis['active_investigations'] ?? 0), 'icon' => 'shield-alert', 'tone' => 'text-rose-300 bg-rose-500/10 border-rose-500/20'],
     ['label' => 'Crescimento mensal', 'value' => '+' . $formatNumber($kpis['monthly_growth'] ?? 0), 'icon' => 'trending-up', 'tone' => 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20'],
 ];

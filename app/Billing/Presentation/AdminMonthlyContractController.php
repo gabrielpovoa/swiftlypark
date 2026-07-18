@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Controllers;
+namespace App\Billing\Presentation;
 
 use App\Context\IdentityContext;
 use App\Exceptions\ForbiddenException;
-use App\Finance\Repositories\MonthlyContractRepository;
+use App\Billing\Infrastructure\MonthlyContractRepository;
 use App\Repositories\AuditLogRepository;
 use App\Security\InputSanitizer;
 use Config\Database;
@@ -333,3 +333,4 @@ final class AdminMonthlyContractController extends Controller
         exit;
     }
 }
+

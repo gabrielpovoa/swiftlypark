@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Finance\Repositories;
+namespace App\Billing\Infrastructure;
 
 use PDO;
 
@@ -62,3 +62,4 @@ final class MonthlyContractRepository
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Finance\Repositories\PricingRepository;
-use App\Finance\Services\PriceCalculator;
+use App\Billing\Infrastructure\PricingRepository;
+use App\Billing\Application\PriceCalculator;
 
 $connection = new PDO('sqlite::memory:');
 $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

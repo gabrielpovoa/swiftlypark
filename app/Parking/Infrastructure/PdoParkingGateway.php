@@ -8,9 +8,9 @@
     use App\Parking\Domain\VehicleType;
     use App\Context\TenantContext;
     use App\Exceptions\TenantNotSetException;
-    use App\Finance\Repositories\PricingRepository;
-    use App\Finance\Repositories\MonthlyContractRepository;
-    use App\Finance\Services\PriceCalculator;
+    use App\Billing\Infrastructure\PricingRepository;
+    use App\Billing\Infrastructure\MonthlyContractRepository;
+    use App\Billing\Application\PriceCalculator;
     use App\Repositories\AuditLogRepository;
     use App\Repositories\Decorators\TransactionalAuditDecorator;
     use App\Services\AuditService;
@@ -521,4 +521,3 @@
         }
 
     }
-

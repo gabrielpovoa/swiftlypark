@@ -7,7 +7,7 @@ $routes = file_get_contents($root . '/routes/web.php');
 $legacyPath = $root . '/app/Controllers/AdminProvisioningController.php';
 $users = file_get_contents($root . '/app/Identity/Presentation/AdminUserProvisioningController.php');
 $companies = file_get_contents($root . '/app/Controllers/AdminCompanyController.php');
-$monthly = file_get_contents($root . '/app/Controllers/AdminMonthlyContractController.php');
+$monthly = file_get_contents($root . '/app/Billing/Presentation/AdminMonthlyContractController.php');
 
 if ($routes === false || $users === false || $companies === false || $monthly === false) {
     throw new RuntimeException('Não foi possível carregar os arquivos administrativos.');

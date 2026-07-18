@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Finance\Repositories;
+namespace App\Billing\Infrastructure;
 
 use PDO;
 
@@ -42,3 +42,4 @@ final class PricingRepository
         return $value !== false && (int) $value === 1;
     }
 }
+

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Context\IdentityContext;
+use App\Companies\Application\RegisterCompany;
+use App\Companies\Infrastructure\PdoCompanyRepository;
 use App\Exceptions\ForbiddenException;
-use App\Identity\Services\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuditService;
 use Config\Database;
@@ -25,13 +26,11 @@ final class AdminCompanyController extends Controller
             $payload = $this->payload();
             $connection = (new Database())->connect();
             $identity = IdentityContext::current();
-            $service = new UserProvisioningService(
+            $service = new RegisterCompany(
                 $connection,
+                new PdoCompanyRepository($connection),
                 $identity,
-                new AuditService(
-                    new AuditLogRepository($connection),
-                    $identity
-                )
+                new AuditService(new AuditLogRepository($connection), $identity)
             );
 
             $name = (string) ($payload['name'] ?? '');
@@ -43,7 +42,7 @@ final class AdminCompanyController extends Controller
 
             $logoPath = $this->storeCompanyLogo($_FILES['logo'] ?? null);
 
-            $companyId = $service->createCompany(
+            $companyId = $service->execute(
                 $name,
                 $slug,
                 $logoPath
@@ -60,12 +59,13 @@ final class AdminCompanyController extends Controller
 
         $connection = (new Database())->connect();
         $filters = $this->companyFilters();
+        $companies = new PdoCompanyRepository($connection);
 
         $this->setView('Admin/companies', [
             'title' => 'Empresas - Governança SaaS',
-            'companies' => $this->companyDirectory($connection, $filters),
+            'companies' => $companies->directory($filters),
             'companyFilters' => $filters,
-            'companiesCount' => $this->companiesCount($connection),
+            'companiesCount' => $companies->countAll(),
             'activeUsersCount' => $this->activeUsersCount($connection),
             'passwordResetUsersCount' => $this->passwordResetUsersCount($connection),
             'csrfToken' => $this->csrfToken(),
@@ -195,59 +195,7 @@ final class AdminCompanyController extends Controller
         }, 'Empresa inativada e acessos do tenant revogados.');
     }
 
-    private function companyDirectory(\PDO $connection, array $filters): array
-    {
-        $where = [];
-        $parameters = [];
 
-        if ($filters['query'] !== '') {
-            $where[] = '(c.name LIKE :company_name_query OR c.slug LIKE :company_slug_query)';
-            $parameters['company_name_query'] = '%' . $filters['query'] . '%';
-            $parameters['company_slug_query'] = '%' . $filters['query'] . '%';
-        }
-
-        if ($filters['status'] === 'active') {
-            $where[] = 'c.deleted_at IS NULL';
-        } elseif ($filters['status'] === 'inactive') {
-            $where[] = 'c.deleted_at IS NOT NULL';
-        }
-
-        $whereSql = $where === [] ? '' : 'WHERE ' . implode(' AND ', $where);
-        $limit = $filters['is_filtered'] ? 50 : 12;
-        $statement = $connection->prepare(
-            'SELECT
-                c.id,
-                c.name,
-                c.slug,
-                c.logo_path,
-                c.deleted_at,
-                COUNT(DISTINCT cu.user_id) AS users_count,
-                SUM(CASE WHEN u.deleted_at IS NULL THEN 1 ELSE 0 END) AS active_users_count,
-                SUM(CASE WHEN u.deleted_at IS NULL AND u.password_reset_required = 1 THEN 1 ELSE 0 END) AS password_reset_users_count,
-                GROUP_CONCAT(DISTINCT r.slug ORDER BY r.slug SEPARATOR \', \') AS role_slugs
-             FROM companies c
-             LEFT JOIN company_user cu ON cu.company_id = c.id
-             LEFT JOIN usuario u ON u.id_usuario = cu.user_id
-             LEFT JOIN roles r ON r.id = cu.role_id
-             ' . $whereSql . '
-             GROUP BY c.id, c.name, c.slug, c.logo_path, c.deleted_at
-             ORDER BY c.name ASC, c.id ASC
-             LIMIT ' . $limit
-        );
-        foreach ($parameters as $key => $value) {
-            $statement->bindValue(':' . $key, $value, \PDO::PARAM_STR);
-        }
-        $statement->execute();
-
-        return $statement->fetchAll(\PDO::FETCH_ASSOC);
-    }
-
-    private function companiesCount(\PDO $connection): int
-    {
-        return (int) $connection
-            ->query('SELECT COUNT(*) FROM companies')
-            ->fetchColumn();
-    }
 
     private function activeUsersCount(\PDO $connection): int
     {
@@ -602,4 +550,3 @@ final class AdminCompanyController extends Controller
         return 'companies/' . $fileName;
     }
 }
-

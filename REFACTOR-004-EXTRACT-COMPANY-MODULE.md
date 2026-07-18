@@ -42,11 +42,25 @@ app/Companies/
 - Nenhuma regra de tarifário ou contrato mensalista será antecipadamente movida
   para Companies.
 
+## Implementado até agora
+
+- Criada a entidade `Companies\Domain\Company`, responsável por normalizar e
+  validar nome e slug.
+- Criado o contrato `CompanyRepository` e a implementação
+  `PdoCompanyRepository`.
+- Criado o caso de uso `RegisterCompany`, mantendo criação, vínculo do ator e
+  auditoria na mesma transação.
+- A criação de empresa foi removida de `Identity\UserProvisioningService`.
+- O diretório administrativo e a contagem de empresas deixaram de executar SQL
+  no controller e agora usam o repository de Companies.
+- Removido o modelo genérico e sem consumidores `app/Models/Company.php`.
+- O teste de governança foi adaptado para o novo caso de uso e foi criado
+  `tests/CompanyDomainTest.php`.
+
 ## Próximo passo exato
 
-1. Mapear a entidade `Company` e seus consumidores.
-2. Criar repository de Companies com operações cadastrais atualmente em SQL
-   direto no controller.
-3. Criar casos de uso de aplicação para consultar, editar e inativar empresa.
-4. Adaptar controllers sem alterar as rotas.
-5. Adicionar testes do limite modular e atualizar este handoff.
+1. Mover edição e inativação para casos de uso em Companies.
+2. Remover do controller os helpers SQL remanescentes de cadastro.
+3. Criar teste de fronteira modular para impedir dependência Companies ->
+   Identity.
+4. Executar a suíte completa e finalizar a feature via Git Flow.

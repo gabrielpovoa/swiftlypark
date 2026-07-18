@@ -138,79 +138,6 @@ final class UserProvisioningService
         return $userId;
     }
 
-    public function createCompany(string $name, string $slug, ?string $logoPath = null): int
-    {
-        $name = trim($name);
-        $slug = strtolower(trim($slug));
-
-        if ($name === '' || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
-            throw new DomainException('Nome e slug válido são obrigatórios.');
-        }
-
-        $existing = $this->connection->prepare(
-            'SELECT 1 FROM companies WHERE slug = :slug LIMIT 1'
-        );
-        $existing->execute(['slug' => $slug]);
-
-        if ($existing->fetchColumn() !== false) {
-            throw new DomainException('Já existe uma empresa com esse slug.');
-        }
-
-        $this->connection->beginTransaction();
-
-        try {
-            $statement = $this->connection->prepare(
-                'INSERT INTO companies (name, slug, logo_path, created_at, updated_at)
-                 VALUES (:name, :slug, :logo_path, NOW(), NOW())'
-            );
-            $statement->execute([
-                'name' => $name,
-                'slug' => $slug,
-                'logo_path' => $logoPath,
-            ]);
-            $companyId = (int) $this->connection->lastInsertId();
-            $actorRole = $this->actorCompanyRole();
-
-            if ($this->actor !== null && $actorRole !== null) {
-                $membership = $this->connection->prepare(
-                    'INSERT INTO company_user (company_id, user_id, role_id, created_at)
-                     VALUES (:company_id, :user_id, :role_id, NOW())'
-                );
-                $membership->execute([
-                    'company_id' => $companyId,
-                    'user_id' => $this->actor->userId(),
-                    'role_id' => $actorRole['id'],
-                ]);
-            }
-
-            $this->connection->commit();
-        } catch (\Throwable $throwable) {
-            if ($this->connection->inTransaction()) {
-                $this->connection->rollBack();
-            }
-
-            throw $throwable;
-        }
-
-        $this->audit?->log('CREATE', [
-            'entity' => 'companies',
-            'entity_id' => $companyId,
-            'new_values' => [
-                'message' => sprintf(
-                    'Master %s criou empresa %s.',
-                    $this->actor?->email() ?? 'CLI',
-                    $name
-                ),
-                'company_id' => $companyId,
-                'company_name' => $name,
-                'slug' => $slug,
-                'logo_path' => $logoPath,
-                'actor_linked_to_company' => $actorRole !== null,
-            ],
-        ]);
-
-        return $companyId;
-    }
 
     public function linkExistingUserToCompany(
         int $userId,
@@ -496,21 +423,6 @@ final class UserProvisioningService
         return $role;
     }
 
-    private function actorCompanyRole(): ?array
-    {
-        if ($this->actor === null) {
-            return null;
-        }
-
-        $roleSlugs = $this->actor->roleSlugs();
-        foreach (['super-admin', 'master', 'admin'] as $candidate) {
-            if (in_array($candidate, $roleSlugs, true)) {
-                return $this->roleBySlug($candidate);
-            }
-        }
-
-        return null;
-    }
 
     private function roleBySlug(string $slug): array
     {

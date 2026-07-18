@@ -14,6 +14,7 @@ use App\Controllers\AuditController;
 use App\Controllers\IdentityManagementController;
 use App\Controllers\FinanceController;
 use App\Controllers\AdminProvisioningController;
+use App\Controllers\AdminMonthlyContractController;
 use App\Controllers\ApiTenantController;
 use App\Controllers\DashboardGlobalController;
 use App\Exceptions\UnauthorizedException;
@@ -359,13 +360,13 @@ $router->post('admin/companies/company_id={company_id}', authRequired(function (
     (new AdminProvisioningController())->updateCompanyPricing($companyId);
 }));
 $router->post('admin/companies/company_id={company_id}/contracts/create', authRequired(function (int $companyId) {
-    (new AdminProvisioningController())->createMonthlyContract($companyId);
+    (new AdminMonthlyContractController())->create($companyId);
 }));
 $router->post('admin/companies/company_id={company_id}/contracts/renew', authRequired(function (int $companyId) {
-    (new AdminProvisioningController())->renewMonthlyContract($companyId);
+    (new AdminMonthlyContractController())->renew($companyId);
 }));
 $router->post('admin/companies/company_id={company_id}/contracts/cancel', authRequired(function (int $companyId) {
-    (new AdminProvisioningController())->cancelMonthlyContract($companyId);
+    (new AdminMonthlyContractController())->cancel($companyId);
 }));
 $router->post('admin/companies/deactivate', authRequired(function () {
     (new AdminProvisioningController())->deactivateCompany();

@@ -15,4 +15,18 @@ interface CompanyRepository
     public function directory(array $filters): array;
 
     public function countAll(): int;
+
+    public function findForUpdate(int $companyId): ?array;
+
+    public function update(int $companyId, string $name, string $slug, ?string $logoPath): void;
+
+    public function linkedUserIds(int $companyId): array;
+
+    public function isUsersLastActiveCompany(int $userId, int $companyId): bool;
+
+    public function deactivate(int $companyId): void;
+
+    public function deleteMemberships(int $companyId): void;
+
+    public function revokeUsersWithoutActiveCompanies(array $userIds, int $exceptUserId): array;
 }

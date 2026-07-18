@@ -37,7 +37,7 @@ trabalho sem depender do histórico da conversa.
 | 001 | `feature/modular-architecture-foundation` | Convenções, mapa e handoff da arquitetura | Concluída |
 | 002 | `feature/centralize-database-migrations` | DDL removido do ciclo normal de bootstrap | Concluída |
 | 003 | `feature/split-admin-provisioning-controller` | Casos administrativos separados por responsabilidade | Concluída |
-| 004 | `feature/extract-company-module` | Contexto Companies modularizado | Pendente |
+| 004 | `feature/extract-company-module` | Contexto Companies modularizado | Concluída |
 | 005 | `feature/extract-identity-module` | Contexto Identity modularizado | Pendente |
 | 006 | `feature/extract-parking-module` | Check-in, ocupação e checkout modularizados | Pendente |
 | 007 | `feature/extract-billing-module` | Tarifários e contratos no contexto Billing | Pendente |

@@ -4,7 +4,7 @@
 
 - Branch: `feature/extract-company-module`
 - Base: `develop` após a conclusão da feature 003
-- Estado: em andamento
+- Estado: concluída
 - Feature anterior: `REFACTOR-003-SPLIT-ADMIN-PROVISIONING-CONTROLLER.md`
 
 ## Objetivo
@@ -56,11 +56,14 @@ app/Companies/
 - Removido o modelo genérico e sem consumidores `app/Models/Company.php`.
 - O teste de governança foi adaptado para o novo caso de uso e foi criado
   `tests/CompanyDomainTest.php`.
+- Criado `ManageCompany` para edição e inativação, incluindo lock, validação de
+  slug, remoção de vínculos, revogação de usuários órfãos e auditoria atômica.
+- Removidas 232 linhas de SQL e orquestração cadastral do controller.
+- Criado `CompanyModuleBoundaryTest`, impedindo dependência direta de Identity
+  e SQL cadastral no controller.
 
 ## Próximo passo exato
 
-1. Mover edição e inativação para casos de uso em Companies.
-2. Remover do controller os helpers SQL remanescentes de cadastro.
-3. Criar teste de fronteira modular para impedir dependência Companies ->
-   Identity.
-4. Executar a suíte completa e finalizar a feature via Git Flow.
+1. Executar a suíte completa.
+2. Marcar a feature 004 como concluída no roadmap.
+3. Finalizar a branch via Git Flow e iniciar a feature 005.

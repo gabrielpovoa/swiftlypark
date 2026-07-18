@@ -43,7 +43,13 @@ try {
     }
 }
 
-$tenantContext->setCompany(new \App\Models\Company(7, 'Tenant Seven', 'tenant-seven'));
+$tenantContext->setCompany(\App\Companies\Domain\Company::reconstitute(
+    7,
+    'Tenant Seven',
+    'tenant-seven',
+    null,
+    true
+));
 $result = (new TestRepository($tenantContext, new PDO('sqlite::memory:')))->runOrderedQuery();
 
 if ($result['query'] !== 'SELECT id FROM audit_logs al WHERE al.company_id = :company_id ORDER BY al.created_at DESC LIMIT 10') {

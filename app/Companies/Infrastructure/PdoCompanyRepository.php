@@ -82,4 +82,81 @@ final class PdoCompanyRepository implements CompanyRepository
     {
         return (int) $this->connection->query('SELECT COUNT(*) FROM companies')->fetchColumn();
     }
+
+    public function findForUpdate(int $companyId): ?array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT id, name, slug, logo_path, deleted_at FROM companies WHERE id = :company_id FOR UPDATE'
+        );
+        $statement->execute(['company_id' => $companyId]);
+        $company = $statement->fetch(PDO::FETCH_ASSOC);
+        return $company === false ? null : $company;
+    }
+
+    public function update(int $companyId, string $name, string $slug, ?string $logoPath): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE companies SET name = :name, slug = :slug,
+             logo_path = COALESCE(:logo_path, logo_path), updated_at = NOW(6) WHERE id = :company_id'
+        );
+        $statement->execute(['name' => $name, 'slug' => $slug, 'logo_path' => $logoPath, 'company_id' => $companyId]);
+    }
+
+    public function linkedUserIds(int $companyId): array
+    {
+        $statement = $this->connection->prepare('SELECT user_id FROM company_user WHERE company_id = :company_id');
+        $statement->execute(['company_id' => $companyId]);
+        return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function isUsersLastActiveCompany(int $userId, int $companyId): bool
+    {
+        $statement = $this->connection->prepare(
+            'SELECT COUNT(*) FROM company_user cu INNER JOIN companies c
+             ON c.id = cu.company_id AND c.deleted_at IS NULL WHERE cu.user_id = :user_id'
+        );
+        $statement->execute(['user_id' => $userId]);
+        $count = (int) $statement->fetchColumn();
+        $statement = $this->connection->prepare(
+            'SELECT 1 FROM company_user WHERE user_id = :user_id AND company_id = :company_id LIMIT 1'
+        );
+        $statement->execute(['user_id' => $userId, 'company_id' => $companyId]);
+        return $count <= 1 && $statement->fetchColumn() !== false;
+    }
+
+    public function deactivate(int $companyId): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE companies SET deleted_at = UTC_TIMESTAMP(6), updated_at = NOW(6)
+             WHERE id = :company_id AND deleted_at IS NULL'
+        );
+        $statement->execute(['company_id' => $companyId]);
+    }
+
+    public function deleteMemberships(int $companyId): void
+    {
+        $statement = $this->connection->prepare('DELETE FROM company_user WHERE company_id = :company_id');
+        $statement->execute(['company_id' => $companyId]);
+    }
+
+    public function revokeUsersWithoutActiveCompanies(array $userIds, int $exceptUserId): array
+    {
+        $revoked = [];
+        $check = $this->connection->prepare(
+            'SELECT COUNT(*) FROM company_user cu INNER JOIN companies c
+             ON c.id = cu.company_id AND c.deleted_at IS NULL WHERE cu.user_id = :user_id'
+        );
+        $revoke = $this->connection->prepare(
+            'UPDATE usuario SET deleted_at = UTC_TIMESTAMP(6)
+             WHERE id_usuario = :user_id AND deleted_at IS NULL'
+        );
+        foreach (array_values(array_unique(array_map('intval', $userIds))) as $userId) {
+            if ($userId === $exceptUserId) { continue; }
+            $check->execute(['user_id' => $userId]);
+            if ((int) $check->fetchColumn() > 0) { continue; }
+            $revoke->execute(['user_id' => $userId]);
+            if ($revoke->rowCount() > 0) { $revoked[] = $userId; }
+        }
+        return $revoked;
+    }
 }

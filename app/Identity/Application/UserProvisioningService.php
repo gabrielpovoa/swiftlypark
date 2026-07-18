@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Identity\Services;
+namespace App\Identity\Application;
 
 use App\Context\RequestIdentity;
 use App\Contracts\PasswordRecoveryMailerInterface;
-use App\Identity\Events\UserCreatedEvent;
+use App\Identity\Domain\Events\UserCreatedEvent;
 use App\Services\AuditService;
 use App\Services\NotificationService;
 use App\Services\PasswordGeneratorService;
@@ -461,3 +461,4 @@ final class UserProvisioningService
         }
     }
 }
+

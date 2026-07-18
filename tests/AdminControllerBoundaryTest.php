@@ -5,7 +5,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $routes = file_get_contents($root . '/routes/web.php');
 $legacyPath = $root . '/app/Controllers/AdminProvisioningController.php';
-$users = file_get_contents($root . '/app/Controllers/AdminUserProvisioningController.php');
+$users = file_get_contents($root . '/app/Identity/Presentation/AdminUserProvisioningController.php');
 $companies = file_get_contents($root . '/app/Controllers/AdminCompanyController.php');
 $monthly = file_get_contents($root . '/app/Controllers/AdminMonthlyContractController.php');
 

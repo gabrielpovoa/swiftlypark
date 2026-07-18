@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Controllers;
+namespace App\Identity\Presentation;
 
 use App\Context\IdentityContext;
-use App\Identity\Repositories\IdentityManagementRepository;
-use App\Identity\Services\IdentityManagementService;
+use App\Identity\Infrastructure\IdentityManagementRepository;
+use App\Identity\Application\IdentityManagementService;
 use App\Repositories\AuditLogRepository;
 use App\Transactions\TransactionManager;
 use Config\Database;
@@ -170,3 +170,4 @@ final class IdentityManagementController extends Controller
         exit;
     }
 }
+

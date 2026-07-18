@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Identity\Repositories;
+namespace App\Identity\Infrastructure;
 
 use PDO;
 
@@ -25,3 +25,4 @@ final class UserAccessRepository
         return $statement->fetchColumn() !== false;
     }
 }
+

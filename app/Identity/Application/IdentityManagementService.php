@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Identity\Services;
+namespace App\Identity\Application;
 
 use App\Context\RequestIdentity;
 use App\Contracts\PasswordRecoveryMailerInterface;
 use App\Context\TenantContext;
 use App\Exceptions\ForbiddenException;
-use App\Identity\Events\UserReactivatedEvent;
-use App\Identity\Repositories\IdentityManagementRepository;
+use App\Identity\Domain\Events\UserReactivatedEvent;
+use App\Identity\Infrastructure\IdentityManagementRepository;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuthorizationService;
 use App\Services\PasswordGeneratorService;
@@ -201,3 +201,4 @@ final class IdentityManagementService
         // Hook central para plugar um EventBus sem espalhar acoplamento pela camada de domínio.
     }
 }
+

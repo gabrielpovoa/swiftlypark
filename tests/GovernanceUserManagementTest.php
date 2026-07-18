@@ -8,7 +8,7 @@ use App\Context\RequestIdentity;
 use App\Contracts\PasswordRecoveryMailerInterface;
 use App\Companies\Application\RegisterCompany;
 use App\Companies\Infrastructure\PdoCompanyRepository;
-use App\Identity\Services\UserProvisioningService;
+use App\Identity\Application\UserProvisioningService;
 use App\Services\PasswordGeneratorService;
 
 final class CapturingMailer implements PasswordRecoveryMailerInterface

@@ -10,7 +10,7 @@ use App\Context\IdentityContext;
 use App\Context\RequestIdentity;
 use App\Exceptions\UnauthorizedException;
 use App\Exceptions\AccessRevokedException;
-use App\Identity\Repositories\UserAccessRepository;
+use App\Identity\Infrastructure\UserAccessRepository;
 use App\Repositories\TenantRepository;
 use Config\Database;
 use DateTimeImmutable;

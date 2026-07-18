@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/env.php';
 
 loadEnv(__DIR__ . '/../.env');
 
-use App\Identity\Services\UserProvisioningService;
+use App\Identity\Application\UserProvisioningService;
 use App\Infrastructure\Database\MigrationRunner;
 use Config\Database;
 

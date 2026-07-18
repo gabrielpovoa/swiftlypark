@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Controllers;
+namespace App\Identity\Presentation;
 
 use App\Context\IdentityContext;
-use App\Identity\Services\UserProvisioningService;
+use App\Identity\Application\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
 use App\Exceptions\ForbiddenException;
 use App\Services\AuditService;

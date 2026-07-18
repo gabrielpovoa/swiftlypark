@@ -7,6 +7,12 @@ namespace App\Finance\Application;
 use App\Context\RequestIdentity;
 use App\Finance\Domain\FinancialAdjustmentRepository;
 use App\Finance\Domain\AdjustmentType;
+use App\Finance\Domain\FinancialLedgerRepository;
+use App\Finance\Domain\LedgerEntry;
+use App\Shared\Domain\ValueObject\Money;
+use App\Context\TenantContext;
+use DateTimeImmutable;
+use DateTimeZone;
 use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;
 use DomainException;
@@ -18,7 +24,8 @@ final class FinancialAdjustmentService
         private FinancialAdjustmentRepository $adjustments,
         private FinancialAuditService $audit,
         private TransactionManager $transactions,
-        private RequestIdentity $identity
+        private RequestIdentity $identity,
+        private FinancialLedgerRepository $ledger
     ) {
     }
 
@@ -65,6 +72,19 @@ final class FinancialAdjustmentService
                 $reason,
                 $this->identity->userId()
             );
+            $companyId = TenantContext::instance()->getCompanyId();
+            if ($companyId === null) {
+                throw new DomainException('Empresa não definida para o lançamento financeiro.');
+            }
+            $this->ledger->append(LedgerEntry::debit(
+                $companyId,
+                'ADJUSTMENT',
+                $id,
+                Money::fromDecimal(number_format($amount, 2, '.', '')),
+                new DateTimeImmutable('now', new DateTimeZone('UTC')),
+                $reason,
+                $this->identity->userId()
+            ));
             $this->audit->recordAdjustment(
                 $id,
                 $transactionId,

@@ -8,6 +8,7 @@ use App\Context\IdentityContext;
 use App\Context\TenantContext;
 use App\Finance\Infrastructure\FinancialAdjustmentRepository;
 use App\Finance\Infrastructure\FinancialReportRepository;
+use App\Finance\Infrastructure\PdoFinancialLedgerRepository;
 use App\Finance\Application\FinancialAdjustmentService;
 use App\Finance\Application\FinancialAuditService;
 use App\Finance\Application\FinancialReportService;
@@ -80,7 +81,8 @@ final class FinanceController extends Controller
                     IdentityContext::current()
                 ),
                 new TransactionManager($connection),
-                IdentityContext::current()
+                IdentityContext::current(),
+                new PdoFinancialLedgerRepository($connection)
             ))->refund(
                 (int) ($_POST['transaction_id'] ?? 0),
                 (float) ($_POST['amount'] ?? 0),
@@ -235,4 +237,3 @@ final class FinanceController extends Controller
         };
     }
 }
-

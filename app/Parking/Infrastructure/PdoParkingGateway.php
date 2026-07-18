@@ -18,6 +18,11 @@
     use App\Services\AuthorizationService;
     use App\Transactions\TransactionManager;
     use App\Shared\Domain\ValueObject\VehiclePlate;
+    use App\Shared\Domain\ValueObject\Money;
+    use App\Finance\Domain\LedgerEntry;
+    use App\Finance\Infrastructure\PdoFinancialLedgerRepository;
+    use DateTimeImmutable;
+    use DateTimeZone;
     use Config\Database;
     use DateTime;
     use Exception;
@@ -246,6 +251,15 @@
             ]);
 
             $id = (int) $this->db->lastInsertId();
+            (new PdoFinancialLedgerRepository($this->db))->append(LedgerEntry::credit(
+                $this->companyId(),
+                'ROTATING_PAYMENT',
+                $id,
+                Money::fromDecimal(number_format($valorPago, 2, '.', '')),
+                new DateTimeImmutable('now', new DateTimeZone('UTC')),
+                'Pagamento de checkout rotativo',
+                $userId
+            ));
             $this->audit->created(
                 'transacoes',
                 $id,

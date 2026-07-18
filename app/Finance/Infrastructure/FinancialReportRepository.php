@@ -13,89 +13,36 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository i
     public function summary(string $startUtc, string $endUtc): array
     {
         $companyId = $this->assertTenantContext();
-        $adjustmentsExpression = '0';
-        $parameters = [
-            'start_at' => $startUtc,
-            'end_at' => $endUtc,
-        ];
-
-        if ($this->hasTenantAwareAdjustments()) {
-            $adjustmentsExpression = '(
-                    SELECT SUM(fa.amount)
-                    FROM financial_adjustments fa
-                    WHERE fa.created_at >= :adjustment_start
-                      AND fa.created_at < :adjustment_end
-                      AND fa.company_id = :adjustment_company_id
-                )';
-            $parameters['adjustment_start'] = $startUtc;
-            $parameters['adjustment_end'] = $endUtc;
-            $parameters['adjustment_company_id'] = $this->assertTenantContext();
-        }
-
-        $parameters['company_id'] = $companyId;
-        $parameters['monthly_company_id'] = $companyId;
-        $parameters['monthly_start_at'] = $startUtc;
-        $parameters['monthly_end_at'] = $endUtc;
-        $query = 'SELECT
-                COALESCE(SUM(revenue.amount), 0) AS gross_revenue,
-                COALESCE(SUM(CASE WHEN revenue.origin = "ROTATING" THEN revenue.amount ELSE 0 END), 0) AS rotating_revenue,
-                COALESCE(SUM(CASE WHEN revenue.origin = "MONTHLY" THEN revenue.amount ELSE 0 END), 0) AS monthly_revenue,
-                COALESCE(AVG(revenue.amount), 0) AS average_ticket,
-                SUM(CASE WHEN revenue.origin = "ROTATING" THEN 1 ELSE 0 END) AS rotating_transaction_count,
-                SUM(CASE WHEN revenue.origin = "MONTHLY" THEN 1 ELSE 0 END) AS monthly_payment_count,
-                COUNT(*) AS transaction_count,
-                COALESCE(' . $adjustmentsExpression . ', 0) AS adjustments
-             FROM (
-                SELECT t.valor AS amount, "ROTATING" AS origin
-                FROM transacoes t
-                WHERE t.payment_date >= :start_at
-                  AND t.payment_date < :end_at
-                  AND t.company_id = :company_id
-                UNION ALL
-                SELECT mp.amount, "MONTHLY" AS origin
-                FROM monthly_contract_payments mp
-                WHERE mp.payment_date >= :monthly_start_at
-                  AND mp.payment_date < :monthly_end_at
-                  AND mp.company_id = :monthly_company_id
-             ) revenue';
-
-        $statement = $this->prepareTenantStatement($query, $parameters);
-        $statement->execute($parameters);
-
+        $statement = $this->connection->prepare(
+            'SELECT
+             COALESCE(SUM(CASE WHEN entry_type = "CREDIT" THEN amount ELSE 0 END), 0) gross_revenue,
+             COALESCE(SUM(CASE WHEN source_type = "ROTATING_PAYMENT" THEN amount ELSE 0 END), 0) rotating_revenue,
+             COALESCE(SUM(CASE WHEN source_type = "MONTHLY_PAYMENT" THEN amount ELSE 0 END), 0) monthly_revenue,
+             COALESCE(AVG(CASE WHEN entry_type = "CREDIT" THEN amount END), 0) average_ticket,
+             SUM(CASE WHEN source_type = "ROTATING_PAYMENT" THEN 1 ELSE 0 END) rotating_transaction_count,
+             SUM(CASE WHEN source_type = "MONTHLY_PAYMENT" THEN 1 ELSE 0 END) monthly_payment_count,
+             SUM(CASE WHEN entry_type = "CREDIT" THEN 1 ELSE 0 END) transaction_count,
+             COALESCE(SUM(CASE WHEN entry_type = "DEBIT" THEN amount ELSE 0 END), 0) adjustments
+             FROM financial_ledger_entries
+             WHERE company_id = :company_id AND occurred_at >= :start_at AND occurred_at < :end_at'
+        );
+        $statement->execute(['company_id' => $companyId, 'start_at' => $startUtc, 'end_at' => $endUtc]);
         return $statement->fetch(PDO::FETCH_ASSOC);
     }
 
     public function revenueByDay(string $startUtc, string $endUtc): array
     {
         $companyId = $this->assertTenantContext();
-        $parameters = [
-            'start_at' => $startUtc, 'end_at' => $endUtc, 'company_id' => $companyId,
-            'monthly_start_at' => $startUtc, 'monthly_end_at' => $endUtc,
-            'monthly_company_id' => $companyId,
-        ];
-        $query = "SELECT revenue.day,
-                    SUM(CASE WHEN revenue.origin = 'ROTATING' THEN revenue.amount ELSE 0 END) AS rotating_total,
-                    SUM(CASE WHEN revenue.origin = 'MONTHLY' THEN revenue.amount ELSE 0 END) AS monthly_total,
-                    SUM(revenue.amount) AS total
-             FROM (
-                SELECT DATE(CONVERT_TZ(t.payment_date, '+00:00', '-03:00')) AS day,
-                       t.valor AS amount, 'ROTATING' AS origin
-                FROM transacoes t
-                WHERE t.payment_date >= :start_at AND t.payment_date < :end_at
-                  AND t.company_id = :company_id
-                UNION ALL
-                SELECT DATE(CONVERT_TZ(mp.payment_date, '+00:00', '-03:00')) AS day,
-                       mp.amount, 'MONTHLY' AS origin
-                FROM monthly_contract_payments mp
-                WHERE mp.payment_date >= :monthly_start_at AND mp.payment_date < :monthly_end_at
-                  AND mp.company_id = :monthly_company_id
-             ) revenue
-             GROUP BY revenue.day
-             ORDER BY day";
-
-        $statement = $this->prepareTenantStatement($query, $parameters);
-        $statement->execute($parameters);
-
+        $statement = $this->connection->prepare(
+            "SELECT DATE(CONVERT_TZ(occurred_at, '+00:00', '-03:00')) day,
+             SUM(CASE WHEN source_type = 'ROTATING_PAYMENT' THEN amount ELSE 0 END) rotating_total,
+             SUM(CASE WHEN source_type = 'MONTHLY_PAYMENT' THEN amount ELSE 0 END) monthly_total,
+             SUM(CASE WHEN entry_type = 'CREDIT' THEN amount ELSE 0 END) total
+             FROM financial_ledger_entries
+             WHERE company_id = :company_id AND occurred_at >= :start_at AND occurred_at < :end_at
+             GROUP BY day ORDER BY day"
+        );
+        $statement->execute(['company_id' => $companyId, 'start_at' => $startUtc, 'end_at' => $endUtc]);
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 

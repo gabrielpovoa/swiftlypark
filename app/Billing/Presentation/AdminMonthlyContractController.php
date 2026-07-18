@@ -17,6 +17,9 @@ use DomainException;
 use PDO;
 use PDOException;
 use Throwable;
+use App\Finance\Domain\LedgerEntry;
+use App\Finance\Infrastructure\PdoFinancialLedgerRepository;
+use App\Shared\Domain\ValueObject\Money;
 
 final class AdminMonthlyContractController extends Controller
 {
@@ -265,6 +268,16 @@ final class AdminMonthlyContractController extends Controller
             'period_end' => $periodEnd,
             'created_by' => IdentityContext::current()->userId(),
         ]);
+        $paymentId = (int) $connection->lastInsertId();
+        (new PdoFinancialLedgerRepository($connection))->append(LedgerEntry::credit(
+            $companyId,
+            'MONTHLY_PAYMENT',
+            $paymentId,
+            Money::fromDecimal($amount),
+            new DateTimeImmutable('now', new DateTimeZone('UTC')),
+            'Pagamento de contrato mensalista #' . $contractId,
+            IdentityContext::current()->userId()
+        ));
     }
 
     private function companyExistsForUpdate(PDO $connection, int $companyId): bool
@@ -333,4 +346,3 @@ final class AdminMonthlyContractController extends Controller
         exit;
     }
 }
-

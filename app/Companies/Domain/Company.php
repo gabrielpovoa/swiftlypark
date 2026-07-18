@@ -43,4 +43,14 @@ final class Company
     public function slug(): string { return $this->slug; }
     public function logoPath(): ?string { return $this->logoPath; }
     public function isActive(): bool { return $this->active; }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'logo_path' => $this->logoPath,
+        ];
+    }
 }

@@ -243,6 +243,26 @@ Lint rápido de um arquivo PHP:
 php -l app/Controllers/AlgumController.php
 ```
 
+## Migrations de banco
+
+Migrations nunca são executadas durante requisições HTTP. Antes de publicar uma
+nova versão, execute:
+
+```bash
+php cli/migrate.php status
+php cli/migrate.php migrate
+```
+
+Para adotar o runner em uma instalação existente cujo schema já recebeu todas
+as migrations antigas, registre o estado uma única vez, sem reaplicar SQL:
+
+```bash
+php cli/migrate.php baseline
+```
+
+Não execute `baseline` em banco vazio ou desatualizado. O comando apenas registra
+as migrations existentes; ele não cria nem corrige tabelas.
+
 ## Comandos Úteis
 
 Subir o ambiente:
@@ -288,4 +308,3 @@ Ao alterar regras de tenant, RBAC, auditoria ou governança:
 ## Repositório
 
 https://github.com/gabrielpovoa/swiftlypark
-

@@ -7,8 +7,8 @@ require_once __DIR__ . '/../config/env.php';
 
 loadEnv(__DIR__ . '/../.env');
 
-use App\Bootstrap\TenantBootstrap;
 use App\Identity\Services\UserProvisioningService;
+use App\Infrastructure\Database\MigrationRunner;
 use Config\Database;
 
 $options = getopt('', [
@@ -34,7 +34,10 @@ if ($name === '' || $email === '' || $password === '') {
 }
 
 $connection = (new Database())->connect();
-(new TenantBootstrap($connection))->boot();
+(new MigrationRunner(
+    $connection,
+    dirname(__DIR__) . '/database/migrations'
+))->migrate();
 
 $activeMaster = $connection->query(
     "SELECT COUNT(DISTINCT u.id_usuario)

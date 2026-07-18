@@ -35,7 +35,7 @@ trabalho sem depender do histórico da conversa.
 | Ordem | Branch Git Flow | Resultado esperado | Estado |
 |---|---|---|---|
 | 001 | `feature/modular-architecture-foundation` | Convenções, mapa e handoff da arquitetura | Concluída |
-| 002 | `feature/centralize-database-migrations` | DDL removido do ciclo normal de bootstrap | Pendente |
+| 002 | `feature/centralize-database-migrations` | DDL removido do ciclo normal de bootstrap | Concluída |
 | 003 | `feature/split-admin-provisioning-controller` | Casos administrativos separados por responsabilidade | Pendente |
 | 004 | `feature/extract-company-module` | Contexto Companies modularizado | Pendente |
 | 005 | `feature/extract-identity-module` | Contexto Identity modularizado | Pendente |

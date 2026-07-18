@@ -22,7 +22,7 @@ Estado geral: **Pricing Engine rotativo e ciclo operacional mensalista implement
 Principais entregas realizadas:
 
 - migration de `companies.is_mensalista` e da tabela `tarifarios`;
-- criação defensiva do schema pelo `TenantBootstrap`;
+- migrations versionadas registradas por `schema_migrations` e executadas via CLI;
 - `PricingRepository` e `PriceCalculator`;
 - check-in rotativo sem cobrança;
 - checkout pós-pago com cálculo no backend;
@@ -291,7 +291,7 @@ Esses registros deverão permitir rastrear completamente o cálculo realizado pe
 Arquivos implementados ou alterados:
 
 - `database/migrations/20260721_create_dynamic_pricing_engine.sql`;
-- `app/Bootstrap/TenantBootstrap.php`;
+- `app/Infrastructure/Database/MigrationRunner.php` e `cli/migrate.php`;
 - `app/Finance/Repositories/PricingRepository.php`;
 - `app/Finance/Services/PriceCalculator.php`;
 - `app/Security/InputSanitizer.php`;

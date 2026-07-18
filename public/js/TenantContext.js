@@ -90,6 +90,31 @@
         return payload;
     }
 
+    async function updateSupportProfile(form) {
+        const formData = new FormData(form);
+        const permissions = formData.getAll('extra_permissions[]')
+            .map((value) => Number.parseInt(String(value), 10))
+            .filter((value) => Number.isInteger(value) && value > 0);
+        const response = await fetch('/api/v1/support/profile', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                simulated_role: String(formData.get('simulated_role') || ''),
+                extra_permissions: permissions,
+            }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || payload.error) {
+            throw new Error(payload.error || 'Não foi possível atualizar o perfil de suporte.');
+        }
+
+        return payload;
+    }
+
     function setSwitcherLoading(container, isLoading) {
         const select = container.querySelector('.tenant-switcher__select');
         const loading = container.querySelector('.tenant-switcher__loading');
@@ -120,6 +145,12 @@
 
             select.dataset.bound = 'true';
             select.addEventListener('change', async () => {
+                if (select.value === '__global__') {
+                    setCurrentCompanyId(null);
+                    window.location.href = '/admin/dashboard';
+                    return;
+                }
+
                 if (!normalizeCompanyId(select.value)) {
                     return;
                 }
@@ -162,9 +193,70 @@
 
     document.addEventListener('DOMContentLoaded', bindTenantSwitcher);
 
+    function bindSupportProfile() {
+        document.querySelectorAll('.support-profile__form').forEach((form) => {
+            if (form.dataset.bound === 'true') {
+                return;
+            }
+
+            const loading = form.querySelector('.support-profile__loading');
+            const submit = form.querySelector('.support-profile__submit');
+            form.dataset.bound = 'true';
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                if (submit) {
+                    submit.disabled = true;
+                    submit.classList.add('opacity-60');
+                }
+
+                if (loading) {
+                    loading.classList.remove('hidden');
+                    loading.classList.add('flex');
+                }
+
+                try {
+                    const payload = await updateSupportProfile(form);
+                    if (payload.redirect_url) {
+                        window.location.href = payload.redirect_url;
+                        return;
+                    }
+
+                    window.location.reload();
+                } catch (error) {
+                    if (window.Swal) {
+                        window.Swal.fire({
+                            icon: 'error',
+                            title: 'Perfil bloqueado',
+                            text: error.message,
+                            background: '#111827',
+                            color: '#f8fafc',
+                            confirmButtonColor: '#f59e0b',
+                        });
+                    } else {
+                        alert(error.message);
+                    }
+
+                    if (submit) {
+                        submit.disabled = false;
+                        submit.classList.remove('opacity-60');
+                    }
+
+                    if (loading) {
+                        loading.classList.add('hidden');
+                        loading.classList.remove('flex');
+                    }
+                }
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', bindSupportProfile);
+
     window.SwiftlyParkTenant = Object.assign(root, {
         getCurrentCompanyId,
         setCurrentCompanyId,
         switchTenant,
+        updateSupportProfile,
     });
 })();

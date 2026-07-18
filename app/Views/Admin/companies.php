@@ -120,17 +120,26 @@ $error ??= null;
                     </div>
 
                     <div class="mt-5 grid grid-cols-3 gap-2">
-                        <div class="rounded-xl bg-black/20 border border-white/5 px-3 py-3">
+                        <div
+                            class="rounded-xl bg-black/20 border border-white/5 px-3 py-3"
+                            title="Total de usuários vinculados à empresa, incluindo usuários inativos ou removidos.">
                             <span class="block text-[9px] text-slate-500 font-black uppercase tracking-widest">Vínculos</span>
                             <strong class="text-lg text-white"><?= (int) ($company['users_count'] ?? 0) ?></strong>
+                            <span class="block text-[10px] text-slate-600 leading-tight">totais</span>
                         </div>
-                        <div class="rounded-xl bg-black/20 border border-white/5 px-3 py-3">
+                        <div
+                            class="rounded-xl bg-black/20 border border-white/5 px-3 py-3"
+                            title="Usuários vinculados à empresa que ainda estão ativos no sistema.">
                             <span class="block text-[9px] text-slate-500 font-black uppercase tracking-widest">Ativos</span>
                             <strong class="text-lg text-white"><?= (int) ($company['active_users_count'] ?? 0) ?></strong>
+                            <span class="block text-[10px] text-slate-600 leading-tight">usuários</span>
                         </div>
-                        <div class="rounded-xl bg-black/20 border border-white/5 px-3 py-3">
+                        <div
+                            class="rounded-xl bg-black/20 border border-white/5 px-3 py-3"
+                            title="Usuários ativos vinculados à empresa que precisam redefinir a senha.">
                             <span class="block text-[9px] text-slate-500 font-black uppercase tracking-widest">Senha</span>
                             <strong class="text-lg text-amber-300"><?= (int) ($company['password_reset_users_count'] ?? 0) ?></strong>
+                            <span class="block text-[10px] text-slate-600 leading-tight">pendente</span>
                         </div>
                     </div>
 

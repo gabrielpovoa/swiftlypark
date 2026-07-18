@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SwiftlyPark SaaS architecture, roles, permissions, tenant views, and Super Admin support mode.">
+  <title>SwiftlyPark — SaaS System Overview</title>
+  <style>
+    :root { --bg:#07101f; --panel:#0d192c; --panel2:#111f35; --line:#24344e; --text:#ecf4ff; --muted:#9db0ca; --blue:#55a7ff; --cyan:#45ddd1; --amber:#ffca61; --green:#61dfa5; --rose:#ff7c97; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--text); background:radial-gradient(circle at 80% 0,#123566 0,transparent 28rem),var(--bg); font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    a { color:inherit; }
+    code { padding:.12rem .38rem; border:1px solid var(--line); border-radius:.35rem; color:#baddff; background:#081321; }
+    .wrap { width:min(1180px,calc(100% - 36px)); margin:auto; }
+    .topbar { position:sticky; top:0; z-index:10; border-bottom:1px solid #ffffff12; background:#07101fe8; backdrop-filter:blur(14px); }
+    .topbar .wrap { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:64px; }
+    .brand { font-weight:900; letter-spacing:-.03em; }
+    .brand span { color:var(--blue); }
+    nav { display:flex; flex-wrap:wrap; gap:18px; }
+    nav a { color:var(--muted); text-decoration:none; font-size:.83rem; font-weight:700; }
+    nav a:hover { color:white; }
+    header { padding:100px 0 66px; }
+    .eyebrow { color:var(--cyan); font-size:.73rem; font-weight:900; letter-spacing:.18em; text-transform:uppercase; }
+    h1 { max-width:900px; margin:12px 0 22px; font-size:clamp(2.7rem,7vw,5.8rem); line-height:.98; letter-spacing:-.065em; }
+    header p { max-width:760px; color:var(--muted); font-size:1.18rem; }
+    .status { display:inline-flex; align-items:center; gap:9px; margin-top:18px; padding:8px 12px; border:1px solid #61dfa54a; border-radius:999px; color:var(--green); background:#61dfa50d; font-size:.78rem; font-weight:800; }
+    .dot { width:8px; height:8px; border-radius:50%; background:currentColor; box-shadow:0 0 14px currentColor; }
+    section { padding:48px 0; scroll-margin-top:70px; }
+    h2 { margin:0 0 12px; font-size:clamp(1.8rem,4vw,3rem); letter-spacing:-.04em; }
+    h3 { margin:0 0 8px; font-size:1.05rem; }
+    .intro { max-width:800px; margin:0 0 28px; color:var(--muted); }
+    .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+    .card { grid-column:span 4; padding:24px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(145deg,#111f35dd,#0b1729dd); box-shadow:0 18px 45px #0004; }
+    .card.wide { grid-column:span 6; }
+    .card.full { grid-column:1/-1; }
+    .card p,.card li { color:var(--muted); }
+    .card ul { margin:12px 0 0; padding-left:19px; }
+    .tag { display:inline-block; margin-bottom:14px; padding:4px 9px; border-radius:999px; color:var(--blue); background:#55a7ff16; font-size:.68rem; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+    .tag.global { color:var(--amber); background:#ffca6115; }
+    .tag.tenant { color:var(--cyan); background:#45ddd115; }
+    .architecture { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; align-items:center; }
+    .node { min-height:108px; display:grid; place-content:center; padding:14px; border:1px solid var(--line); border-radius:15px; text-align:center; background:var(--panel); font-weight:800; }
+    .node small { display:block; margin-top:6px; color:var(--muted); font-weight:500; }
+    .arrow { display:none; }
+    .table-scroll { overflow:auto; border:1px solid var(--line); border-radius:18px; }
+    table { width:100%; min-width:850px; border-collapse:collapse; background:#0c1829d9; }
+    th,td { padding:16px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:#cde3ff; background:#12223a; font-size:.72rem; letter-spacing:.09em; text-transform:uppercase; }
+    td { color:var(--muted); }
+    td:first-child { color:white; font-weight:850; }
+    tr:last-child td { border-bottom:0; }
+    .yes { color:var(--green); font-weight:800; }
+    .limited { color:var(--amber); font-weight:800; }
+    .no { color:#7589a6; }
+    .flow { display:grid; grid-template-columns:1fr 44px 1fr 44px 1fr; align-items:stretch; gap:8px; }
+    .flow .step { padding:22px; border:1px solid var(--line); border-radius:16px; background:var(--panel2); }
+    .flow .connector { display:grid; place-content:center; color:var(--blue); font-size:1.5rem; }
+    .warning { padding:18px 20px; border:1px solid #ffca6150; border-radius:14px; color:#ffe5ae; background:#ffca610c; }
+    .checks { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:0; list-style:none; }
+    .checks li { padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:#0c1829; }
+    .checks li::before { content:"✓"; margin-right:10px; color:var(--green); font-weight:900; }
+    footer { margin-top:60px; padding:32px 0 60px; border-top:1px solid var(--line); color:var(--muted); font-size:.86rem; }
+    @media (max-width:900px) { nav{display:none}.card,.card.wide{grid-column:span 6}.architecture{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.flow .connector{transform:rotate(90deg)} }
+    @media (max-width:620px) { header{padding-top:68px}.card,.card.wide{grid-column:1/-1}.checks{grid-template-columns:1fr}.wrap{width:min(100% - 24px,1180px)} }
+    @media print { .topbar{display:none} body{background:white;color:#172033}.card,table,.node,.step{box-shadow:none;background:white!important}.card p,.card li,.intro,td,footer{color:#475569} section{break-inside:avoid} }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wrap"><div class="brand">Swiftly<span>Park</span></div><nav><a href="#system">System</a><a href="#roles">Profiles</a><a href="#views">Views</a><a href="#super-admin">Super Admin</a><a href="#security">Security</a></nav></div>
+  </div>
+
+  <header class="wrap">
+    <div class="eyebrow">Working system · SaaS overview</div>
+    <h1>One platform.<br>Many parking companies.</h1>
+    <p>SwiftlyPark is a multi-company parking-management SaaS. Every operational request combines an authenticated identity, an active company, and an effective authorization profile before data is read or changed.</p>
+    <div class="status"><span class="dot"></span> Current architecture implemented and covered by core security tests</div>
+  </header>
+
+  <main>
+    <section id="system" class="wrap">
+      <h2>How the system works</h2>
+      <p class="intro">The same application serves multiple tenants while isolating their vacancies, parked vehicles, transactions, finance records, users, and audit history by <code>company_id</code>.</p>
+      <div class="architecture">
+        <div class="node">Identity<small>The real signed-in user</small></div>
+        <div class="node">Tenant context<small>The active company</small></div>
+        <div class="node">RBAC resolver<small>Role + extra permissions</small></div>
+        <div class="node">Authorized route<small>UI and backend enforcement</small></div>
+        <div class="node">Scoped repository<small>Tenant-filtered data + audit</small></div>
+      </div>
+      <div class="grid" style="margin-top:16px">
+        <article class="card"><span class="tag">Operations</span><h3>Parking workflow</h3><p>Tenant dashboards, vacancy management, vehicle check-in and checkout, and operational reports.</p></article>
+        <article class="card"><span class="tag">Business</span><h3>Finance and reporting</h3><p>Financial analytics, exports, printable views, adjustments, and refunds—always in the selected company context.</p></article>
+        <article class="card"><span class="tag">Governance</span><h3>Companies and people</h3><p>Centralized company onboarding, user provisioning, access revocation, tenant roles, and permission overrides.</p></article>
+      </div>
+    </section>
+
+    <section id="roles" class="wrap">
+      <h2>Profiles, roles, and permissions</h2>
+      <p class="intro">SwiftlyPark separates global platform authority from company-level authority. A user may have one role in Company A and another in Company B. The effective tenant permissions come from the active membership plus any explicit permission overrides.</p>
+      <div class="grid">
+        <article class="card wide"><span class="tag global">Global role</span><h3>Super Admin</h3><p>Controls the SaaS platform, sees global indicators, selects any tenant for support, and can simulate tenant profiles without receiving a permanent membership.</p></article>
+        <article class="card wide"><span class="tag global">Privileged governance</span><h3>Master</h3><p>Manages identities, access, permissions, companies, global audit views, and high-level governance. Assignment rules prevent inappropriate privilege escalation.</p></article>
+        <article class="card"><span class="tag tenant">Tenant role</span><h3>Administrator</h3><p>Receives the complete seeded tenant permission set: operational control, vacancy creation, reports, audit, finance permissions when configured, and profile management.</p></article>
+        <article class="card"><span class="tag tenant">Tenant role</span><h3>Operator</h3><p>Works in daily parking operations: dashboard, vacancy visibility, check-in, checkout, and personal profile updates.</p></article>
+        <article class="card"><span class="tag tenant">Tenant role</span><h3>Auditor</h3><p>Read-oriented profile for dashboard, reports, and audit trail access, without normal operational mutation powers.</p></article>
+        <article class="card"><span class="tag tenant">Tenant role</span><h3>Finance</h3><p>Uses the financial dashboard and financial adjustments, with dashboard access and personal profile controls.</p></article>
+        <article class="card wide"><span class="tag">Authorization formula</span><h3>Effective tenant access</h3><p><code>role permissions</code> + <code>company_user permission overrides</code>, resolved for the active <code>company_id</code>. Navigation visibility is helpful UX; route and repository checks remain authoritative.</p></article>
+      </div>
+    </section>
+
+    <section id="views" class="wrap">
+      <h2>What each profile sees</h2>
+      <p class="intro">This matrix summarizes the intended current experience. “Scoped” means the screen is limited to the active tenant. Exact items can change when tenant-specific permission overrides are applied.</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Profile</th><th>Landing view</th><th>Parking operations</th><th>Finance</th><th>Audit</th><th>People & companies</th></tr></thead>
+          <tbody>
+            <tr><td>Super Admin</td><td>Global dashboard</td><td><span class="limited">Via support profile</span></td><td><span class="limited">Via support profile</span></td><td><span class="yes">Global + tenant</span></td><td><span class="yes">Platform governance</span></td></tr>
+            <tr><td>Master</td><td>Governance / authorized dashboard</td><td><span class="limited">When tenant context permits</span></td><td><span class="yes">Authorized</span></td><td><span class="yes">Global + tenant</span></td><td><span class="yes">Full privileged management</span></td></tr>
+            <tr><td>Administrator</td><td>Tenant dashboard</td><td><span class="yes">Full tenant operations</span></td><td><span class="limited">Per assigned permissions</span></td><td><span class="yes">Tenant audit</span></td><td><span class="limited">Per governance permissions</span></td></tr>
+            <tr><td>Operator</td><td>Tenant dashboard</td><td><span class="yes">View, check-in, checkout</span></td><td><span class="no">Not seeded</span></td><td><span class="no">Not seeded</span></td><td><span class="no">No</span></td></tr>
+            <tr><td>Auditor</td><td>Tenant dashboard</td><td><span class="no">Read/report focus</span></td><td><span class="no">Not seeded</span></td><td><span class="yes">Tenant audit + reports</span></td><td><span class="no">No</span></td></tr>
+            <tr><td>Finance</td><td>Tenant dashboard</td><td><span class="no">Not seeded</span></td><td><span class="yes">View + adjustments</span></td><td><span class="no">Not seeded</span></td><td><span class="no">No</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="super-admin" class="wrap">
+      <h2>The global Super Admin</h2>
+      <p class="intro">The Super Admin has two deliberately separate modes. This prevents platform power from silently becoming tenant-operational power.</p>
+      <div class="grid">
+        <article class="card wide"><span class="tag global">Mode 1</span><h3>Global control dashboard</h3><ul><li>Aggregated company and activity KPIs</li><li>Total revenue and tenant summaries</li><li>Security alerts and cross-tenant monitoring</li><li>Company directory and platform governance</li><li>No quick check-in outside a tenant context</li></ul></article>
+        <article class="card wide"><span class="tag tenant">Mode 2</span><h3>Temporary tenant support</h3><ul><li>Select any active company</li><li>Choose Admin, Operator, Auditor, Finance, or Master simulation</li><li>Add temporary custom permissions</li><li>See the tenant UI as that effective profile</li><li>Keep the real Super Admin identity in every audit record</li></ul></article>
+      </div>
+      <div class="flow" style="margin-top:16px">
+        <div class="step"><strong>1. Select company</strong><br><span style="color:var(--muted)">The tenant switcher establishes the temporary company context.</span></div><div class="connector">→</div>
+        <div class="step"><strong>2. Simulate profile</strong><br><span style="color:var(--muted)">RBAC resolves the chosen role and optional extra permissions.</span></div><div class="connector">→</div>
+        <div class="step"><strong>3. Work and audit</strong><br><span style="color:var(--muted)">The UI and routes behave like that profile while actions retain the real actor.</span></div>
+      </div>
+      <p class="warning" style="margin-top:16px"><strong>Support mode is temporary.</strong> It does not create a <code>company_user</code> record, does not change real global roles, cannot simulate <code>super-admin</code> as a tenant role, and ends when the user returns to the global dashboard.</p>
+    </section>
+
+    <section id="security" class="wrap">
+      <h2>Isolation and traceability</h2>
+      <p class="intro">Tenant isolation is enforced below the interface layer. Hiding a menu is never treated as sufficient authorization.</p>
+      <ul class="checks">
+        <li>Operational repositories filter by active <code>company_id</code></li>
+        <li>Missing tenant context blocks tenant-required queries</li>
+        <li>Conflicting tenant requests fail closed</li>
+        <li>Cross-tenant attempts generate critical audit events</li>
+        <li>Support start, profile change, actions, and exit are traceable</li>
+        <li>Audit stores real actor, tenant, simulated role, request, and IP context</li>
+        <li>Public self-registration is disabled</li>
+        <li>Provisioned users must replace temporary credentials</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer><div class="wrap">SwiftlyPark SaaS system overview · Generated from the current RBAC, tenant, navigation, governance, and Super Admin support-mode implementation.</div></footer>
+</body>
+</html>

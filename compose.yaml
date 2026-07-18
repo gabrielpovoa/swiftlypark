@@ -18,7 +18,9 @@ services:
     # O bind mount acima preserva as permissões do host. O volume dedicado
     # é preparado para o usuário que executa o Apache antes da inicialização.
     command: >
-      bash -c "install -d -o www-data -g www-data -m 0750 /var/www/html/public/uploads
+      bash -c "install -d -o www-data -g www-data -m 0775 /var/www/html/public/uploads /var/www/html/public/uploads/companies
+      && chown -R www-data:www-data /var/www/html/public/uploads
+      && chmod -R u+rwX,g+rwX /var/www/html/public/uploads
       && composer install
       && apache2-foreground"
 

@@ -91,14 +91,18 @@ final class ApiTenantController extends Controller
             }
 
             $_SESSION['company_id'] = (int) $company['id'];
-            if (!$hasMembership && $isPlatformAdmin) {
+            if ($isPlatformAdmin) {
                 $_SESSION['support_impersonation'] = [
                     'super_admin_user_id' => $identity->userId(),
                     'company_id' => (int) $company['id'],
                     'company_name' => (string) $company['name'],
+                    'profile_selected' => false,
+                    'simulated_role' => null,
+                    'simulated_role_label' => 'Super-Admin (sem simulação)',
+                    'extra_permissions' => [],
                     'started_at' => $identity->requestedAt()->format('Y-m-d H:i:s.u'),
                 ];
-                $this->recordImpersonationStart(new AuditLogRepository($connection), $company);
+                $this->recordImpersonationStart(new AuditLogRepository($connection), $company, null);
             } else {
                 unset($_SESSION['support_impersonation']);
             }
@@ -110,9 +114,12 @@ final class ApiTenantController extends Controller
                 $company['logo_path'] !== null ? (string) $company['logo_path'] : null
             ));
 
-            $authorization = (new RolePermissionResolver(
+            $resolver = new RolePermissionResolver(
                 new RbacRepository($connection)
-            ))->resolve($identity->userId(), (int) $company['id']);
+            );
+            $authorization = $isPlatformAdmin
+                ? $resolver->resolve($identity->userId(), null)
+                : $resolver->resolve($identity->userId(), (int) $company['id']);
             $_SESSION['permissions'] = $authorization->permissions();
             $_SESSION['role_slugs'] = $authorization->roleSlugs();
             $_SESSION['role_metadata'] = $authorization->roleMetadata()->toArray();
@@ -124,7 +131,105 @@ final class ApiTenantController extends Controller
                     $authorization->roleSlugs(),
                     $authorization->roleMetadata()->toArray()
                 ),
-                'support_impersonation' => !$hasMembership && $isPlatformAdmin,
+                'support_impersonation' => $isPlatformAdmin,
+                'support_profile' => $_SESSION['support_impersonation'] ?? null,
+                'redirect_url' => '/operational/dashboard',
+            ];
+        });
+    }
+
+    public function supportProfile(): void
+    {
+        $this->json(function (): array {
+            $this->startSession();
+            $identity = IdentityContext::current();
+            $payload = $this->payload();
+            $connection = (new Database())->connect();
+            $repository = new TenantRepository($connection);
+
+            if (!$this->hasGlobalPlatformRole($connection, $identity->userId())) {
+                http_response_code(403);
+
+                return ['error' => 'Apenas perfis globais podem alterar o modo suporte.'];
+            }
+
+            $companyId = filter_var(
+                $_SESSION['support_impersonation']['company_id'] ?? $_SESSION['company_id'] ?? null,
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1]]
+            );
+
+            if ($companyId === false) {
+                http_response_code(422);
+
+                return ['error' => 'Selecione uma empresa antes de trocar o perfil de suporte.'];
+            }
+
+            $company = $repository->findCompanyById((int) $companyId);
+            if ($company === null) {
+                http_response_code(404);
+
+                return ['error' => 'Empresa não encontrada.'];
+            }
+
+            $roleSlug = trim((string) ($payload['simulated_role'] ?? ''));
+            $useGlobalProfile = $roleSlug === '__super_admin__';
+            $supportRoles = $repository->findSupportRoles();
+            $role = $useGlobalProfile
+                ? ['slug' => null, 'label' => 'Super-Admin (sem simulação)']
+                : $this->findSupportRole($supportRoles, $roleSlug);
+            if ($role === null) {
+                http_response_code(422);
+
+                return ['error' => 'Perfil de suporte inválido.'];
+            }
+
+            $extraPermissions = $payload['extra_permissions'] ?? [];
+            if (!is_array($extraPermissions)) {
+                $extraPermissions = [];
+            }
+            $extraPermissions = array_values(array_unique(array_filter(
+                array_map('intval', $extraPermissions),
+                static fn (int $id): bool => $id > 0
+            )));
+
+            $_SESSION['company_id'] = (int) $company['id'];
+            $_SESSION['support_impersonation'] = [
+                'super_admin_user_id' => $identity->userId(),
+                'company_id' => (int) $company['id'],
+                'company_name' => (string) $company['name'],
+                'profile_selected' => !$useGlobalProfile,
+                'simulated_role' => $role['slug'],
+                'simulated_role_label' => (string) $role['label'],
+                'extra_permissions' => $useGlobalProfile ? [] : $extraPermissions,
+                'started_at' => $_SESSION['support_impersonation']['started_at']
+                    ?? $identity->requestedAt()->format('Y-m-d H:i:s.u'),
+            ];
+
+            $resolver = new RolePermissionResolver(new RbacRepository($connection));
+            $authorization = $useGlobalProfile
+                ? $resolver->resolve($identity->userId(), null)
+                : $resolver->resolveSimulatedRole((string) $role['slug'], $extraPermissions);
+            $_SESSION['permissions'] = $authorization->permissions();
+            $_SESSION['role_slugs'] = $authorization->roleSlugs();
+            $_SESSION['role_metadata'] = $authorization->roleMetadata()->toArray();
+
+            $this->recordSupportProfileChanged(
+                new AuditLogRepository($connection),
+                $company,
+                $role['slug'] !== null ? (string) $role['slug'] : null,
+                (string) $role['label'],
+                $useGlobalProfile ? [] : $extraPermissions
+            );
+
+            return [
+                'current_company' => $this->normalizeCompany($company),
+                'authorization' => $this->authorizationPayload(
+                    $authorization->permissions(),
+                    $authorization->roleSlugs(),
+                    $authorization->roleMetadata()->toArray()
+                ),
+                'support_profile' => $_SESSION['support_impersonation'],
                 'redirect_url' => '/operational/dashboard',
             ];
         });
@@ -265,7 +370,18 @@ final class ApiTenantController extends Controller
         return $this->isPlatformAdmin($authorization->roleSlugs());
     }
 
-    private function recordImpersonationStart(AuditLogRepository $auditLogs, array $company): void
+    private function findSupportRole(array $roles, string $roleSlug): ?array
+    {
+        foreach ($roles as $role) {
+            if ((string) $role['slug'] === $roleSlug && $roleSlug !== 'super-admin') {
+                return $role;
+            }
+        }
+
+        return null;
+    }
+
+    private function recordImpersonationStart(AuditLogRepository $auditLogs, array $company, ?array $role): void
     {
         $identity = IdentityContext::current();
 
@@ -282,7 +398,41 @@ final class ApiTenantController extends Controller
                 'super_admin_user_id' => $identity->userId(),
                 'target_company_id' => (int) $company['id'],
                 'target_company_name' => (string) $company['name'],
+                'simulated_role' => $role['slug'] ?? null,
+                'simulated_role_label' => $role['label'] ?? 'Super-Admin (sem simulação)',
                 'user_agent' => (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''),
+            ], JSON_THROW_ON_ERROR),
+            'ip_address' => $identity->ipAddress(),
+            'request_id' => $identity->requestId(),
+            'created_at' => $identity->requestedAt()->format('Y-m-d H:i:s.u'),
+        ]);
+    }
+
+    private function recordSupportProfileChanged(
+        AuditLogRepository $auditLogs,
+        array $company,
+        ?string $roleSlug,
+        string $roleLabel,
+        array $extraPermissions
+    ): void {
+        $identity = IdentityContext::current();
+
+        $auditLogs->insert([
+            'user_id' => $identity->userId(),
+            'company_id' => (int) $company['id'],
+            'actor_email' => $identity->email(),
+            'action' => 'UPDATE',
+            'entity' => 'support_impersonation',
+            'entity_id' => (string) $company['id'],
+            'old_values' => null,
+            'new_values' => json_encode([
+                'event' => 'SUPPORT_PROFILE_CHANGED',
+                'super_admin_user_id' => $identity->userId(),
+                'target_company_id' => (int) $company['id'],
+                'target_company_name' => (string) $company['name'],
+                'simulated_role' => $roleSlug,
+                'simulated_role_label' => $roleLabel,
+                'extra_permissions' => $extraPermissions,
             ], JSON_THROW_ON_ERROR),
             'ip_address' => $identity->ipAddress(),
             'request_id' => $identity->requestId(),

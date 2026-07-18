@@ -147,4 +147,29 @@ final class TenantRepository
 
         return $company === false ? null : $company;
     }
+
+    public function findSupportRoles(): array
+    {
+        $statement = $this->connection->query(
+            'SELECT id, slug, label, icon_slug
+             FROM roles
+             WHERE is_active = 1
+               AND slug <> "super-admin"
+             ORDER BY display_priority ASC, slug ASC'
+        );
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function findActivePermissions(): array
+    {
+        $statement = $this->connection->query(
+            'SELECT id, slug, name
+             FROM permissions
+             WHERE is_active = 1
+             ORDER BY name ASC, slug ASC'
+        );
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

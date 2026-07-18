@@ -17,6 +17,7 @@ final class AuditLogPresenter
         'authorization' => 'Segurança',
         'identity' => 'Gestão de identidade',
         'companies' => 'Empresa',
+        'support_impersonation' => 'Modo suporte',
     ];
 
     private const ENTITY_MESSAGES = [
@@ -74,6 +75,15 @@ final class AuditLogPresenter
         'new_slug' => 'Novo slug',
         'revoked_company_memberships' => 'Vínculos revogados',
         'revoked_user_ids' => 'Usuários revogados',
+        '_support_context' => 'Contexto de suporte',
+        'event' => 'Evento',
+        'target_company_id' => 'Empresa acessada',
+        'target_company_name' => 'Nome da empresa',
+        'super_admin_user_id' => 'Super-Admin',
+        'simulated_role' => 'Perfil simulado',
+        'simulated_role_label' => 'Perfil simulado',
+        'extra_permissions' => 'Permissões extras',
+        'user_agent' => 'Navegador',
     ];
 
     public function present(array $log): array
@@ -162,6 +172,26 @@ final class AuditLogPresenter
                     $newValues['company_name'] ?? ('#' . $log['entity_id'])
                 ),
                 default => sprintf('A empresa #%s recebeu um evento.', $log['entity_id']),
+            };
+        }
+
+        if ($log['entity'] === 'support_impersonation') {
+            return match ($newValues['event'] ?? '') {
+                'IMPERSONATION_STARTED' => sprintf(
+                    'Modo suporte iniciado na empresa %s, visualizando como %s.',
+                    $newValues['target_company_name'] ?? ('#' . $log['entity_id']),
+                    $newValues['simulated_role_label'] ?? $newValues['simulated_role'] ?? 'perfil simulado'
+                ),
+                'SUPPORT_PROFILE_CHANGED' => sprintf(
+                    'Perfil de suporte alterado para %s na empresa %s.',
+                    $newValues['simulated_role_label'] ?? $newValues['simulated_role'] ?? 'perfil simulado',
+                    $newValues['target_company_name'] ?? ('#' . $log['entity_id'])
+                ),
+                'IMPERSONATION_ENDED' => sprintf(
+                    'Modo suporte encerrado na empresa %s.',
+                    $newValues['target_company_name'] ?? ('#' . $log['entity_id'])
+                ),
+                default => sprintf('Modo suporte atualizado para a empresa #%s.', $log['entity_id']),
             };
         }
 
@@ -265,8 +295,37 @@ final class AuditLogPresenter
         }
 
         return is_array($value)
-            ? implode(', ', array_map('strval', $value))
+            ? $this->formatArrayValue($value)
             : (string) $value;
+    }
+
+    private function formatArrayValue(array $value): string
+    {
+        if ($value === []) {
+            return 'Nenhum';
+        }
+
+        if (array_is_list($value)) {
+            return implode(', ', array_map(
+                fn (mixed $item): string => is_array($item)
+                    ? $this->formatArrayValue($item)
+                    : (string) $item,
+                $value
+            ));
+        }
+
+        $labels = [];
+        foreach ($value as $key => $item) {
+            $label = self::FIELD_LABELS[(string) $key]
+                ?? ucfirst(str_replace('_', ' ', (string) $key));
+            $labels[] = sprintf(
+                '%s: %s',
+                $label,
+                is_array($item) ? $this->formatArrayValue($item) : (string) $item
+            );
+        }
+
+        return implode(' · ', $labels);
     }
 
     private function displayDate(string $date): string

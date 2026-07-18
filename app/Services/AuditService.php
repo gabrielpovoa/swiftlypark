@@ -61,6 +61,13 @@ final class AuditService
     public function log(string $action, array $data): void
     {
         unset($data['company_id']);
+        $supportContext = $this->supportContext();
+        if ($supportContext !== null) {
+            $newValues = $data['new_values'] ?? [];
+            $data['new_values'] = is_array($newValues)
+                ? $newValues + ['_support_context' => $supportContext]
+                : ['value' => $newValues, '_support_context' => $supportContext];
+        }
 
         try {
             $this->auditLogs->insert([
@@ -110,6 +117,7 @@ final class AuditService
 
         $oldValues = $this->sanitize($entity, $oldValues);
         $newValues = $this->sanitize($entity, $newValues);
+        $supportContext = $this->supportContext();
 
         if ($action === self::UPDATE) {
             [$oldValues, $newValues] = $this->changedValues(
@@ -120,6 +128,10 @@ final class AuditService
             if ($newValues === []) {
                 return;
             }
+        }
+
+        if ($supportContext !== null && $newValues !== null) {
+            $newValues['_support_context'] = $supportContext;
         }
 
         try {
@@ -189,5 +201,29 @@ final class AuditService
         }
 
         return [$changedOld, $changedNew];
+    }
+
+    private function supportContext(): ?array
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            return null;
+        }
+
+        $support = $_SESSION['support_impersonation'] ?? null;
+        if (!is_array($support) || empty($support['company_id'])) {
+            return null;
+        }
+
+        return [
+            'support_mode' => true,
+            'real_user_id' => $this->identity->userId(),
+            'company_id' => (int) $support['company_id'],
+            'company_name' => (string) ($support['company_name'] ?? ''),
+            'simulated_role' => (string) ($support['simulated_role'] ?? ''),
+            'simulated_role_label' => (string) ($support['simulated_role_label'] ?? ''),
+            'extra_permissions' => is_array($support['extra_permissions'] ?? null)
+                ? array_values($support['extra_permissions'])
+                : [],
+        ];
     }
 }

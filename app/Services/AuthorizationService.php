@@ -18,6 +18,13 @@ final class AuthorizationService
     {
         $this->assertValidPermission($permission);
 
+        // The real global Super Admin can traverse every authorized view. When
+        // support simulation is active, IdentityMiddleware exposes only the
+        // simulated tenant role here, so this bypass is intentionally disabled.
+        if ($this->hasAnyRole(['super-admin'])) {
+            return true;
+        }
+
         if ($permission === 'identity.manage'
             && $this->hasAnyRole(['master', 'super-admin', 'admin'])) {
             return true;

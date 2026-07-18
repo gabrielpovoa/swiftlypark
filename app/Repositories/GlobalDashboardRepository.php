@@ -15,9 +15,20 @@ final class GlobalDashboardRepository extends BaseRepository
                 'SELECT
                     (SELECT COUNT(*) FROM companies WHERE deleted_at IS NULL) AS active_companies,
                     (SELECT COUNT(*) FROM usuario WHERE deleted_at IS NULL) AS registered_users,
-                    (SELECT COUNT(*) FROM vagas_preenchidas WHERE hora_saida IS NULL) AS active_sessions,
-                    (SELECT COUNT(*) FROM vagas_preenchidas WHERE hora_entrada IS NOT NULL) AS completed_checkins,
-                    (SELECT COALESCE(SUM(valor), 0) FROM transacoes) AS total_revenue,
+                    (SELECT COUNT(*)
+                        FROM vagas_preenchidas vp
+                        INNER JOIN companies c ON c.id = vp.company_id AND c.deleted_at IS NULL
+                        WHERE vp.hora_saida IS NULL
+                    ) AS active_sessions,
+                    (SELECT COUNT(*)
+                        FROM vagas_preenchidas vp
+                        INNER JOIN companies c ON c.id = vp.company_id AND c.deleted_at IS NULL
+                        WHERE vp.hora_entrada IS NOT NULL
+                    ) AS completed_checkins,
+                    (SELECT COALESCE(SUM(t.valor), 0)
+                        FROM transacoes t
+                        INNER JOIN companies c ON c.id = t.company_id AND c.deleted_at IS NULL
+                    ) AS total_revenue,
                     (SELECT COUNT(*) FROM audit_logs
                         WHERE action IN (
                             \'CROSS_TENANT_ACCESS_ATTEMPT\',

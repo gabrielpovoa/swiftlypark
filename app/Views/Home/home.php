@@ -18,7 +18,9 @@
                             <p class="text-xs font-black uppercase tracking-[0.2em]">Modo de suporte ativo</p>
                             <p class="text-sm font-bold">
                                 Você está atuando como Super-Admin na empresa
-                                <span class="text-white"><?= htmlspecialchars((string) $_SESSION['support_impersonation']['company_name'], ENT_QUOTES, 'UTF-8') ?></span>.
+                                <span class="text-white"><?= htmlspecialchars((string) $_SESSION['support_impersonation']['company_name'], ENT_QUOTES, 'UTF-8') ?></span>,
+                                visualizando como
+                                <span class="text-white"><?= htmlspecialchars((string) ($_SESSION['support_impersonation']['simulated_role_label'] ?? $_SESSION['support_impersonation']['simulated_role'] ?? 'perfil simulado'), ENT_QUOTES, 'UTF-8') ?></span>.
                                 Todas as ações serão auditadas.
                             </p>
                         </div>

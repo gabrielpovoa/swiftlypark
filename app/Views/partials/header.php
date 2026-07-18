@@ -52,6 +52,18 @@ if ($isPlatformAdmin && $supportCompanyId !== false && $supportCompanyId !== nul
 $tenants = $isPlatformAdmin
     ? $tenantRepository->findSwitchableCompaniesForPlatformUser($identity->userId())
     : $tenantRepository->findCompaniesForUser($identity->userId());
+$supportRoles = $isPlatformAdmin ? $tenantRepository->findSupportRoles() : [];
+$supportPermissions = $isPlatformAdmin ? $tenantRepository->findActivePermissions() : [];
+$supportProfile = is_array($_SESSION['support_impersonation'] ?? null)
+    ? $_SESSION['support_impersonation']
+    : [];
+$supportProfileSelected = ($supportProfile['profile_selected'] ?? false) === true;
+$supportRoleSlug = $supportProfileSelected
+    ? (string) ($supportProfile['simulated_role'] ?? '')
+    : '__super_admin__';
+$supportExtraPermissions = is_array($supportProfile['extra_permissions'] ?? null)
+    ? array_map('intval', $supportProfile['extra_permissions'])
+    : [];
 $showTenantSwitcher = count($tenants) > 1
     || $isPlatformAdmin;
 $showGlobalPlaceholder = $isPlatformAdmin
@@ -130,8 +142,8 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
                         <select
                             id="tenant-switcher-select"
                             class="tenant-switcher__select mt-1 w-full rounded-lg border border-white/10 bg-[#111827] px-2 py-1.5 text-xs font-bold text-white outline-none transition focus:border-blue-500 disabled:opacity-60">
-                            <?php if ($showGlobalPlaceholder): ?>
-                                <option value="" selected disabled>Dashboard global</option>
+                            <?php if ($isPlatformAdmin): ?>
+                                <option value="__global__" <?= $showGlobalPlaceholder ? 'selected' : '' ?>>Dashboard global</option>
                             <?php endif; ?>
                             <?php foreach ($tenants as $tenant): ?>
                                 <?php
@@ -154,6 +166,65 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
                     </div>
                 </div>
             </div>
+
+            <?php if ($isPlatformAdmin && $currentCompanyId !== null && $supportRoles !== []): ?>
+                <div
+                    class="support-profile mb-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    data-extra-permissions="<?= $escape(json_encode($supportExtraPermissions, JSON_THROW_ON_ERROR)) ?>">
+                    <div class="flex items-start gap-2">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            <i data-lucide="badge-check" class="h-4 w-4"></i>
+                        </div>
+                        <form class="support-profile__form min-w-0 flex-1">
+                            <span class="block text-[9px] font-black uppercase tracking-[0.18em] text-amber-200/80">Visualizar como</span>
+                            <select
+                                name="simulated_role"
+                                class="support-profile__role mt-1 w-full rounded-lg border border-white/10 bg-[#111827] px-2 py-1.5 text-xs font-bold text-white outline-none transition focus:border-amber-400">
+                                <option value="__super_admin__" <?= $supportRoleSlug === '__super_admin__' ? 'selected' : '' ?>>
+                                    Super-Admin · acesso global
+                                </option>
+                                <?php foreach ($supportRoles as $role): ?>
+                                    <option
+                                        value="<?= $escape($role['slug']) ?>"
+                                        <?= (string) $role['slug'] === $supportRoleSlug ? 'selected' : '' ?>>
+                                        <?= $escape($role['label']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <details class="support-profile__custom mt-2 rounded-lg border border-white/10 bg-black/20 p-2">
+                                <summary class="cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-300">
+                                    Permissões extras
+                                </summary>
+                                <div class="mt-2 max-h-44 space-y-1 overflow-y-auto pr-1">
+                                    <?php foreach ($supportPermissions as $permission): ?>
+                                        <?php $permissionId = (int) $permission['id']; ?>
+                                        <label class="flex items-start gap-2 rounded-md px-1 py-1 text-[11px] font-bold text-slate-300 hover:bg-white/[0.04]">
+                                            <input
+                                                type="checkbox"
+                                                name="extra_permissions[]"
+                                                value="<?= $permissionId ?>"
+                                                <?= in_array($permissionId, $supportExtraPermissions, true) ? 'checked' : '' ?>
+                                                class="mt-0.5 rounded border-white/10 bg-slate-900 text-amber-400 focus:ring-amber-400">
+                                            <span class="leading-tight">
+                                                <?= $escape($permission['name']) ?>
+                                                <span class="block text-[9px] text-slate-500"><?= $escape($permission['slug']) ?></span>
+                                            </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </details>
+                            <button class="support-profile__submit mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-amber-300">
+                                <i data-lucide="rotate-cw" class="h-3.5 w-3.5"></i>
+                                Aplicar perfil
+                            </button>
+                            <span class="support-profile__loading mt-2 hidden items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-200">
+                                <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>
+                                Atualizando
+                            </span>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <a href="/Profile" class="group/user flex items-center h-14 rounded-2xl hover:bg-white/[0.05] transition-all duration-300 mb-2">
@@ -203,6 +274,7 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
     window.SwiftlyParkTenant = Object.assign(window.SwiftlyParkTenant || {}, {
         currentCompanyId: <?= json_encode($currentCompanyId, JSON_THROW_ON_ERROR) ?>,
         supportImpersonation: <?= json_encode($supportCompanyId !== false && $supportCompanyId !== null, JSON_THROW_ON_ERROR) ?>,
+        supportProfile: <?= json_encode($supportProfile, JSON_THROW_ON_ERROR) ?>,
         tenants: <?= json_encode(array_map(
             fn (array $tenant): array => [
                 'id' => (int) $tenant['id'],

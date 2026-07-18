@@ -15,6 +15,7 @@ use App\Controllers\IdentityManagementController;
 use App\Controllers\FinanceController;
 use App\Controllers\AdminProvisioningController;
 use App\Controllers\AdminMonthlyContractController;
+use App\Controllers\AdminCompanyBillingController;
 use App\Controllers\ApiTenantController;
 use App\Controllers\DashboardGlobalController;
 use App\Exceptions\UnauthorizedException;
@@ -342,10 +343,10 @@ $router->get('admin/companies', permissionRequired('identity.manage', 'admin/com
     (new AdminProvisioningController())->companiesIndex();
 }));
 $router->get('admin/companies/pricing', permissionRequired('identity.manage', 'admin/companies/pricing', function () {
-    (new AdminProvisioningController())->companyPricing();
+    (new AdminCompanyBillingController())->show();
 }));
 $router->get('admin/companies/company_id={company_id}', permissionRequired('identity.manage', 'admin/companies/company', function (int $companyId) {
-    (new AdminProvisioningController())->companyPricing($companyId);
+    (new AdminCompanyBillingController())->show($companyId);
 }));
 $router->post('admin/companies/create', authRequired(function () {
     (new AdminProvisioningController())->createCompany();
@@ -354,10 +355,10 @@ $router->post('admin/companies/update', authRequired(function () {
     (new AdminProvisioningController())->updateCompany();
 }));
 $router->post('admin/companies/pricing', authRequired(function () {
-    (new AdminProvisioningController())->updateCompanyPricing();
+    (new AdminCompanyBillingController())->update();
 }));
 $router->post('admin/companies/company_id={company_id}', authRequired(function (int $companyId) {
-    (new AdminProvisioningController())->updateCompanyPricing($companyId);
+    (new AdminCompanyBillingController())->update($companyId);
 }));
 $router->post('admin/companies/company_id={company_id}/contracts/create', authRequired(function (int $companyId) {
     (new AdminMonthlyContractController())->create($companyId);

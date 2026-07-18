@@ -18,6 +18,13 @@ foreach (['create', 'renew', 'cancel'] as $action) {
     }
 }
 
+foreach (['show', 'update'] as $action) {
+    $expected = '(new AdminCompanyBillingController())->' . $action;
+    if (!str_contains($routes, $expected)) {
+        throw new RuntimeException('Rota de cobrança não aponta para ' . $action . '.');
+    }
+}
+
 foreach (['createMonthlyContract', 'renewMonthlyContract', 'cancelMonthlyContract'] as $legacyMethod) {
     if (str_contains($legacy, 'function ' . $legacyMethod . '(')) {
         throw new RuntimeException('Responsabilidade mensalista retornou ao controller legado.');

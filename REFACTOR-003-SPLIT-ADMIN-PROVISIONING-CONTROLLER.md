@@ -83,6 +83,17 @@ AdminMonthlyContractController
   instanciar o controller dedicado.
 - Removidas 238 linhas de responsabilidade mensalista do controller original.
 
+### Cobrança e tarifários
+
+- Criado `app/Controllers/AdminCompanyBillingController.php`.
+- As duas rotas GET da página da empresa e as duas rotas POST de atualização
+  agora usam `show` e `update` no controller dedicado.
+- Preservados leitura dos tarifários, contratos mensalistas, mensagens, CSRF,
+  autorização, upload seguro da logo e validação dos quatro tipos de veículo.
+- Atualização da empresa, upsert dos tarifários e auditoria continuam atômicos,
+  com lock pessimista da empresa.
+- O teste de fronteira passou a verificar também o roteamento de cobrança.
+
 ### Validação executada
 
 ```text
@@ -115,10 +126,8 @@ controllers agora aumentaria o acoplamento durante a separação.
 
 ## Próximo passo exato
 
-1. Extrair `companyPricing` e `updateCompanyPricing` para
-   `AdminCompanyBillingController`.
-2. Manter a leitura de contratos mensalistas na página de cobrança por meio do
-   repository existente.
-3. Atualizar somente as rotas de visualização e atualização de cobrança.
-4. Executar novamente lint, suíte completa e verificação do autoload.
-5. Depois separar governança de empresas e provisionamento de usuários.
+1. Remover de `AdminProvisioningController` os métodos e helpers de cobrança
+   que ficaram sem consumidores após a troca das rotas.
+2. Executar a suíte completa e ampliar o teste para impedir o retorno desses
+   métodos ao controller legado.
+3. Separar governança de empresas e provisionamento de usuários.

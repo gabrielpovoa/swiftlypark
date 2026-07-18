@@ -93,6 +93,8 @@ AdminMonthlyContractController
 - Atualização da empresa, upsert dos tarifários e auditoria continuam atômicos,
   com lock pessimista da empresa.
 - O teste de fronteira passou a verificar também o roteamento de cobrança.
+- Removidos do controller legado os dois endpoints, o validador exclusivo e o
+  import de repository que ficaram sem consumidores (204 linhas adicionais).
 
 ### Validação executada
 
@@ -126,8 +128,6 @@ controllers agora aumentaria o acoplamento durante a separação.
 
 ## Próximo passo exato
 
-1. Remover de `AdminProvisioningController` os métodos e helpers de cobrança
-   que ficaram sem consumidores após a troca das rotas.
-2. Executar a suíte completa e ampliar o teste para impedir o retorno desses
-   métodos ao controller legado.
-3. Separar governança de empresas e provisionamento de usuários.
+1. Separar governança de empresas em `AdminCompanyController`.
+2. Separar provisionamento de usuários em `AdminUserProvisioningController`.
+3. Executar a suíte completa, atualizar o roadmap e finalizar a feature.

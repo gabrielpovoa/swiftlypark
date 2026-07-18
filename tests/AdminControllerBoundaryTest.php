@@ -31,6 +31,12 @@ foreach (['createMonthlyContract', 'renewMonthlyContract', 'cancelMonthlyContrac
     }
 }
 
+foreach (['companyPricing', 'updateCompanyPricing', 'validateTariff'] as $legacyMethod) {
+    if (str_contains($legacy, 'function ' . $legacyMethod . '(')) {
+        throw new RuntimeException('Responsabilidade de cobrança retornou ao controller legado.');
+    }
+}
+
 foreach (['beginTransaction()', 'commit()', 'rollBack()', 'FOR UPDATE', 'AuditLogRepository'] as $guarantee) {
     if (!str_contains($monthly, $guarantee)) {
         throw new RuntimeException('Garantia ausente no controller mensalista: ' . $guarantee);

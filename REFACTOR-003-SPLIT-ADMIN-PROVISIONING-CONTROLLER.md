@@ -4,7 +4,7 @@
 
 - Branch: `feature/split-admin-provisioning-controller`
 - Base: `develop` em `eaae93f`
-- Estado: em andamento
+- Estado: concluída
 - Feature anterior: `REFACTOR-002-DATABASE-MIGRATIONS.md`
 
 ## Objetivo
@@ -96,6 +96,17 @@ AdminMonthlyContractController
 - Removidos do controller legado os dois endpoints, o validador exclusivo e o
   import de repository que ficaram sem consumidores (204 linhas adicionais).
 
+### Empresas e usuários
+
+- Criado `AdminCompanyController` para criação, diretório, edição e inativação
+  de empresas.
+- Criado `AdminUserProvisioningController` para usuários, vínculos, senhas
+  temporárias e permissões adicionais por empresa.
+- Removido definitivamente `AdminProvisioningController`.
+- Todas as rotas públicas foram preservadas e apontam para os novos limites.
+- O teste de fronteira falha se o controller legado voltar a existir ou se uma
+  responsabilidade de empresas retornar ao controller de usuários.
+
 ### Validação executada
 
 ```text
@@ -128,6 +139,6 @@ controllers agora aumentaria o acoplamento durante a separação.
 
 ## Próximo passo exato
 
-1. Separar governança de empresas em `AdminCompanyController`.
-2. Separar provisionamento de usuários em `AdminUserProvisioningController`.
-3. Executar a suíte completa, atualizar o roadmap e finalizar a feature.
+1. Finalizar a branch com Git Flow.
+2. Iniciar `feature/extract-company-module` a partir de `develop`.
+3. Consultar `REFACTOR-004-EXTRACT-COMPANY-MODULE.md` ao retomar o trabalho.

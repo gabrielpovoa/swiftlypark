@@ -13,9 +13,10 @@ use App\Controllers\ProfileController;
 use App\Controllers\AuditController;
 use App\Controllers\IdentityManagementController;
 use App\Controllers\FinanceController;
-use App\Controllers\AdminProvisioningController;
+use App\Controllers\AdminUserProvisioningController;
 use App\Controllers\AdminMonthlyContractController;
 use App\Controllers\AdminCompanyBillingController;
+use App\Controllers\AdminCompanyController;
 use App\Controllers\ApiTenantController;
 use App\Controllers\DashboardGlobalController;
 use App\Exceptions\UnauthorizedException;
@@ -334,13 +335,13 @@ $router->post('identity/permissions', permissionRequired('identity.manage', 'ide
 }));
 
 $router->get('admin', permissionRequired('identity.manage', 'admin', function () {
-    (new AdminProvisioningController())->index();
+    (new AdminUserProvisioningController())->index();
 }));
 $router->get('admin/dashboard', superAdminRequired(function () {
     (new DashboardGlobalController())->index();
 }));
 $router->get('admin/companies', permissionRequired('identity.manage', 'admin/companies', function () {
-    (new AdminProvisioningController())->companiesIndex();
+    (new AdminCompanyController())->companiesIndex();
 }));
 $router->get('admin/companies/pricing', permissionRequired('identity.manage', 'admin/companies/pricing', function () {
     (new AdminCompanyBillingController())->show();
@@ -349,10 +350,10 @@ $router->get('admin/companies/company_id={company_id}', permissionRequired('iden
     (new AdminCompanyBillingController())->show($companyId);
 }));
 $router->post('admin/companies/create', authRequired(function () {
-    (new AdminProvisioningController())->createCompany();
+    (new AdminCompanyController())->createCompany();
 }));
 $router->post('admin/companies/update', authRequired(function () {
-    (new AdminProvisioningController())->updateCompany();
+    (new AdminCompanyController())->updateCompany();
 }));
 $router->post('admin/companies/pricing', authRequired(function () {
     (new AdminCompanyBillingController())->update();
@@ -370,22 +371,22 @@ $router->post('admin/companies/company_id={company_id}/contracts/cancel', authRe
     (new AdminMonthlyContractController())->cancel($companyId);
 }));
 $router->post('admin/companies/deactivate', authRequired(function () {
-    (new AdminProvisioningController())->deactivateCompany();
+    (new AdminCompanyController())->deactivateCompany();
 }));
 $router->post('admin/users/create', authRequired(function () {
-    (new AdminProvisioningController())->createUser();
+    (new AdminUserProvisioningController())->createUser();
 }));
 $router->post('admin/users/link-company', authRequired(function () {
-    (new AdminProvisioningController())->linkExistingUser();
+    (new AdminUserProvisioningController())->linkExistingUser();
 }));
 $router->post('admin/users/send-temporary-password', authRequired(function () {
-    (new AdminProvisioningController())->sendTemporaryPassword();
+    (new AdminUserProvisioningController())->sendTemporaryPassword();
 }));
 $router->post('admin/users/remove-company', authRequired(function () {
-    (new AdminProvisioningController())->removeCompanyAccess();
+    (new AdminUserProvisioningController())->removeCompanyAccess();
 }));
 $router->post('admin/users/company-permissions', authRequired(function () {
-    (new AdminProvisioningController())->syncCompanyPermissions();
+    (new AdminUserProvisioningController())->syncCompanyPermissions();
 }));
 
 $router->get('finance', permissionRequired('finance.view', 'finance', function () {

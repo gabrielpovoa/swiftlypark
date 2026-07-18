@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Finance\Application;
 
 use App\Finance\Infrastructure\FinancialReportRepository;
+use App\Shared\Domain\ValueObject\DatePeriod;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
@@ -25,7 +26,9 @@ final class FinancialReportService
             throw new InvalidArgumentException('Período financeiro inválido.');
         }
 
-        $end = $start->modify('+1 month');
+        $period = new DatePeriod($start, $start->modify('+1 month'));
+        $start = $period->start();
+        $end = $period->end();
         $previousYearStart = $start->modify('-1 year');
         $previousYearEnd = $end->modify('-1 year');
         $startUtc = $start->setTimezone($utc)->format('Y-m-d H:i:s');
@@ -156,4 +159,3 @@ final class FinancialReportService
         return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
     }
 }
-

@@ -16,6 +16,7 @@
     use App\Services\AuditService;
     use App\Services\AuthorizationService;
     use App\Transactions\TransactionManager;
+    use App\Shared\Domain\ValueObject\VehiclePlate;
     use Config\Database;
     use DateTime;
     use Exception;
@@ -134,6 +135,7 @@
         ): int
         {
             $tipoVeiculo = VehicleType::fromInput($tipoVeiculo)->value;
+            $plate = VehiclePlate::fromString($plate)->value();
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vehicle.checkin');
 
@@ -171,6 +173,7 @@
 
         public function checkIfVehicleIsParked(string $plate)
         {
+            $plate = VehiclePlate::fromString($plate)->value();
             $sql = "SELECT id_vaga FROM vagas_preenchidas
                 WHERE placa = :plate
                   AND hora_saida IS NULL

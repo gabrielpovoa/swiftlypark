@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Parking\Infrastructure;
 
 use App\Context\IdentityContext;
+use App\Parking\Domain\VehicleType;
 use App\Context\TenantContext;
 use App\Exceptions\TenantNotSetException;
 use App\Repositories\AuditLogRepository;
@@ -17,7 +18,7 @@ use Config\Database;
 use PDO;
 use Throwable;
 
-final class CreateVacancyModel
+final class PdoVacancyCreator
 {
     private PDO $db;
     private TransactionalAuditDecorator $audit;
@@ -37,6 +38,7 @@ final class CreateVacancyModel
 
     public function createVacancy(string $category, int $amount): bool
     {
+        $category = VehicleType::fromInput($category)->value;
         try {
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vacancy.create');
@@ -97,3 +99,4 @@ final class CreateVacancyModel
         return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
     }
 }
+

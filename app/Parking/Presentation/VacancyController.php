@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Parking\Presentation;
 
 use Core\Controller;
-use App\Models\VacancyModel;
+use App\Parking\Application\ParkingService;
 use App\Context\IdentityContext;
 use App\Services\AuthorizationService;
 use App\Security\InputSanitizer;
@@ -16,7 +16,7 @@ class VacancyController extends Controller
      */
     public function index()
     {
-        $model = new VacancyModel();
+        $model = new ParkingService();
         $counts = $model->getAvailableCounts();
 
         $this->setview('Vacancy/vacancy', [
@@ -29,7 +29,7 @@ class VacancyController extends Controller
 
     public function apply()
     {
-        $model = new VacancyModel();
+        $model = new ParkingService();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sanitizer = new InputSanitizer();
@@ -174,7 +174,7 @@ class VacancyController extends Controller
 
     public function manage()
     {
-        $model = new VacancyModel();
+        $model = new ParkingService();
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -245,7 +245,7 @@ class VacancyController extends Controller
         }
 
         try {
-            $model = new \App\Models\VacancyModel();
+            $model = new ParkingService();
 
             $vaga = $model->getVagaById($idVaga);
             if (!$vaga) {
@@ -289,3 +289,4 @@ class VacancyController extends Controller
     }
 
 }
+

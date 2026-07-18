@@ -1,12 +1,12 @@
 <?php
-    namespace App\Controllers;
+    namespace App\Parking\Presentation;
 
     use App\Context\IdentityContext;
     use Core\Controller;
-    use App\Models\CreateVacancyModel;
+    use App\Parking\Application\CreateVacancies;
     use App\Services\AuthorizationService;
 
-    class CreateVacancy extends Controller
+    final class CreateVacancyController extends Controller
     {
         public function index()
         {
@@ -24,7 +24,7 @@
             $category = $_POST['category'] ?? '';
             $amount = (int) ($_POST['amount'] ?? 0);
 
-            $model = new CreateVacancyModel();
+            $model = new CreateVacancies();
 
             if ($category && $amount > 0) {
                 $success = $model->createVacancy($category, $amount);
@@ -47,3 +47,4 @@
                 ->check('vacancy.create');
         }
     }
+

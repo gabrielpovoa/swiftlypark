@@ -39,7 +39,7 @@ trabalho sem depender do histórico da conversa.
 | 003 | `feature/split-admin-provisioning-controller` | Casos administrativos separados por responsabilidade | Concluída |
 | 004 | `feature/extract-company-module` | Contexto Companies modularizado | Concluída |
 | 005 | `feature/extract-identity-module` | Contexto Identity modularizado | Concluída |
-| 006 | `feature/extract-parking-module` | Check-in, ocupação e checkout modularizados | Pendente |
+| 006 | `feature/extract-parking-module` | Check-in, ocupação e checkout modularizados | Concluída |
 | 007 | `feature/extract-billing-module` | Tarifários e contratos no contexto Billing | Pendente |
 | 008 | `feature/extract-finance-module` | Finance completo e limites de reporting definidos | Pendente |
 | 009 | `feature/add-domain-value-objects` | Money, Plate, períodos e enums tipados | Pendente |

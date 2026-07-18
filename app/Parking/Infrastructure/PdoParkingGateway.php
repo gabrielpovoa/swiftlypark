@@ -6,9 +6,10 @@
     use App\Parking\Domain\BillingMode;
     use App\Parking\Domain\VacancyStatus;
     use App\Parking\Domain\VehicleType;
+    use App\Parking\Domain\ParkingGateway;
     use App\Context\TenantContext;
     use App\Exceptions\TenantNotSetException;
-    use App\Billing\Infrastructure\PricingRepository;
+    use App\Billing\Infrastructure\PdoPricingRepository;
     use App\Billing\Infrastructure\MonthlyContractRepository;
     use App\Billing\Application\PriceCalculator;
     use App\Repositories\AuditLogRepository;
@@ -23,7 +24,7 @@
     use PDO;
     use PDOException;
 
-    final class PdoParkingGateway
+    final class PdoParkingGateway implements ParkingGateway
     {
         private PDO $db;
         private TransactionalAuditDecorator $audit;
@@ -122,7 +123,7 @@
 
         public function isMonthlyCompany(): bool
         {
-            return (new PricingRepository($this->db))->isMonthlyCompany($this->companyId());
+            return (new PdoPricingRepository($this->db))->isMonthlyCompany($this->companyId());
         }
 
         public function ocuparVaga(
@@ -322,7 +323,7 @@
             }
 
             $companyId = $this->companyId();
-            $pricingRepository = new PricingRepository($this->db);
+            $pricingRepository = new PdoPricingRepository($this->db);
 
             return $this->transactions->run(function () use (
                 $companyId,

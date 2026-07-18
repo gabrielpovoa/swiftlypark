@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Finance\Application;
 
 use App\Context\RequestIdentity;
-use App\Finance\Infrastructure\FinancialAdjustmentRepository;
+use App\Finance\Domain\FinancialAdjustmentRepository;
 use App\Finance\Domain\AdjustmentType;
 use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;

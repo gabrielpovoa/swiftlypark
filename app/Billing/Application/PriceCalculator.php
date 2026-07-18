@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Billing\Application;
 
-use App\Billing\Infrastructure\PricingRepository;
+use App\Billing\Domain\PricingRepository;
 use App\Billing\Domain\Tariff;
 use DomainException;
 

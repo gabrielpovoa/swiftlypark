@@ -6,6 +6,7 @@ namespace App\Parking\Infrastructure;
 
 use App\Context\IdentityContext;
 use App\Parking\Domain\VehicleType;
+use App\Parking\Domain\VacancyCreator;
 use App\Context\TenantContext;
 use App\Exceptions\TenantNotSetException;
 use App\Repositories\AuditLogRepository;
@@ -18,7 +19,7 @@ use Config\Database;
 use PDO;
 use Throwable;
 
-final class PdoVacancyCreator
+final class PdoVacancyCreator implements VacancyCreator
 {
     private PDO $db;
     private TransactionalAuditDecorator $audit;
@@ -99,4 +100,3 @@ final class PdoVacancyCreator
         return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
     }
 }
-

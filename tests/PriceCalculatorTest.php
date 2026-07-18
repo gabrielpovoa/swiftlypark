@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Billing\Infrastructure\PricingRepository;
+use App\Billing\Infrastructure\PdoPricingRepository;
 use App\Billing\Application\PriceCalculator;
 
 $connection = new PDO('sqlite::memory:');
@@ -23,7 +23,7 @@ $connection->exec(
     "INSERT INTO tarifarios VALUES (7, 'carro', 10.00, 3.50, 15, 30)"
 );
 
-$calculator = new PriceCalculator(new PricingRepository($connection));
+$calculator = new PriceCalculator(new PdoPricingRepository($connection));
 
 $assertAmount = static function (float $expected, float $actual, string $scenario): void {
     if (abs($expected - $actual) > 0.001) {

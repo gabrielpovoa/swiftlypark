@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Finance\Application;
 
-use App\Finance\Infrastructure\FinancialReportRepository;
+use App\Finance\Domain\FinancialReportRepository;
 use App\Shared\Domain\ValueObject\DatePeriod;
 use DateTimeImmutable;
 use DateTimeZone;

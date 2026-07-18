@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Billing\Infrastructure;
 
+use App\Billing\Domain\PricingRepository;
 use PDO;
 
-final class PricingRepository
+final class PdoPricingRepository implements PricingRepository
 {
     public function __construct(private PDO $connection)
     {
@@ -42,4 +43,5 @@ final class PricingRepository
         return $value !== false && (int) $value === 1;
     }
 }
+
 

@@ -4,6 +4,7 @@ namespace App\Parking\Presentation;
 
 use Core\Controller;
 use App\Parking\Application\ParkingService;
+use App\Parking\Infrastructure\PdoParkingGateway;
 use App\Context\IdentityContext;
 use App\Services\AuthorizationService;
 use App\Security\InputSanitizer;
@@ -16,7 +17,7 @@ class VacancyController extends Controller
      */
     public function index()
     {
-        $model = new ParkingService();
+        $model = new ParkingService(new PdoParkingGateway());
         $counts = $model->getAvailableCounts();
 
         $this->setview('Vacancy/vacancy', [
@@ -29,7 +30,7 @@ class VacancyController extends Controller
 
     public function apply()
     {
-        $model = new ParkingService();
+        $model = new ParkingService(new PdoParkingGateway());
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sanitizer = new InputSanitizer();
@@ -174,7 +175,7 @@ class VacancyController extends Controller
 
     public function manage()
     {
-        $model = new ParkingService();
+        $model = new ParkingService(new PdoParkingGateway());
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -245,7 +246,7 @@ class VacancyController extends Controller
         }
 
         try {
-            $model = new ParkingService();
+            $model = new ParkingService(new PdoParkingGateway());
 
             $vaga = $model->getVagaById($idVaga);
             if (!$vaga) {
@@ -289,4 +290,3 @@ class VacancyController extends Controller
     }
 
 }
-

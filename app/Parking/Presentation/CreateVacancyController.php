@@ -4,6 +4,7 @@
     use App\Context\IdentityContext;
     use Core\Controller;
     use App\Parking\Application\CreateVacancies;
+    use App\Parking\Infrastructure\PdoVacancyCreator;
     use App\Services\AuthorizationService;
 
     final class CreateVacancyController extends Controller
@@ -24,7 +25,7 @@
             $category = $_POST['category'] ?? '';
             $amount = (int) ($_POST['amount'] ?? 0);
 
-            $model = new CreateVacancies();
+            $model = new CreateVacancies(new PdoVacancyCreator());
 
             if ($category && $amount > 0) {
                 $success = $model->createVacancy($category, $amount);
@@ -47,4 +48,3 @@
                 ->check('vacancy.create');
         }
     }
-

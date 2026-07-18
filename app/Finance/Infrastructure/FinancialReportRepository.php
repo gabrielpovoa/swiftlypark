@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Finance\Infrastructure;
 
+use App\Finance\Domain\FinancialReportRepository as FinancialReportRepositoryContract;
 use PDO;
 
-final class FinancialReportRepository extends \App\Repositories\BaseRepository
+final class FinancialReportRepository extends \App\Repositories\BaseRepository implements FinancialReportRepositoryContract
 {
 
     public function summary(string $startUtc, string $endUtc): array
@@ -255,4 +256,3 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
         return $exists;
     }
 }
-

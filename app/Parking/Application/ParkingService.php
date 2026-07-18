@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Parking\Application;
 
-use App\Parking\Infrastructure\PdoParkingGateway;
+use App\Parking\Domain\ParkingGateway;
 
 final class ParkingService
 {
-    public function __construct(private ?PdoParkingGateway $gateway = null)
-    {
-        $this->gateway ??= new PdoParkingGateway();
-    }
+    public function __construct(private ParkingGateway $gateway) {}
 
     public function getAvailableCounts(): array { return $this->gateway->getAvailableCounts(); }
     public function getFreeVagaByCategory(string $category): array|false { return $this->gateway->getFreeVagaByCategory($category); }

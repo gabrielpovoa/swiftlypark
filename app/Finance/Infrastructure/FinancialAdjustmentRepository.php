@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Finance\Infrastructure;
 
+use App\Finance\Domain\FinancialAdjustmentRepository as FinancialAdjustmentRepositoryContract;
 use PDO;
 
-final class FinancialAdjustmentRepository extends \App\Repositories\BaseRepository
+final class FinancialAdjustmentRepository extends \App\Repositories\BaseRepository implements FinancialAdjustmentRepositoryContract
 {
 
     public function findTransactionForUpdate(int $transactionId): ?array
@@ -68,4 +69,3 @@ final class FinancialAdjustmentRepository extends \App\Repositories\BaseReposito
         return (int) $this->connection->lastInsertId();
     }
 }
-

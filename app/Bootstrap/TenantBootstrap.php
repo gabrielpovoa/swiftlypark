@@ -140,6 +140,46 @@ final class TenantBootstrap
                 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             );
         }
+
+        if ($this->tableExists($connection, 'roles')
+            && $this->tableExists($connection, 'permissions')
+            && $this->tableExists($connection, 'role_permissions')) {
+            $this->ensureFinanceRole($connection);
+        }
+    }
+
+    private function ensureFinanceRole(PDO $connection): void
+    {
+        $connection->exec(
+            "INSERT INTO roles (
+                slug, name, label, icon_slug, description, display_priority
+            )
+            SELECT 'finance', 'FINANCE', 'Financeiro', 'clipboard-check',
+                   'Consulta e ajustes financeiros.', 25
+            WHERE NOT EXISTS (
+                SELECT 1 FROM roles WHERE slug = 'finance'
+            )"
+        );
+
+        $connection->exec(
+            "INSERT INTO role_permissions (role_id, permission_id)
+            SELECT r.id, p.id
+            FROM roles r
+            INNER JOIN permissions p
+                ON p.slug IN (
+                    'dashboard.view',
+                    'finance.view',
+                    'finance.adjust',
+                    'financial.view',
+                    'profile.password.update',
+                    'profile.photo.update'
+                )
+            LEFT JOIN role_permissions rp
+                ON rp.role_id = r.id
+               AND rp.permission_id = p.id
+            WHERE r.slug = 'finance'
+              AND rp.role_id IS NULL"
+        );
     }
 
     private function ensureSwiftlyParkCompany(PDO $connection): int

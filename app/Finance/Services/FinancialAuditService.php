@@ -35,6 +35,10 @@ final class FinancialAuditService
             'amount' => $amount,
             'reason' => $reason,
         ];
+        $supportContext = $this->supportContext();
+        if ($supportContext !== null) {
+            $payload['_support_context'] = $supportContext;
+        }
 
         try {
             $newValues = json_encode($payload, JSON_THROW_ON_ERROR);
@@ -62,5 +66,29 @@ final class FinancialAuditService
                 new DateTimeZone('UTC')
             ))->format('Y-m-d H:i:s.u'),
         ]);
+    }
+
+    private function supportContext(): ?array
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            return null;
+        }
+
+        $support = $_SESSION['support_impersonation'] ?? null;
+        if (!is_array($support) || empty($support['company_id'])) {
+            return null;
+        }
+
+        return [
+            'support_mode' => true,
+            'real_user_id' => $this->identity->userId(),
+            'company_id' => (int) $support['company_id'],
+            'company_name' => (string) ($support['company_name'] ?? ''),
+            'simulated_role' => (string) ($support['simulated_role'] ?? ''),
+            'simulated_role_label' => (string) ($support['simulated_role_label'] ?? ''),
+            'extra_permissions' => is_array($support['extra_permissions'] ?? null)
+                ? array_values($support['extra_permissions'])
+                : [],
+        ];
     }
 }

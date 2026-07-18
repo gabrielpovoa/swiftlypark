@@ -47,34 +47,19 @@ final class IdentityMiddleware
 
         $tenantRepository = new TenantRepository($connection);
         $resolver = new RolePermissionResolver(new RbacRepository($connection));
-        $requestedCompanyId = filter_var(
-            $_SESSION['company_id'] ?? null,
-            FILTER_VALIDATE_INT,
-            ['options' => ['min_range' => 1]]
-        );
-        $companyId = null;
+        $companyId = $this->isGlobalDashboardRequest()
+            ? null
+            : $this->resolveCompanyId($tenantRepository, $resolver, $userId);
 
-        if ($requestedCompanyId !== false && $requestedCompanyId !== null) {
-            if ($tenantRepository->hasMembership($userId, (int) $requestedCompanyId)) {
-                $companyId = (int) $requestedCompanyId;
-            } else {
-                $globalAuthorization = $resolver->resolve($userId);
-                $impersonatedCompanyId = filter_var(
-                    $_SESSION['support_impersonation']['company_id'] ?? null,
-                    FILTER_VALIDATE_INT,
-                    ['options' => ['min_range' => 1]]
-                );
-
-                if ($this->hasPlatformAdminRole($globalAuthorization->roleSlugs())
-                    && $impersonatedCompanyId !== false
-                    && (int) $impersonatedCompanyId === (int) $requestedCompanyId
-                ) {
-                    $companyId = (int) $requestedCompanyId;
-                }
-            }
+        if ($companyId !== null) {
+            $_SESSION['company_id'] = $companyId;
         }
 
-        $authorization = $resolver->resolve($userId, $companyId);
+        $globalAuthorization = $resolver->resolve($userId, null);
+        $authorization = $this->supportAuthorization($resolver, $companyId)
+            ?? ($this->hasPlatformAdminRole($globalAuthorization->roleSlugs())
+                ? $globalAuthorization
+                : $resolver->resolve($userId, $companyId));
         $_SESSION['permissions'] = $authorization->permissions();
         $_SESSION['role_slugs'] = $authorization->roleSlugs();
         $_SESSION['role_metadata'] = $authorization
@@ -108,6 +93,137 @@ final class IdentityMiddleware
         } finally {
             IdentityContext::clear();
         }
+    }
+
+    private function resolveCompanyId(
+        TenantRepository $tenantRepository,
+        RolePermissionResolver $resolver,
+        int $userId
+    ): ?int {
+        foreach ($this->companyCandidates() as $requestedCompanyId) {
+            if ($tenantRepository->hasMembership($userId, $requestedCompanyId)) {
+                return $requestedCompanyId;
+            }
+
+            $globalAuthorization = $resolver->resolve($userId);
+            $impersonatedCompanyId = filter_var(
+                $_SESSION['support_impersonation']['company_id'] ?? null,
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1]]
+            );
+
+            if ($this->hasPlatformAdminRole($globalAuthorization->roleSlugs())
+                && $impersonatedCompanyId !== false
+                && (int) $impersonatedCompanyId === $requestedCompanyId
+            ) {
+                return $requestedCompanyId;
+            }
+        }
+
+        return null;
+    }
+
+    private function supportAuthorization(
+        RolePermissionResolver $resolver,
+        ?int $companyId
+    ): ?\App\Authorization\DTO\ResolvedAuthorizationContext {
+        if ($companyId === null) {
+            return null;
+        }
+
+        if (($_SESSION['support_impersonation']['profile_selected'] ?? false) !== true) {
+            return null;
+        }
+
+        $supportCompanyId = $this->normalizeCompanyId(
+            $_SESSION['support_impersonation']['company_id'] ?? null
+        );
+
+        if ($supportCompanyId === null || $supportCompanyId !== $companyId) {
+            return null;
+        }
+
+        $roleSlug = trim((string) ($_SESSION['support_impersonation']['simulated_role'] ?? ''));
+        if ($roleSlug === '' || $roleSlug === 'super-admin') {
+            return null;
+        }
+
+        return $resolver->resolveSimulatedRole(
+            $roleSlug,
+            is_array($_SESSION['support_impersonation']['extra_permissions'] ?? null)
+                ? $_SESSION['support_impersonation']['extra_permissions']
+                : []
+        );
+    }
+
+    private function isGlobalDashboardRequest(): bool
+    {
+        $route = trim((string) ($_GET['url'] ?? parse_url(
+            (string) ($_SERVER['REQUEST_URI'] ?? ''),
+            PHP_URL_PATH
+        ) ?? ''), '/');
+
+        return $route === 'admin/dashboard';
+    }
+
+    /**
+     * Keep authorization aligned with the tenant that the request will use.
+     */
+    private function companyCandidates(): array
+    {
+        $supportCompanyId = $this->normalizeCompanyId(
+            $_SESSION['support_impersonation']['company_id'] ?? null
+        );
+        $headerCompanyId = $this->companyIdFromHeaders();
+        $sessionCompanyId = $this->normalizeCompanyId($_SESSION['company_id'] ?? null);
+        $candidates = [];
+
+        if ($supportCompanyId !== null
+            && ($headerCompanyId === null || $headerCompanyId === $supportCompanyId)
+            && ($sessionCompanyId === null || $sessionCompanyId === $supportCompanyId)
+        ) {
+            $candidates[] = $supportCompanyId;
+        }
+
+        $candidates[] = $headerCompanyId;
+        $candidates[] = $sessionCompanyId;
+
+        $ids = [];
+        foreach ($candidates as $candidate) {
+            if ($candidate !== null && !in_array($candidate, $ids, true)) {
+                $ids[] = $candidate;
+            }
+        }
+
+        return $ids;
+    }
+
+    private function normalizeCompanyId(mixed $value): ?int
+    {
+        $companyId = filter_var(
+            $value,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+
+        return $companyId !== false ? (int) $companyId : null;
+    }
+
+    private function companyIdFromHeaders(): ?int
+    {
+        foreach (['HTTP_X_COMPANY_ID', 'HTTP_X_TENANT_ID'] as $headerName) {
+            $value = $_SERVER[$headerName] ?? null;
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $companyId = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($companyId !== false) {
+                return (int) $companyId;
+            }
+        }
+
+        return null;
     }
 
     private function resolveIpAddress(): string

@@ -1,111 +1,291 @@
-# 🏎️ SwiftlyPark - Estacionamento Inteligente
+# SwiftlyPark
 
-![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?style=for-the-badge&logo=php&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![Architecture](https://img.shields.io/badge/Architecture-MVC-green?style=for-the-badge)
+Sistema SaaS multiempresa para gestão de estacionamentos, com operação de vagas, check-in/check-out, financeiro, auditoria, RBAC, governança de usuários e dashboard global para Super-Admin.
 
-O **SwiftlyPark** é um sistema de gestão de estacionamentos focado em agilidade e controle financeiro. Desenvolvido com arquitetura MVC, o projeto oferece uma interface moderna para controle de vagas, entradas, saídas e métricas de faturamento em tempo real.
+O projeto usa PHP em arquitetura MVC, MySQL e Docker. A aplicação roda com Apache apontando para `public/`.
 
-🔗 **Repositório:** [github.com/gabrielpovoa/swiftlypark](https://github.com/gabrielpovoa/swiftlypark)
+## O Que Existe Hoje
 
----
+- Autenticação com login, logout, recuperação de senha por OTP e troca obrigatória de senha.
+- Gestão operacional de vagas, check-in e checkout de veículos.
+- Dashboard operacional por empresa.
+- Relatórios de movimentações.
+- Financeiro com visão analítica, exportação CSV, impressão e ajustes/reembolsos.
+- Auditoria por empresa e auditoria global para perfis de plataforma.
+- Multi-tenancy com isolamento por `company_id`.
+- Troca de empresa pelo Tenant Switcher.
+- Governança de usuários, empresas, vínculos e permissões.
+- RBAC com roles e permissions.
+- Permissões extras por vínculo usuário-empresa.
+- Dashboard Global para Super-Admin com KPIs agregados.
+- Modo suporte/impersonation para Super-Admin acessar ambientes de empresas.
+- Upload de foto de perfil e logo de empresa.
 
-## 🚀 Funcionalidades Implementadas
+## Papéis e Contextos
 
-| ID | Funcionalidade | Descrição | Status | Prioridade |
-| :--- | :--- | :--- | :--- | :--- |
-| **RQ-01** | Login de Usuário | Autenticação segura com e-mail e senha. | ✅ Concluído | Alta |
-| **RQ-02** | Cadastro de Conta | Criação de novos perfis vinculados ao sistema. | ✅ Concluído | Alta |
-| **RQ-03** | Gerenciar Vagas | Controle de disponibilidade (Carro, Moto, Caminhão, App). | ✅ Concluído | Alta |
-| **RQ-04** | Dashboard | Métricas de faturamento, tempo médio e ocupação. | 🔄 Em Dev | Média |
+O sistema separa três conceitos:
 
----
+- **Papel global:** define poderes na plataforma, como `super-admin` e `master`.
+- **Papel na empresa:** define o que o usuário pode fazer dentro de uma empresa, como `admin`, `operator`, `finance` ou `auditor`.
+- **Contexto ativo:** define qual empresa está sendo usada na sessão atual.
 
-## 🛠️ Tecnologias e Infraestrutura
+Um Super-Admin pode acessar o Dashboard Global e também entrar no contexto de uma empresa para suporte. Quando estiver atuando em uma empresa, o sistema deve deixar isso visível por banner e auditar as ações.
 
-O projeto foi migrado de um ambiente local (Laragon) para uma infraestrutura robusta baseada em **Docker**, garantindo que o sistema rode exatamente da mesma forma em qualquer máquina.
+Mais detalhes estão em:
 
-- **Backend:** PHP 8.2 (MVC)
-- **Banco de Dados:** MySQL 8.0
-- **Servidor Web:** Apache (configurado para `public/`)
-- **Containerização:** Docker & Docker Compose
-- **Interface DB:** phpMyAdmin incluído no ambiente
+- [spec-saas-eight.md](docs/specs/spec-saas-eight.md)
+- [spec-super-admin-support-mode.md](docs/specs/spec-super-admin-support-mode.md)
+- [spec-multi-tenancy.md](docs/specs/spec-multi-tenancy.md)
+- [spec-auth-rebac-governance.md](docs/specs/spec-auth-rebac-governance.md)
 
----
+## Stack
 
-## 📂 Estrutura do Projeto
+- PHP 8.2
+- MySQL 8.0
+- Apache
+- Docker / Docker Compose
+- Composer
+- PHPMailer
+- PhpSpreadsheet
+- Tailwind via CDN/markup nas views
+- Lucide icons nas views
+
+## Estrutura
 
 ```text
 swiftlypark/
-├── app/                # Core do sistema (Models, Views, Controllers)
-├── config/             # Configurações de banco de dados e ambiente
-├── core/               # Motor do Framework (Roteamento e Base)
-├── public/             # Ponto de entrada (index.php) e assets (CSS/JS)
-├── routes/             # Definição de rotas do sistema
-├── Dockerfile          # Configuração da imagem PHP/Apache
-└── docker-compose.yml  # Orquestração dos serviços (App, DB, phpMyAdmin)
+├── app/
+│   ├── Authorization/       # RBAC, roles e permissions
+│   ├── Bootstrap/           # Bootstrap de tenant/schema
+│   ├── Context/             # IdentityContext e TenantContext
+│   ├── Controllers/         # Controllers MVC
+│   ├── Middleware/          # Auth, tenant e autorização
+│   ├── Repositories/        # Acesso a dados
+│   ├── Services/            # Serviços de domínio e segurança
+│   └── Views/               # Views PHP
+├── config/                  # Configuração de banco
+├── core/                    # Router e Controller base
+├── database/migrations/     # Migrações incrementais
+├── docs/specs/              # Especificações funcionais/técnicas
+├── heidSQL/parking.sql      # Dump/base inicial
+├── public/                  # index.php, assets e uploads
+├── routes/web.php           # Rotas HTTP
+├── tests/                   # Testes de segurança, tenant e governança
+├── compose.yaml             # Ambiente Docker
+├── Dockerfile
+└── composer.json
 ```
 
----
-## 🐳 Como Rodar o Projeto com Docker
+## Como Rodar
 
-Para iniciar o ambiente de desenvolvimento, certifique-se de ter o **Docker Desktop** instalado em sua máquina.
+Pré-requisitos:
 
-### 1️⃣ Clonar o Repositório
-Abra o seu terminal e execute os comandos abaixo para baixar o projeto e acessar a pasta raiz:
-``` bash
-    git clone [https://github.com/gabrielpovoa/swiftlypark.git](https://github.com/gabrielpovoa/swiftlypark.git)
-cd swiftlypark
+- Docker
+- Docker Compose
+
+Suba o ambiente:
+
+```bash
+docker compose up -d --build
 ```
 
----
+Acesse:
 
-## 2️⃣ Subir os Containers
-Utilize o Docker Compose para construir as imagens e iniciar os serviços (PHP, MySQL e phpMyAdmin):
+- Aplicação: http://localhost:8080
+- phpMyAdmin: http://localhost:8081
 
-``` bash
-    docker-compose up -d --build
+Banco local:
+
+```text
+Host: db
+Database: parking
+User: root
+Password: root
 ```
 
----
+Para acessar pelo host, use:
 
-## 3️⃣ Acessar o Sistema
-Após o carregamento, os serviços estarão disponíveis nos seguintes endereços:
-
-- 🌐 Aplicação: http://localhost:8080
-- 🗄️ phpMyAdmin: http://localhost:8081
-
-``` mysql
-    Usuário: root
-    Senha: root
+```text
+Host: 127.0.0.1
+Port: 3306
+Database: parking
+User: root
+Password: root
 ```
 
-💡 Dica: No primeiro acesso, utilize o phpMyAdmin para importar o arquivo .sql que acompanha o projeto para criar as tabelas e popular os dados iniciais.
+Se o banco estiver vazio, importe o dump:
 
----
+```text
+heidSQL/parking.sql
+```
 
-## 🗄️ Modelagem do Banco de Dados
-- A arquitetura do banco de dados foi projetada com foco em integridade referencial e automação de processos via deleção em cascata (ON DELETE CASCADE):
+O bootstrap da aplicação também cria/ajusta parte da infraestrutura SaaS automaticamente quando o app inicia, como tabelas de tenant, vínculos e colunas `company_id` em tabelas operacionais existentes.
 
-- Login & Usuário: Estrutura normalizada com separação entre credenciais de acesso e informações de perfil.
+## Rotas Principais
 
-- Gestão de Vagas: Sistema dinâmico que sincroniza a disponibilidade em tempo real entre vagas livres e registros de ocupação.
+```text
+/                         Redireciona conforme sessão e papel
+/login                    Login
+/operational/dashboard    Dashboard operacional da empresa ativa
+/admin/dashboard          Dashboard global do Super-Admin
+/admin                    Governança de usuários e permissões
+/admin/companies          Diretório de empresas
+/identity                 Gestão de identidades
+/audit                    Trilha de auditoria
+/vacancy                  Consulta operacional
+/vacancy/apply            Check-in
+/vacancy/manage           Gestão de vagas ocupadas
+/finance                  Financeiro
+/Profile                  Perfil do usuário
+```
 
-- Transações: Módulo financeiro integrado, registrando valores e métricas no momento exato da saída dos veículos.
+APIs internas usadas pela interface:
 
----
+```text
+GET  /api/v1/user/tenants
+POST /api/v1/tenant/switch
+GET  /api/v1/permissions/context
+```
 
-## 🔄 Próximos Passos
+## Multi-Tenancy
 
-Acompanhe o que ainda está por vir no desenvolvimento do **SwiftlyPark**:
+O isolamento por empresa usa `company_id`.
 
-- [ ] **Dashboard Analytics:** Implementação de gráficos interativos para visualização de performance.
-- [ ] **Relatórios PDF:** Exportação de fechamento de caixa e histórico de movimentações.
-- [ ] **Sistema de Auditoria (Logs):** Registro de logs de atividades (quem alterou valores, horários ou excluiu registros) para maior transparência e segurança.
+Principais tabelas:
 
----
+- `companies`
+- `company_user`
+- `company_user_permissions`
+- `user_roles`
+- `roles`
+- `permissions`
+- `role_permissions`
+- `audit_logs`
 
-<p align="center">
-  Developed with ❤️ by <strong>Gabriel Povoa</strong>
-</p>
+Repositórios devem aplicar filtro de tenant por padrão. Quando uma consulta precisa ser global, como no Dashboard Global do Super-Admin, o acesso deve ser explícito com `withoutTenantFilter()`.
+
+## RBAC e Permissões
+
+O RBAC combina:
+
+- roles globais da plataforma;
+- roles por empresa;
+- permissões herdadas da role;
+- permissões extras por vínculo usuário-empresa.
+
+Permissões por empresa devem afetar apenas aquele vínculo específico. Exemplo: um usuário pode ser `operator` na SwiftlyPark e ter outro papel/permissões em outra empresa.
+
+## Auditoria
+
+A auditoria registra ações sensíveis e pode ser consultada em três escopos:
+
+- Global, para Super-Admin/Master.
+- Empresa específica.
+- Empresa atual da sessão.
+
+Em modo suporte, a auditoria deve registrar o usuário real, a empresa acessada e o contexto usado na operação.
+
+## Dashboard Global
+
+O Dashboard Global é reservado para papéis globais de plataforma, como `super-admin` e `master`.
+
+Ele mostra KPIs agregados, como:
+
+- empresas ativas;
+- check-ins;
+- sessões ativas;
+- faturamento total;
+- alertas de segurança;
+- ranking/resumo por empresa.
+
+Essa tela não deve exibir formulário de check-in rápido para evitar operação acidental fora do contexto correto.
+
+## Modo Suporte do Super-Admin
+
+O Super-Admin pode acessar o ambiente de empresas para suporte. A proposta documentada é separar:
+
+- empresa selecionada;
+- perfil simulado;
+- permissões customizadas temporárias;
+- identidade global real.
+
+Esse estado deve ser temporário, salvo em sessão e sempre visível no layout por meio de banner.
+
+Documento de referência:
+
+- [spec-super-admin-support-mode.md](docs/specs/spec-super-admin-support-mode.md)
+
+## Uploads
+
+Uploads ficam em:
+
+```text
+public/uploads/
+public/uploads/companies/
+```
+
+No Docker, `compose.yaml` prepara o volume `swiftly-uploads` com permissão para o usuário do Apache (`www-data`).
+
+## Testes
+
+Testes disponíveis:
+
+```bash
+php tests/TenantContextTest.php
+php tests/RepositoryTenantIsolationTest.php
+php tests/SecurityTestSuite.php
+php tests/GovernanceUserManagementTest.php
+```
+
+Lint rápido de um arquivo PHP:
+
+```bash
+php -l app/Controllers/AlgumController.php
+```
+
+## Comandos Úteis
+
+Subir o ambiente:
+
+```bash
+docker compose up -d --build
+```
+
+Ver containers:
+
+```bash
+docker compose ps
+```
+
+Acessar o container da aplicação:
+
+```bash
+docker exec -it swiftlypark-app bash
+```
+
+Acessar o MySQL:
+
+```bash
+docker exec -it swiftlypark-db mysql -uroot -proot parking
+```
+
+Ver logs da aplicação:
+
+```bash
+docker logs swiftlypark-app
+```
+
+## Desenvolvimento
+
+Ao alterar regras de tenant, RBAC, auditoria ou governança:
+
+1. Verifique se o acesso continua respeitando `company_id`.
+2. Confirme se Super-Admin global não depende da role tenant ativa.
+3. Confirme se ações sensíveis geram auditoria.
+4. Rode os testes relacionados.
+5. Rode `php -l` nos arquivos alterados.
+
+## Repositório
+
+https://github.com/gabrielpovoa/swiftlypark
+

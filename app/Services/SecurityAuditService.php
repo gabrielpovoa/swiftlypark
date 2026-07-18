@@ -35,13 +35,18 @@ final class SecurityAuditService
         string $reason
     ): void {
         try {
-            $context = json_encode([
+            $payload = [
                 'role_slug' => $this->identity->primaryRoleSlug(),
                 'role_slugs' => $this->identity->roleSlugs(),
                 'requested_action' => $permission,
                 'route' => $route,
                 'reason' => $reason,
-            ], JSON_THROW_ON_ERROR);
+            ];
+            $supportContext = $this->supportContext();
+            if ($supportContext !== null) {
+                $payload['_support_context'] = $supportContext;
+            }
+            $context = json_encode($payload, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
             throw new AuditLogException(
                 'Falha ao serializar o evento de segurança.',
@@ -139,6 +144,10 @@ final class SecurityAuditService
         array $context
     ): void {
         try {
+            $supportContext = $this->supportContext();
+            if ($supportContext !== null) {
+                $context['_support_context'] = $supportContext;
+            }
             $payload = json_encode($context, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
             throw new AuditLogException(
@@ -163,5 +172,29 @@ final class SecurityAuditService
                 ->requestedAt()
                 ->format('Y-m-d H:i:s.u'),
         ]);
+    }
+
+    private function supportContext(): ?array
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            return null;
+        }
+
+        $support = $_SESSION['support_impersonation'] ?? null;
+        if (!is_array($support) || empty($support['company_id'])) {
+            return null;
+        }
+
+        return [
+            'support_mode' => true,
+            'real_user_id' => $this->identity->userId(),
+            'company_id' => (int) $support['company_id'],
+            'company_name' => (string) ($support['company_name'] ?? ''),
+            'simulated_role' => (string) ($support['simulated_role'] ?? ''),
+            'simulated_role_label' => (string) ($support['simulated_role_label'] ?? ''),
+            'extra_permissions' => is_array($support['extra_permissions'] ?? null)
+                ? array_values($support['extra_permissions'])
+                : [],
+        ];
     }
 }

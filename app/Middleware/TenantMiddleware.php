@@ -104,20 +104,25 @@ final class TenantMiddleware
             ['options' => ['min_range' => 1]]
         );
 
-        if ($impersonatedCompanyId !== false && $impersonatedCompanyId !== null) {
-            return (int) $impersonatedCompanyId;
-        }
-
         $headerCompanyId = $this->resolveCompanyIdFromHeaders();
-        if ($headerCompanyId !== null) {
-            return $headerCompanyId;
-        }
 
         $sessionCompanyId = filter_var(
             $_SESSION['company_id'] ?? null,
             FILTER_VALIDATE_INT,
             ['options' => ['min_range' => 1]]
         );
+
+        if ($impersonatedCompanyId !== false
+            && $impersonatedCompanyId !== null
+            && ($headerCompanyId === null || $headerCompanyId === (int) $impersonatedCompanyId)
+            && ($sessionCompanyId === false || $sessionCompanyId === null || (int) $sessionCompanyId === (int) $impersonatedCompanyId)
+        ) {
+            return (int) $impersonatedCompanyId;
+        }
+
+        if ($headerCompanyId !== null) {
+            return $headerCompanyId;
+        }
 
         if ($sessionCompanyId !== false && $sessionCompanyId !== null) {
             return (int) $sessionCompanyId;

@@ -49,10 +49,11 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
     public function revenueByDay(string $startUtc, string $endUtc): array
     {
         $parameters = ['start_at' => $startUtc, 'end_at' => $endUtc];
-        $query = "SELECT DATE(payment_date) AS day, SUM(valor) AS total
+        $localPaymentDate = "DATE(CONVERT_TZ(payment_date, '+00:00', '-03:00'))";
+        $query = "SELECT {$localPaymentDate} AS day, SUM(valor) AS total
              FROM transacoes
              WHERE payment_date >= :start_at AND payment_date < :end_at
-             GROUP BY DATE(payment_date)
+             GROUP BY {$localPaymentDate}
              ORDER BY day";
         $this->applyTenantFilter($query, $parameters, 'company_id');
 

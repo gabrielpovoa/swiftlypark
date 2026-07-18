@@ -104,6 +104,55 @@ final class RbacRepository implements RbacRepositoryInterface
         return $statement->fetchAll(PDO::FETCH_COLUMN);
     }
 
+    public function findAuthorizationRowsForRole(string $roleSlug): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT
+                r.slug AS role_slug,
+                r.label AS role_label,
+                r.icon_slug,
+                r.display_priority,
+                p.slug AS permission_slug
+             FROM roles r
+             LEFT JOIN role_permissions rp ON rp.role_id = r.id
+             LEFT JOIN permissions p
+                ON p.id = rp.permission_id AND p.is_active = 1
+             WHERE r.slug = :role_slug
+               AND r.slug <> :blocked_role
+               AND r.is_active = 1
+             ORDER BY r.display_priority ASC, r.slug ASC, p.slug ASC'
+        );
+        $statement->execute([
+            'role_slug' => $roleSlug,
+            'blocked_role' => 'super-admin',
+        ]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function findPermissionSlugsByIds(array $permissionIds): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $permissionIds),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $statement = $this->connection->prepare(
+            'SELECT slug
+             FROM permissions
+             WHERE is_active = 1 AND id IN (' . $placeholders . ')
+             ORDER BY slug'
+        );
+        $statement->execute($ids);
+
+        return $statement->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     public function findPermissionLabels(array $slugs): array
     {
         if ($slugs === []) {

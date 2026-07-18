@@ -5,11 +5,11 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Context\TenantContext;
-use App\Models\Company;
+use App\Companies\Domain\Company;
 
 $context = TenantContext::instance();
 $context->clear();
-$company = new Company(42, 'Acme Parking', 'acme-parking');
+$company = Company::reconstitute(42, 'Acme Parking', 'acme-parking', null, true);
 
 $context->setCompany($company);
 

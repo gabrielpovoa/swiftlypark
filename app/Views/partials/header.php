@@ -41,11 +41,12 @@ if ($isPlatformAdmin && $supportCompanyId !== false && $supportCompanyId !== nul
     $supportCompany = $tenantRepository->findCompanyById((int) $supportCompanyId);
 
     if ($supportCompany !== null && ($currentCompany === null || $currentCompany->id() !== (int) $supportCompanyId)) {
-        $currentCompany = new \App\Models\Company(
+        $currentCompany = \App\Companies\Domain\Company::reconstitute(
             (int) $supportCompany['id'],
             (string) $supportCompany['name'],
             (string) $supportCompany['slug'],
-            $supportCompany['logo_path'] !== null ? (string) $supportCompany['logo_path'] : null
+            $supportCompany['logo_path'] !== null ? (string) $supportCompany['logo_path'] : null,
+            true
         );
     }
 }

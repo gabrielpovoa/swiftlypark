@@ -9,7 +9,7 @@ use App\Authorization\Services\NavigationService;
 use App\Authorization\Services\RolePermissionResolver;
 use App\Context\IdentityContext;
 use App\Context\TenantContext;
-use App\Models\Company;
+use App\Companies\Domain\Company;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\TenantRepository;
 use App\Services\AuthorizationService;
@@ -107,11 +107,12 @@ final class ApiTenantController extends Controller
                 unset($_SESSION['support_impersonation']);
             }
 
-            TenantContext::instance()->setCompany(new Company(
+            TenantContext::instance()->setCompany(Company::reconstitute(
                 (int) $company['id'],
                 (string) $company['name'],
                 (string) $company['slug'],
-                $company['logo_path'] !== null ? (string) $company['logo_path'] : null
+                $company['logo_path'] !== null ? (string) $company['logo_path'] : null,
+                true
             ));
 
             $resolver = new RolePermissionResolver(

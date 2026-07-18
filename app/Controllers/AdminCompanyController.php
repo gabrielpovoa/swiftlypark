@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Context\IdentityContext;
+use App\Companies\Application\RegisterCompany;
+use App\Companies\Application\ManageCompany;
+use App\Companies\Infrastructure\PdoCompanyRepository;
 use App\Exceptions\ForbiddenException;
-use App\Identity\Services\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuditService;
 use Config\Database;
 use Core\Controller;
-use DateTimeImmutable;
-use DateTimeZone;
 use DomainException;
 use Throwable;
 
@@ -25,13 +25,11 @@ final class AdminCompanyController extends Controller
             $payload = $this->payload();
             $connection = (new Database())->connect();
             $identity = IdentityContext::current();
-            $service = new UserProvisioningService(
+            $service = new RegisterCompany(
                 $connection,
+                new PdoCompanyRepository($connection),
                 $identity,
-                new AuditService(
-                    new AuditLogRepository($connection),
-                    $identity
-                )
+                new AuditService(new AuditLogRepository($connection), $identity)
             );
 
             $name = (string) ($payload['name'] ?? '');
@@ -43,7 +41,7 @@ final class AdminCompanyController extends Controller
 
             $logoPath = $this->storeCompanyLogo($_FILES['logo'] ?? null);
 
-            $companyId = $service->createCompany(
+            $companyId = $service->execute(
                 $name,
                 $slug,
                 $logoPath
@@ -60,12 +58,13 @@ final class AdminCompanyController extends Controller
 
         $connection = (new Database())->connect();
         $filters = $this->companyFilters();
+        $companies = new PdoCompanyRepository($connection);
 
         $this->setView('Admin/companies', [
             'title' => 'Empresas - Governança SaaS',
-            'companies' => $this->companyDirectory($connection, $filters),
+            'companies' => $companies->directory($filters),
             'companyFilters' => $filters,
-            'companiesCount' => $this->companiesCount($connection),
+            'companiesCount' => $companies->countAll(),
             'activeUsersCount' => $this->activeUsersCount($connection),
             'passwordResetUsersCount' => $this->passwordResetUsersCount($connection),
             'csrfToken' => $this->csrfToken(),
@@ -79,175 +78,35 @@ final class AdminCompanyController extends Controller
     public function updateCompany(): void
     {
         $this->executeCompanyAction(function (\PDO $connection, array $payload): void {
-            $companyId = (int) ($payload['company_id'] ?? 0);
-            $name = trim((string) ($payload['name'] ?? ''));
-            $slug = strtolower(trim((string) ($payload['slug'] ?? '')));
-            $logoPath = $this->storeCompanyLogo($_FILES['logo'] ?? null);
-
-            if ($companyId <= 0
-                || $name === ''
-                || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
-                throw new DomainException('Empresa, nome e slug válido são obrigatórios.');
-            }
-
-            $connection->beginTransaction();
-
-            try {
-                $company = $this->companyForUpdate($connection, $companyId);
-                if ($company === null || $company['deleted_at'] !== null) {
-                    throw new DomainException('Empresa indisponível para edição.');
-                }
-
-                $this->assertCompanySlugAvailable($connection, $slug, $companyId);
-
-                $statement = $connection->prepare(
-                    'UPDATE companies
-                     SET name = :name,
-                         slug = :slug,
-                         logo_path = COALESCE(:logo_path, logo_path),
-                         updated_at = NOW(6)
-                     WHERE id = :company_id'
-                );
-                $statement->execute([
-                    'name' => $name,
-                    'slug' => $slug,
-                    'logo_path' => $logoPath,
-                    'company_id' => $companyId,
-                ]);
-
-                $this->auditCompany($connection, 'UPDATE', $companyId, [
-                    'company_id' => $companyId,
-                    'old_name' => $company['name'],
-                    'old_slug' => $company['slug'],
-                    'new_name' => $name,
-                    'new_slug' => $slug,
-                    'new_logo_path' => $logoPath ?? $company['logo_path'],
-                ]);
-
-                $connection->commit();
-            } catch (Throwable $throwable) {
-                if ($connection->inTransaction()) {
-                    $connection->rollBack();
-                }
-
-                throw $throwable;
-            }
+            $identity = IdentityContext::current();
+            (new ManageCompany(
+                $connection,
+                new PdoCompanyRepository($connection),
+                $identity,
+                new AuditService(new AuditLogRepository($connection), $identity)
+            ))->update(
+                (int) ($payload['company_id'] ?? 0),
+                (string) ($payload['name'] ?? ''),
+                (string) ($payload['slug'] ?? ''),
+                $this->storeCompanyLogo($_FILES['logo'] ?? null)
+            );
         }, 'Empresa atualizada com sucesso.');
     }
 
     public function deactivateCompany(): void
     {
         $this->executeCompanyAction(function (\PDO $connection, array $payload): void {
-            $companyId = (int) ($payload['company_id'] ?? 0);
-            if ($companyId <= 0) {
-                throw new DomainException('Empresa inválida.');
-            }
-
-            $connection->beginTransaction();
-
-            try {
-                $company = $this->companyForUpdate($connection, $companyId);
-                if ($company === null || $company['deleted_at'] !== null) {
-                    throw new DomainException('Empresa indisponível para inativação.');
-                }
-
-                if ($this->isCurrentUsersLastActiveCompany($connection, $companyId)) {
-                    throw new DomainException(
-                        'Você não pode inativar sua última empresa ativa.'
-                    );
-                }
-
-                $linkedUserIds = $this->linkedUserIdsForCompany($connection, $companyId);
-                $statement = $connection->prepare(
-                    'UPDATE companies
-                     SET deleted_at = UTC_TIMESTAMP(6), updated_at = NOW(6)
-                     WHERE id = :company_id AND deleted_at IS NULL'
-                );
-                $statement->execute(['company_id' => $companyId]);
-
-                $deleteMemberships = $connection->prepare(
-                    'DELETE FROM company_user WHERE company_id = :company_id'
-                );
-                $deleteMemberships->execute(['company_id' => $companyId]);
-
-                $revokedUserIds = $this->revokeUsersWithoutActiveCompanies(
-                    $connection,
-                    $linkedUserIds
-                );
-
-                $this->auditCompany($connection, 'DELETE', $companyId, [
-                    'company_id' => $companyId,
-                    'company_name' => $company['name'],
-                    'company_slug' => $company['slug'],
-                    'revoked_company_memberships' => count($linkedUserIds),
-                    'revoked_user_ids' => $revokedUserIds,
-                    'message' => 'Empresa inativada e vínculos do tenant revogados.',
-                ]);
-
-                $connection->commit();
-            } catch (Throwable $throwable) {
-                if ($connection->inTransaction()) {
-                    $connection->rollBack();
-                }
-
-                throw $throwable;
-            }
+            $identity = IdentityContext::current();
+            (new ManageCompany(
+                $connection,
+                new PdoCompanyRepository($connection),
+                $identity,
+                new AuditService(new AuditLogRepository($connection), $identity)
+            ))->deactivate((int) ($payload['company_id'] ?? 0));
         }, 'Empresa inativada e acessos do tenant revogados.');
     }
 
-    private function companyDirectory(\PDO $connection, array $filters): array
-    {
-        $where = [];
-        $parameters = [];
 
-        if ($filters['query'] !== '') {
-            $where[] = '(c.name LIKE :company_name_query OR c.slug LIKE :company_slug_query)';
-            $parameters['company_name_query'] = '%' . $filters['query'] . '%';
-            $parameters['company_slug_query'] = '%' . $filters['query'] . '%';
-        }
-
-        if ($filters['status'] === 'active') {
-            $where[] = 'c.deleted_at IS NULL';
-        } elseif ($filters['status'] === 'inactive') {
-            $where[] = 'c.deleted_at IS NOT NULL';
-        }
-
-        $whereSql = $where === [] ? '' : 'WHERE ' . implode(' AND ', $where);
-        $limit = $filters['is_filtered'] ? 50 : 12;
-        $statement = $connection->prepare(
-            'SELECT
-                c.id,
-                c.name,
-                c.slug,
-                c.logo_path,
-                c.deleted_at,
-                COUNT(DISTINCT cu.user_id) AS users_count,
-                SUM(CASE WHEN u.deleted_at IS NULL THEN 1 ELSE 0 END) AS active_users_count,
-                SUM(CASE WHEN u.deleted_at IS NULL AND u.password_reset_required = 1 THEN 1 ELSE 0 END) AS password_reset_users_count,
-                GROUP_CONCAT(DISTINCT r.slug ORDER BY r.slug SEPARATOR \', \') AS role_slugs
-             FROM companies c
-             LEFT JOIN company_user cu ON cu.company_id = c.id
-             LEFT JOIN usuario u ON u.id_usuario = cu.user_id
-             LEFT JOIN roles r ON r.id = cu.role_id
-             ' . $whereSql . '
-             GROUP BY c.id, c.name, c.slug, c.logo_path, c.deleted_at
-             ORDER BY c.name ASC, c.id ASC
-             LIMIT ' . $limit
-        );
-        foreach ($parameters as $key => $value) {
-            $statement->bindValue(':' . $key, $value, \PDO::PARAM_STR);
-        }
-        $statement->execute();
-
-        return $statement->fetchAll(\PDO::FETCH_ASSOC);
-    }
-
-    private function companiesCount(\PDO $connection): int
-    {
-        return (int) $connection
-            ->query('SELECT COUNT(*) FROM companies')
-            ->fetchColumn();
-    }
 
     private function activeUsersCount(\PDO $connection): int
     {
@@ -304,134 +163,11 @@ final class AdminCompanyController extends Controller
         $this->redirectCompanies();
     }
 
-    private function companyForUpdate(\PDO $connection, int $companyId): ?array
-    {
-        $statement = $connection->prepare(
-            'SELECT id, name, slug, logo_path, deleted_at
-             FROM companies
-             WHERE id = :company_id
-             FOR UPDATE'
-        );
-        $statement->execute(['company_id' => $companyId]);
-        $company = $statement->fetch(\PDO::FETCH_ASSOC);
 
-        return $company === false ? null : $company;
-    }
 
-    private function assertCompanySlugAvailable(
-        \PDO $connection,
-        string $slug,
-        int $exceptCompanyId
-    ): void {
-        $statement = $connection->prepare(
-            'SELECT 1 FROM companies
-             WHERE slug = :slug AND id <> :company_id
-             LIMIT 1'
-        );
-        $statement->execute([
-            'slug' => $slug,
-            'company_id' => $exceptCompanyId,
-        ]);
 
-        if ($statement->fetchColumn() !== false) {
-            throw new DomainException('Já existe uma empresa com esse slug.');
-        }
-    }
 
-    private function linkedUserIdsForCompany(\PDO $connection, int $companyId): array
-    {
-        $statement = $connection->prepare(
-            'SELECT user_id FROM company_user WHERE company_id = :company_id'
-        );
-        $statement->execute(['company_id' => $companyId]);
 
-        return array_map('intval', $statement->fetchAll(\PDO::FETCH_COLUMN));
-    }
-
-    private function revokeUsersWithoutActiveCompanies(
-        \PDO $connection,
-        array $userIds
-    ): array {
-        $revoked = [];
-        $membershipCheck = $connection->prepare(
-            'SELECT COUNT(*)
-             FROM company_user cu
-             INNER JOIN companies c ON c.id = cu.company_id AND c.deleted_at IS NULL
-             WHERE cu.user_id = :user_id'
-        );
-        $revoke = $connection->prepare(
-            'UPDATE usuario
-             SET deleted_at = UTC_TIMESTAMP(6)
-             WHERE id_usuario = :user_id AND deleted_at IS NULL'
-        );
-
-        foreach (array_values(array_unique($userIds)) as $userId) {
-            if ($userId === IdentityContext::current()->userId()) {
-                continue;
-            }
-
-            $membershipCheck->execute(['user_id' => $userId]);
-            if ((int) $membershipCheck->fetchColumn() > 0) {
-                continue;
-            }
-
-            $revoke->execute(['user_id' => $userId]);
-            if ($revoke->rowCount() > 0) {
-                $revoked[] = $userId;
-            }
-        }
-
-        return $revoked;
-    }
-
-    private function isCurrentUsersLastActiveCompany(
-        \PDO $connection,
-        int $companyId
-    ): bool {
-        $statement = $connection->prepare(
-            'SELECT COUNT(*)
-             FROM company_user cu
-             INNER JOIN companies c ON c.id = cu.company_id AND c.deleted_at IS NULL
-             WHERE cu.user_id = :user_id'
-        );
-        $statement->execute(['user_id' => IdentityContext::current()->userId()]);
-        $activeMemberships = (int) $statement->fetchColumn();
-
-        $linkedToTarget = $connection->prepare(
-            'SELECT 1 FROM company_user
-             WHERE user_id = :user_id AND company_id = :company_id
-             LIMIT 1'
-        );
-        $linkedToTarget->execute([
-            'user_id' => IdentityContext::current()->userId(),
-            'company_id' => $companyId,
-        ]);
-
-        return $activeMemberships <= 1 && $linkedToTarget->fetchColumn() !== false;
-    }
-
-    private function auditCompany(
-        \PDO $connection,
-        string $action,
-        int $companyId,
-        array $payload
-    ): void {
-        $identity = IdentityContext::current();
-        (new AuditLogRepository($connection))->insert([
-            'user_id' => $identity->userId(),
-            'company_id' => $companyId,
-            'actor_email' => $identity->email(),
-            'action' => $action,
-            'entity' => 'companies',
-            'entity_id' => (string) $companyId,
-            'old_values' => null,
-            'new_values' => json_encode($payload, JSON_THROW_ON_ERROR),
-            'ip_address' => $identity->ipAddress(),
-            'request_id' => $identity->requestId(),
-            'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))
-                ->format('Y-m-d H:i:s.u'),
-        ]);
-    }
 
     private function respond(callable $action, string $successMessage): void
     {
@@ -602,4 +338,3 @@ final class AdminCompanyController extends Controller
         return 'companies/' . $fileName;
     }
 }
-

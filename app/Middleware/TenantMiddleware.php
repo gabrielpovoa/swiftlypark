@@ -9,7 +9,7 @@ use App\Context\TenantContext;
 use App\Exceptions\ForbiddenException;
 use App\Exceptions\SecurityCriticalException;
 use App\Exceptions\UnauthorizedException;
-use App\Models\Company;
+use App\Companies\Domain\Company;
 use App\Repositories\AuditLogRepository;
 use App\Repositories\TenantRepository;
 use App\Services\SecurityAuditService;
@@ -67,11 +67,12 @@ final class TenantMiddleware
         }
 
         $this->tenantContext->setCompany(
-            new Company(
+            Company::reconstitute(
                 (int) $company['id'],
                 (string) $company['name'],
                 (string) $company['slug'],
-                $company['logo_path'] !== null ? (string) $company['logo_path'] : null
+                $company['logo_path'] !== null ? (string) $company['logo_path'] : null,
+                true
             )
         );
 

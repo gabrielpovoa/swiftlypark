@@ -6,6 +6,8 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use App\Context\RequestIdentity;
 use App\Contracts\PasswordRecoveryMailerInterface;
+use App\Companies\Application\RegisterCompany;
+use App\Companies\Infrastructure\PdoCompanyRepository;
 use App\Identity\Services\UserProvisioningService;
 use App\Services\PasswordGeneratorService;
 
@@ -164,7 +166,11 @@ try {
 } catch (DomainException) {
 }
 
-$companyId = $service->createCompany('Nova Master', 'nova-master');
+$companyId = (new RegisterCompany(
+    $connection,
+    new PdoCompanyRepository($connection),
+    $identity
+))->execute('Nova Master', 'nova-master');
 $actorMembership = $connection
     ->query(
         'SELECT role_id FROM company_user WHERE user_id = 99 AND company_id = '

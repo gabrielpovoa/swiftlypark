@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Controllers;
+namespace App\Finance\Presentation;
 
 use App\Context\IdentityContext;
 use App\Context\TenantContext;
-use App\Finance\Repositories\FinancialAdjustmentRepository;
-use App\Finance\Repositories\FinancialReportRepository;
-use App\Finance\Services\FinancialAdjustmentService;
-use App\Finance\Services\FinancialAuditService;
-use App\Finance\Services\FinancialReportService;
+use App\Finance\Infrastructure\FinancialAdjustmentRepository;
+use App\Finance\Infrastructure\FinancialReportRepository;
+use App\Finance\Application\FinancialAdjustmentService;
+use App\Finance\Application\FinancialAuditService;
+use App\Finance\Application\FinancialReportService;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;
@@ -235,3 +235,4 @@ final class FinanceController extends Controller
         };
     }
 }
+

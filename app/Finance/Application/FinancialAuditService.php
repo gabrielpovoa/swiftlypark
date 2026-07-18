@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Finance\Services;
+namespace App\Finance\Application;
 
 use App\Context\RequestIdentity;
 use App\Context\TenantContext;
@@ -92,3 +92,4 @@ final class FinancialAuditService
         ];
     }
 }
+

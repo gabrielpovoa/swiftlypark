@@ -12,7 +12,7 @@ use App\Controllers\AboutController;
 use App\Controllers\ProfileController;
 use App\Controllers\AuditController;
 use App\Identity\Presentation\IdentityManagementController;
-use App\Controllers\FinanceController;
+use App\Finance\Presentation\FinanceController;
 use App\Identity\Presentation\AdminUserProvisioningController;
 use App\Billing\Presentation\AdminMonthlyContractController;
 use App\Billing\Presentation\AdminCompanyBillingController;

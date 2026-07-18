@@ -41,7 +41,7 @@ trabalho sem depender do histórico da conversa.
 | 005 | `feature/extract-identity-module` | Contexto Identity modularizado | Concluída |
 | 006 | `feature/extract-parking-module` | Check-in, ocupação e checkout modularizados | Concluída |
 | 007 | `feature/extract-billing-module` | Tarifários e contratos no contexto Billing | Concluída |
-| 008 | `feature/extract-finance-module` | Finance completo e limites de reporting definidos | Pendente |
+| 008 | `feature/extract-finance-module` | Finance completo e limites de reporting definidos | Concluída |
 | 009 | `feature/add-domain-value-objects` | Money, Plate, períodos e enums tipados | Pendente |
 | 010 | `feature/add-repository-contracts` | Domínio desacoplado de implementações MySQL | Pendente |
 | 011 | `feature/add-financial-ledger` | Livro financeiro unificado e auditável | Pendente |

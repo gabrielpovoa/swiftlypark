@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Finance\Services;
+namespace App\Finance\Application;
 
-use App\Finance\Repositories\FinancialReportRepository;
+use App\Finance\Infrastructure\FinancialReportRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
@@ -156,3 +156,4 @@ final class FinancialReportService
         return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
     }
 }
+

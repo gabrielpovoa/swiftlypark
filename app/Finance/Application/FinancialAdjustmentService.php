@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Finance\Services;
+namespace App\Finance\Application;
 
 use App\Context\RequestIdentity;
-use App\Finance\Repositories\FinancialAdjustmentRepository;
+use App\Finance\Infrastructure\FinancialAdjustmentRepository;
+use App\Finance\Domain\AdjustmentType;
 use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;
 use DomainException;
@@ -59,7 +60,7 @@ final class FinancialAdjustmentService
 
             $id = $this->adjustments->create(
                 $transactionId,
-                'REFUND',
+                AdjustmentType::Refund->value,
                 $amount,
                 $reason,
                 $this->identity->userId()
@@ -67,7 +68,7 @@ final class FinancialAdjustmentService
             $this->audit->recordAdjustment(
                 $id,
                 $transactionId,
-                'REFUND',
+                AdjustmentType::Refund->value,
                 $amount,
                 $reason
             );

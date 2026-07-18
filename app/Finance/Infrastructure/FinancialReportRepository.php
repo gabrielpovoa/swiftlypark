@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Finance\Repositories;
+namespace App\Finance\Infrastructure;
 
 use PDO;
 
@@ -255,3 +255,4 @@ final class FinancialReportRepository extends \App\Repositories\BaseRepository
         return $exists;
     }
 }
+

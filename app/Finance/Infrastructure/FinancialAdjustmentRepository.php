@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Finance\Repositories;
+namespace App\Finance\Infrastructure;
 
 use PDO;
 
@@ -68,3 +68,4 @@ final class FinancialAdjustmentRepository extends \App\Repositories\BaseReposito
         return (int) $this->connection->lastInsertId();
     }
 }
+

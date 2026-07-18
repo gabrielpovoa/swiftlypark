@@ -171,6 +171,7 @@
                     $tipoVeiculo,
                     $hasMonthlyContract ? BillingMode::Monthly->value : BillingMode::Rotating->value
                 );
+                $this->acquireActiveStay($idVaga, $idVagaPreenchida);
                 $this->updateVagaStatus($idVaga, VacancyStatus::Reserved->value);
 
                 return $idVagaPreenchida;
@@ -419,6 +420,7 @@
                     )
                 );
 
+                $this->releaseActiveStay($idVaga);
                 $this->updateVagaStatus($idVaga, 'livre');
 
                 (new AuditService(
@@ -464,6 +466,24 @@
             ]);
 
             return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+        }
+
+        private function acquireActiveStay(int $vacancyId, int $filledVacancyId): void
+        {
+            $statement = $this->db->prepare(
+                'INSERT INTO parking_active_stays (company_id, vacancy_id, filled_vacancy_id)
+                 VALUES (:company_id, :vacancy_id, :filled_vacancy_id)'
+            );
+            $statement->execute(['company_id' => $this->companyId(), 'vacancy_id' => $vacancyId,
+                'filled_vacancy_id' => $filledVacancyId]);
+        }
+
+        private function releaseActiveStay(int $vacancyId): void
+        {
+            $statement = $this->db->prepare(
+                'DELETE FROM parking_active_stays WHERE company_id = :company_id AND vacancy_id = :vacancy_id'
+            );
+            $statement->execute(['company_id' => $this->companyId(), 'vacancy_id' => $vacancyId]);
         }
 
         private function findAvailableVacancyForUpdate(int $id): array

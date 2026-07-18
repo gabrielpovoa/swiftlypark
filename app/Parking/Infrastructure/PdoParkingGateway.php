@@ -1,8 +1,11 @@
 <?php
 
-    namespace App\Models;
+    namespace App\Parking\Infrastructure;
 
     use App\Context\IdentityContext;
+    use App\Parking\Domain\BillingMode;
+    use App\Parking\Domain\VacancyStatus;
+    use App\Parking\Domain\VehicleType;
     use App\Context\TenantContext;
     use App\Exceptions\TenantNotSetException;
     use App\Finance\Repositories\PricingRepository;
@@ -19,7 +22,7 @@
     use PDO;
     use PDOException;
 
-    class VacancyModel
+    final class PdoParkingGateway
     {
         private PDO $db;
         private TransactionalAuditDecorator $audit;
@@ -130,6 +133,7 @@
             string $tipoVeiculo
         ): int
         {
+            $tipoVeiculo = VehicleType::fromInput($tipoVeiculo)->value;
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vehicle.checkin');
 
@@ -157,9 +161,9 @@
                     $plate,
                     0.0,
                     $tipoVeiculo,
-                    $hasMonthlyContract ? 'MONTHLY' : 'ROTATING'
+                    $hasMonthlyContract ? BillingMode::Monthly->value : BillingMode::Rotating->value
                 );
-                $this->updateVagaStatus($idVaga, 'reservada');
+                $this->updateVagaStatus($idVaga, VacancyStatus::Reserved->value);
 
                 return $idVagaPreenchida;
             });
@@ -517,3 +521,4 @@
         }
 
     }
+

@@ -4,7 +4,7 @@
 
 - Branch: `feature/extract-parking-module`
 - Base: `develop` após a conclusão da feature 005
-- Estado: em andamento
+- Estado: concluída
 - Feature anterior: `REFACTOR-005-EXTRACT-IDENTITY-MODULE.md`
 
 ## Objetivo
@@ -55,11 +55,24 @@ app/Parking/
   fronteiras explícitas.
 - Rotas e views permanecem compatíveis nesta feature.
 
+## Implementado
+
+- Criados enums de domínio `VehicleType`, `BillingMode` e `VacancyStatus` com
+  os valores persistidos compatíveis com o banco atual.
+- Casos de uso públicos estão em `Parking\Application`.
+- Toda implementação com SQL foi movida para `Parking\Infrastructure`.
+- Controllers foram movidos para `Parking\Presentation` e as rotas atualizadas
+  sem alterar URLs.
+- Repositories de vagas e transações saíram do diretório global.
+- Modelos e controllers legados foram removidos.
+- Criados testes do domínio e da fronteira modular; o teste impede SQL em
+  Application/Presentation e dependência de infraestrutura no Domain.
+- Smoke tests HTTP de `/vacancy`, `/vacancy/apply`, `/vacancy/manage` e
+  `/CreateVacancy` retornaram `302` para uma sessão não autenticada, preservando
+  a proteção das rotas.
+
 ## Próximo passo exato
 
-1. Mapear métodos públicos e dependências de `VacancyModel` e
-   `CreateVacancyModel`.
-2. Separar entidade/estado de vaga e estadia em Domain.
-3. Mover casos de uso para Application e SQL para Infrastructure.
-4. Mover controllers para Presentation e atualizar rotas.
-5. Criar testes de fronteira e regressão do fluxo.
+1. Executar a suíte completa e smoke tests das rotas.
+2. Atualizar o roadmap e finalizar via Git Flow.
+3. Iniciar a feature 007 para extrair Billing das classes Finance atuais.

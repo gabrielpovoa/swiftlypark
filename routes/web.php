@@ -4,8 +4,8 @@ use Core\Controller;
 use App\Controllers\HomeController;
 use App\Controllers\LoginController;
 use App\Controllers\PasswordRecController;
-use App\Controllers\VacancyController;
-use App\Controllers\CreateVacancy;
+use App\Parking\Presentation\VacancyController;
+use App\Parking\Presentation\CreateVacancyController;
 use App\Controllers\LogsController;
 use App\Controllers\ContactController;
 use App\Controllers\AboutController;
@@ -298,11 +298,11 @@ $router->post('vacancy/finish', permissionRequired('vehicle.checkout', 'vacancy/
 }));
 // CreateVacancy
 $router->get('CreateVacancy', permissionRequired('vacancy.create', 'CreateVacancy', function () {
-    $controller = new CreateVacancy();
+    $controller = new CreateVacancyController();
     $controller->index();
 }));
 $router->post('CreateVacancy/store', permissionRequired('vacancy.create', 'CreateVacancy/store', function () {
-    $controller = new CreateVacancy();
+    $controller = new CreateVacancyController();
     $controller->store();
 }));
 

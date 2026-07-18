@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Repositories;
+namespace App\Parking\Infrastructure;
+
+use App\Repositories\BaseRepository;
 
 use PDO;
 
@@ -20,3 +22,4 @@ final class TransacaoRepository extends BaseRepository
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+

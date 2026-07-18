@@ -94,10 +94,16 @@ php tests/RepositoryTenantIsolationTest.php
 php tests/SecurityTestSuite.php
 php tests/GovernanceUserManagementTest.php
 php tests/PriceCalculatorTest.php
+php tests/AdminControllerBoundaryTest.php
 ```
 
 Todos os comandos passaram. O autoload PSR-4 do novo controller também foi
 verificado diretamente.
+
+Foi adicionado `tests/AdminControllerBoundaryTest.php` para proteger o limite
+recém-criado: as três rotas precisam continuar no controller mensalista, os
+métodos antigos não podem retornar ao controller legado e a implementação deve
+manter transação, rollback, lock e auditoria.
 
 ## Decisão temporária conhecida
 

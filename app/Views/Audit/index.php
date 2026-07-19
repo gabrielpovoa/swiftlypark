@@ -120,47 +120,60 @@ $selectedCompanyId ??= null;
                 </p>
             </div>
         <?php else: ?>
-            <div class="space-y-4">
+            <div class="hidden xl:grid grid-cols-[170px_minmax(180px,0.8fr)_minmax(180px,0.8fr)_minmax(280px,1.6fr)_140px] gap-5 px-6 pb-3 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                <span>Data e hora</span>
+                <span>Responsável</span>
+                <span>Tipo de evento</span>
+                <span>Ação realizada</span>
+                <span class="text-right">Informações</span>
+            </div>
+            <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] divide-y divide-white/[0.07]">
                 <?php foreach ($logs as $log):
                     [$color, $icon] = $actionStyles[$log['action']] ?? ['slate', 'activity'];
                     ?>
-                    <article class="rounded-3xl bg-white/[0.025] border border-white/10 p-5 md:p-6 hover:border-white/20 transition-colors">
-                        <div class="flex flex-col md:flex-row md:items-start justify-between gap-5">
-                            <div class="flex gap-4">
-                                <div class="shrink-0 w-11 h-11 rounded-2xl bg-<?= $color ?>-500/10 text-<?= $color ?>-400 flex items-center justify-center border border-<?= $color ?>-500/20">
-                                    <i data-lucide="<?= $icon ?>" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="text-<?= $color ?>-400 text-[10px] font-black uppercase tracking-widest"><?= $escape($log['action_label']) ?></span>
-                                        <span class="text-slate-700">•</span>
-                                        <span class="text-[10px] text-slate-500 uppercase tracking-wider"><?= $escape($log['entity_label']) ?></span>
-                                    </div>
-                                    <h2 class="text-white font-bold text-base mt-1"><?= $escape($log['description']) ?></h2>
-                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-slate-500">
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <i data-lucide="user" class="w-3.5 h-3.5"></i>
-                                            <strong class="text-slate-300"><?= $escape($log['actor_display']) ?></strong>
-                                            <span><?= $escape($log['actor_email']) ?></span>
-                                        </span>
-                                        <span class="inline-flex items-center gap-1.5">
-                                            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-                                            <?= $escape($log['display_date']) ?>
-                                        </span>
-                                    </div>
-                                </div>
+                    <article class="hover:bg-white/[0.025] transition-colors">
+                        <details class="group p-5 md:p-6">
+                            <summary class="list-none cursor-pointer grid grid-cols-1 xl:grid-cols-[170px_minmax(180px,0.8fr)_minmax(180px,0.8fr)_minmax(280px,1.6fr)_140px] gap-4 xl:gap-5 xl:items-center">
+                            <div>
+                                <span class="xl:hidden block text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1">Data e hora</span>
+                                <span class="text-sm font-semibold text-slate-300"><?= $escape($log['display_date']) ?></span>
+                                <span class="block mt-1 text-[10px] font-mono text-slate-600">Evento #<?= $escape($log['id']) ?></span>
                             </div>
-                            <span class="text-[10px] font-mono text-slate-600">Evento #<?= $escape($log['id']) ?></span>
-                        </div>
+                            <div>
+                                <span class="xl:hidden block text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1">Responsável</span>
+                                <strong class="block text-sm text-white"><?= $escape($log['actor_display']) ?></strong>
+                                <span class="block text-xs text-slate-500 break-all"><?= $escape($log['actor_email']) ?></span>
+                            </div>
+                            <div>
+                                <span class="xl:hidden block text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1">Tipo de evento</span>
+                                <span class="inline-flex items-center gap-2 rounded-xl bg-<?= $color ?>-500/10 border border-<?= $color ?>-500/20 px-3 py-2 text-xs font-bold text-<?= $color ?>-300">
+                                    <i data-lucide="<?= $icon ?>" class="w-4 h-4"></i>
+                                    <?= $escape($log['event_label']) ?>
+                                </span>
+                                <span class="block mt-1.5 text-[10px] uppercase tracking-wider text-slate-600"><?= $escape($log['entity_label']) ?></span>
+                            </div>
+                            <div>
+                                <span class="xl:hidden block text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1">Ação realizada</span>
+                                <h2 class="text-white font-semibold text-sm leading-relaxed"><?= $escape($log['description']) ?></h2>
+                            </div>
+                            <span class="xl:text-right">
+                                <span class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-bold text-blue-400 group-hover:bg-white/[0.07] group-hover:text-blue-300">
+                                    <span>Ver detalhes</span>
+                                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform group-open:rotate-180"></i>
+                                </span>
+                            </span>
+                            </summary>
 
                         <?php if ($log['changes'] !== []): ?>
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-5">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-5 xl:ml-[570px]">
                                 <?php foreach ($log['changes'] as $change): ?>
                                     <div class="rounded-2xl bg-black/20 border border-white/5 p-4">
                                         <span class="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2"><?= $escape($change['label']) ?></span>
                                         <div class="flex items-center gap-3 text-xs">
-                                            <span class="flex-1 text-rose-300 line-through decoration-rose-500/40"><?= $escape($change['before']) ?></span>
-                                            <i data-lucide="arrow-right" class="w-4 h-4 text-slate-600"></i>
+                                            <?php if ($change['has_before']): ?>
+                                                <span class="flex-1 text-rose-300 line-through decoration-rose-500/40"><?= $escape($change['before']) ?></span>
+                                                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-600"></i>
+                                            <?php endif; ?>
                                             <strong class="flex-1 text-emerald-300"><?= $escape($change['after']) ?></strong>
                                         </div>
                                     </div>
@@ -168,13 +181,26 @@ $selectedCompanyId ??= null;
                             </div>
                         <?php endif; ?>
 
-                        <details class="mt-4 group">
-                            <summary class="cursor-pointer list-none text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-400">
-                                Detalhes técnicos
-                            </summary>
-                            <div class="mt-3 rounded-xl bg-black/30 p-4 text-[10px] text-slate-500">
-                                <p>IP: <?= $escape($log['ip_address']) ?> · Requisição: <?= $escape($log['request_id']) ?></p>
-                                <pre class="mt-2 whitespace-pre-wrap break-all"><?= $escape($log['technical_json']) ?></pre>
+                            <div class="mt-4 rounded-2xl border border-white/10 bg-black/30 p-5">
+                                <div class="flex items-center justify-between gap-3 mb-5">
+                                    <div>
+                                        <span class="block text-[10px] font-black uppercase tracking-widest text-blue-400">Detalhes técnicos</span>
+                                        <p class="mt-1 text-xs text-slate-500">Contexto completo para suporte, segurança e investigação.</p>
+                                    </div>
+                                    <i data-lucide="shield-check" class="w-5 h-5 text-slate-600"></i>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <?php foreach ($log['technical_details'] as $detail): ?>
+                                        <div>
+                                            <span class="block text-[9px] font-black uppercase tracking-widest text-slate-600"><?= $escape($detail['label']) ?></span>
+                                            <span class="block mt-1 text-xs text-slate-300 break-all"><?= $escape($detail['value'] ?? 'Não registrado') ?></span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <details class="mt-5 border-t border-white/10 pt-4">
+                                    <summary class="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-slate-500">Ver dados brutos</summary>
+                                    <pre class="mt-3 whitespace-pre-wrap break-all text-[10px] text-slate-500"><?= $escape($log['technical_json']) ?></pre>
+                                </details>
                             </div>
                         </details>
                     </article>

@@ -83,12 +83,13 @@ final class AuditLogRepository extends BaseRepository
             : 'al.created_at DESC';
 
         $query = 'SELECT
-                al.id, al.user_id, al.company_id, al.actor_email,
+                al.id, al.user_id, al.company_id, c.name AS company_name, al.actor_email,
                 u.nome AS actor_name, al.action, al.entity, al.entity_id,
                 al.old_values, al.new_values, al.ip_address,
                 al.request_id, al.created_at
              FROM audit_logs al
              LEFT JOIN usuario u ON u.id_usuario = al.user_id'
+            . ' LEFT JOIN companies c ON c.id = al.company_id'
             . $where
             . ' ORDER BY ' . $orderBy
             . ' LIMIT ' . $limit;
@@ -159,12 +160,13 @@ final class AuditLogRepository extends BaseRepository
             : 'al.created_at DESC';
         $statement = $this->prepareGlobalStatement(
             'SELECT
-                al.id, al.user_id, al.company_id, al.actor_email,
+                al.id, al.user_id, al.company_id, c.name AS company_name, al.actor_email,
                 u.nome AS actor_name, al.action, al.entity, al.entity_id,
                 al.old_values, al.new_values, al.ip_address,
                 al.request_id, al.created_at
              FROM audit_logs al
              LEFT JOIN usuario u ON u.id_usuario = al.user_id
+             LEFT JOIN companies c ON c.id = al.company_id
              ' . $where . '
              ORDER BY ' . $orderBy . '
              LIMIT ' . $limit
@@ -194,12 +196,13 @@ final class AuditLogRepository extends BaseRepository
             : 'al.created_at DESC';
         $statement = $this->prepareGlobalStatement(
             'SELECT
-                al.id, al.user_id, al.company_id, al.actor_email,
+                al.id, al.user_id, al.company_id, c.name AS company_name, al.actor_email,
                 u.nome AS actor_name, al.action, al.entity, al.entity_id,
                 al.old_values, al.new_values, al.ip_address,
                 al.request_id, al.created_at
              FROM audit_logs al
              LEFT JOIN usuario u ON u.id_usuario = al.user_id
+             LEFT JOIN companies c ON c.id = al.company_id
              ' . $where . '
              ORDER BY ' . $orderBy . '
              LIMIT ' . $limit

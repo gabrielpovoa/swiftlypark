@@ -9,6 +9,17 @@ use DateTimeZone;
 
 final class AuditLogPresenter
 {
+    private const EVENT_LABELS = [
+        'GLOBAL_DASHBOARD_ACCESS' => 'Acesso ao painel global',
+        'IMPERSONATION_STARTED' => 'Modo suporte iniciado',
+        'SUPPORT_PROFILE_CHANGED' => 'Perfil de suporte alterado',
+        'IMPERSONATION_ENDED' => 'Modo suporte encerrado',
+        'COMPANY_PRICING_UPDATED' => 'Configuração de cobrança atualizada',
+        'MONTHLY_CONTRACT_CREATED' => 'Contrato mensalista criado',
+        'MONTHLY_CONTRACT_RENEWED' => 'Contrato mensalista renovado',
+        'MONTHLY_CONTRACT_CANCELLED' => 'Contrato mensalista cancelado',
+    ];
+
     private const ENTITY_LABELS = [
         'vagas_preenchidas' => 'Ocupação',
         'vagas_disponiveis' => 'Vaga',
@@ -98,12 +109,24 @@ final class AuditLogPresenter
             'entity_label' => self::ENTITY_LABELS[$log['entity']]
                 ?? ucfirst(str_replace('_', ' ', $log['entity'])),
             'description' => $this->description($log, $oldValues, $newValues),
+            'event_label' => $this->eventLabel($log, $newValues),
             'changes' => $this->changes($oldValues, $newValues),
             'display_date' => $this->displayDate($log['created_at']),
-            'technical_json' => $log['new_values']
-                ?? $log['old_values']
-                ?? '{}',
+            'technical_details' => $this->technicalDetails($log, $newValues),
+            'technical_json' => $this->prettyTechnicalJson($oldValues, $newValues),
         ];
+    }
+
+    private function eventLabel(array $log, array $newValues): string
+    {
+        $event = (string) ($newValues['event'] ?? '');
+
+        if (isset(self::EVENT_LABELS[$event])) {
+            return self::EVENT_LABELS[$event];
+        }
+
+        return sprintf('%s de %s', $this->actionLabel($log['action']), self::ENTITY_LABELS[$log['entity']]
+            ?? ucfirst(str_replace('_', ' ', $log['entity'])));
     }
 
     private function decode(?string $json): array
@@ -195,6 +218,37 @@ final class AuditLogPresenter
             };
         }
 
+        if (($newValues['event'] ?? '') === 'GLOBAL_DASHBOARD_ACCESS') {
+            return 'O painel consolidado de todas as empresas foi acessado.';
+        }
+
+        if (($newValues['event'] ?? '') === 'COMPANY_PRICING_UPDATED') {
+            return sprintf(
+                'Os dados cadastrais e a configuração de cobrança da empresa %s foram atualizados.',
+                $log['company_name'] ?? ('#' . $log['entity_id'])
+            );
+        }
+
+        if (str_starts_with((string) ($newValues['event'] ?? ''), 'MONTHLY_CONTRACT_')) {
+            return match ($newValues['event']) {
+                'MONTHLY_CONTRACT_CREATED' => sprintf(
+                    'O contrato mensalista #%s foi criado%s.',
+                    $newValues['contract_id'] ?? $log['entity_id'],
+                    isset($newValues['vehicle_plate']) ? ' para o veículo ' . $newValues['vehicle_plate'] : ''
+                ),
+                'MONTHLY_CONTRACT_RENEWED' => sprintf(
+                    'O contrato mensalista #%s foi renovado até %s.',
+                    $newValues['contract_id'] ?? $log['entity_id'],
+                    $newValues['period_end'] ?? 'a nova data de vencimento'
+                ),
+                'MONTHLY_CONTRACT_CANCELLED' => sprintf(
+                    'O contrato mensalista #%s foi cancelado.',
+                    $newValues['contract_id'] ?? $log['entity_id']
+                ),
+                default => 'Um contrato mensalista foi atualizado.',
+            };
+        }
+
         if ($log['action'] === 'FINANCIAL_ADJUSTMENT') {
             return sprintf(
                 'Um ajuste financeiro foi registrado na transação #%s.',
@@ -236,6 +290,9 @@ final class AuditLogPresenter
                 'created_by',
                 'updated_by',
                 'role_slugs',
+                'event',
+                'user_agent',
+                '_support_context',
             ], true)) {
                 continue;
             }
@@ -252,10 +309,63 @@ final class AuditLogPresenter
                     ?? ucfirst(str_replace('_', ' ', $field)),
                 'before' => $this->formatValue($field, $old),
                 'after' => $this->formatValue($field, $new),
+                'has_before' => array_key_exists($field, $oldValues),
+                'has_after' => array_key_exists($field, $newValues),
             ];
         }
 
         return $changes;
+    }
+
+    private function technicalDetails(array $log, array $newValues): array
+    {
+        $companyId = $newValues['target_company_id']
+            ?? $newValues['company_id']
+            ?? $log['company_id']
+            ?? null;
+        $companyName = $newValues['target_company_name']
+            ?? $newValues['company_name']
+            ?? $log['company_name']
+            ?? null;
+        $route = $newValues['route'] ?? $this->routeFromEntityId((string) $log['entity_id']);
+
+        return [
+            ['label' => 'Ação técnica', 'value' => $newValues['event'] ?? $log['action']],
+            ['label' => 'Página acessada', 'value' => $route],
+            ['label' => 'Responsável', 'value' => $log['actor_name'] ?: $log['actor_email']],
+            ['label' => 'E-mail', 'value' => $log['actor_email']],
+            ['label' => 'Empresa', 'value' => $companyName],
+            ['label' => 'ID da empresa', 'value' => $companyId],
+            ['label' => 'Endereço IP', 'value' => $log['ip_address'] ?? null],
+            ['label' => 'Navegador', 'value' => $newValues['user_agent'] ?? null],
+            ['label' => 'ID da requisição', 'value' => $log['request_id'] ?? null],
+            ['label' => 'Registro afetado', 'value' => sprintf('%s #%s', $log['entity'], $log['entity_id'])],
+        ];
+    }
+
+    private function routeFromEntityId(string $entityId): ?string
+    {
+        if ($entityId === '' || !str_contains($entityId, '/')) {
+            return null;
+        }
+
+        return '/' . ltrim($entityId, '/');
+    }
+
+    private function prettyTechnicalJson(array $oldValues, array $newValues): string
+    {
+        $payload = [];
+        if ($oldValues !== []) {
+            $payload['antes'] = $oldValues;
+        }
+        if ($newValues !== []) {
+            $payload['depois'] = $newValues;
+        }
+
+        return (string) json_encode(
+            $payload,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
     }
 
     private function formatValue(string $field, mixed $value): string

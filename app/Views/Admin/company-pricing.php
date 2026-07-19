@@ -30,9 +30,9 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
                 <a href="/audit?company_id=<?= (int) $company['id'] ?>" class="inline-flex min-h-[76px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-xs font-black text-slate-200 hover:bg-white/[0.08]">
                     <i data-lucide="search-check" class="h-4 w-4 text-blue-400"></i>Auditar
                 </a>
-                <div class="flex min-h-[76px] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+                <div class="flex min-h-[88px] items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
                 <?php if (!empty($company['logo_path'])): ?>
-                    <img src="/uploads/<?= $escape($company['logo_path']) ?>" alt="" class="h-11 w-11 object-contain">
+                    <img src="/uploads/<?= $escape($company['logo_path']) ?>" alt="Logo <?= $escape($company['name']) ?>" class="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20">
                 <?php else: ?>
                     <i data-lucide="building-2" class="w-7 h-7 text-amber-300"></i>
                 <?php endif; ?>

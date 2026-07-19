@@ -7,7 +7,7 @@
                 <?php if (!empty($companyBrand['logo_path'])): ?>
                     <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
                          alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
-                         class="h-14 w-14 object-contain">
+                         class="h-20 w-20 shrink-0 object-contain md:h-24 md:w-24">
                 <?php endif; ?>
                 <div>
                 <span class="text-emerald-500 text-xs font-black uppercase tracking-[0.3em]">Business Intelligence</span>

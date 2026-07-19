@@ -97,7 +97,7 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
             <span class="text-white font-black italic text-lg select-none">P</span>
         </div>
         <?php if ($currentCompany?->logoPath()): ?>
-            <div class="ml-2 flex-shrink-0 w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="ml-2 flex h-12 w-12 flex-shrink-0 items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <img src="/uploads/<?= $escape($currentCompany->logoPath()) ?>"
                      alt="<?= $escape($currentCompany->name()) ?>"
                      class="w-full h-full object-contain">

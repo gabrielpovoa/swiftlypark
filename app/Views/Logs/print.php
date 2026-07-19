@@ -13,7 +13,7 @@
                     <?php if (!empty($companyBrand['logo_path'])): ?>
                         <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
                              alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
-                             class="h-14 w-14 object-contain">
+                             class="h-20 w-20 object-contain">
                     <?php endif; ?>
                 </div>
                 <div>

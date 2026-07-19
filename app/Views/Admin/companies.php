@@ -152,7 +152,7 @@ $error ??= null;
                         <?php if (!empty($company['logo_path'])): ?>
                             <img src="/uploads/<?= $escape($company['logo_path']) ?>"
                                  alt="Logo <?= $escape($company['name']) ?>"
-                                 class="h-12 w-12 shrink-0 object-contain">
+                                 class="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20">
                         <?php else: ?>
                             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                 <i data-lucide="building-2" class="w-5 h-5"></i>

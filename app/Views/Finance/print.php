@@ -28,7 +28,7 @@ $metricLabels = [
                 <?php if (!empty($companyBrand['logo_path'])): ?>
                     <img src="/uploads/<?= htmlspecialchars($companyBrand['logo_path']) ?>"
                          alt="<?= htmlspecialchars($companyBrand['name'] ?? 'Empresa') ?>"
-                         class="h-14 w-14 object-contain">
+                         class="h-20 w-20 object-contain">
                 <?php endif; ?>
                 <div>
                     <p class="text-xs uppercase tracking-[0.25em] text-emerald-700 font-black">SwiftlyPark</p>

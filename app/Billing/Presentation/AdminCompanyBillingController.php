@@ -251,7 +251,7 @@ final class AdminCompanyBillingController extends Controller
         if (!isset($allowed[$mime])) {
             throw new DomainException('Formato inválido. Envie logo em JPG, PNG ou WEBP.');
         }
-        $directory = dirname(__DIR__, 2) . '/public/uploads/companies';
+        $directory = dirname(__DIR__, 3) . '/public/uploads/companies';
         if ((!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory))
             || !is_writable($directory)) {
             throw new DomainException('Não foi possível preparar o diretório de logos.');

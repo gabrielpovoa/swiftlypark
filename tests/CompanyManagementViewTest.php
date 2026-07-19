@@ -42,4 +42,11 @@ if (!str_contains($users, "\$_POST['return_company_id']")) {
     throw new RuntimeException('Ação de vínculo não retorna à empresa de origem.');
 }
 
+if (!str_contains(
+    $billing,
+    "dirname(__DIR__, 3) . '/public/uploads/companies'"
+)) {
+    throw new RuntimeException('Upload de logo não aponta para o public da raiz do projeto.');
+}
+
 echo "Company management view test passed\n";

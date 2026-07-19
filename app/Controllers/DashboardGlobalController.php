@@ -21,7 +21,9 @@ final class DashboardGlobalController extends Controller
         $connection = (new Database())->connect();
 
         if (!$this->hasGlobalPlatformRole($connection, $identity->userId())) {
-            $this->render403();
+            (new HomeController())->index();
+
+            return;
         }
 
         $repository = new GlobalDashboardRepository($connection);
@@ -101,7 +103,6 @@ final class DashboardGlobalController extends Controller
         ))->resolve($userId, null);
         $roles = $authorization->roleSlugs();
 
-        return in_array('super-admin', $roles, true)
-            || in_array('master', $roles, true);
+        return in_array('super-admin', $roles, true);
     }
 }

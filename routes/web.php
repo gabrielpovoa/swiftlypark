@@ -137,22 +137,29 @@ function hasGlobalPlatformRole(int $userId): bool
     ))->resolve($userId, null);
     $roles = $authorization->roleSlugs();
 
-    return in_array('super-admin', $roles, true)
-        || in_array('master', $roles, true);
+    return in_array('super-admin', $roles, true);
 }
 
-function superAdminRequired($callback)
+function adminDashboardRequired($callback)
 {
     return function () use ($callback) {
         try {
             (new IdentityMiddleware())->handle(function () use ($callback) {
                 $identity = IdentityContext::current();
 
-                if (!hasGlobalPlatformRole($identity->userId())) {
-                    (new Controller())->render403();
+                if (hasGlobalPlatformRole($identity->userId())) {
+                    $callback();
+
+                    return;
                 }
 
-                $callback();
+                (new TenantMiddleware())->handle(function () use ($callback, $identity) {
+                    if (!(new AuthorizationService($identity))->can('dashboard.view')) {
+                        (new Controller())->render403();
+                    }
+
+                    $callback();
+                });
             });
         } catch (AccessRevokedException $exception) {
             header('Location: /login?revoked=1');
@@ -340,7 +347,7 @@ $router->post('identity/permissions', permissionRequired('identity.manage', 'ide
 $router->get('admin', permissionRequired('identity.manage', 'admin', function () {
     (new AdminUserProvisioningController())->index();
 }));
-$router->get('admin/dashboard', superAdminRequired(function () {
+$router->get('admin/dashboard', adminDashboardRequired(function () {
     (new DashboardGlobalController())->index();
 }));
 $router->get('admin/companies', permissionRequired('identity.manage', 'admin/companies', function () {

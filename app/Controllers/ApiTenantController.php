@@ -386,8 +386,7 @@ final class ApiTenantController extends Controller
 
     private function isPlatformAdmin(array $roles): bool
     {
-        return in_array('super-admin', $roles, true)
-            || in_array('master', $roles, true);
+        return in_array('super-admin', $roles, true);
     }
 
     private function hasGlobalPlatformRole(\PDO $connection, int $userId): bool

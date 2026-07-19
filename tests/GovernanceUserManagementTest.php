@@ -144,6 +144,15 @@ if ($memberships !== [2]) {
     exit(1);
 }
 
+$globalRoleCount = (int) $connection
+    ->query('SELECT COUNT(*) FROM user_roles WHERE user_id = ' . $userId)
+    ->fetchColumn();
+
+if ($globalRoleCount !== 0) {
+    fwrite(STDERR, "Expected tenant role not to be persisted as a global platform role\n");
+    exit(1);
+}
+
 if ($mailer->temporaryPassword === null
     || preg_match('/^[A-Za-z0-9]{8,}$/', $mailer->temporaryPassword) !== 1) {
     fwrite(STDERR, "Expected temporary credentials to be generated and sent\n");

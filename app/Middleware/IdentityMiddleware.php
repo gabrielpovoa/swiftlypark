@@ -47,7 +47,9 @@ final class IdentityMiddleware
 
         $tenantRepository = new TenantRepository($connection);
         $resolver = new RolePermissionResolver(new RbacRepository($connection));
-        $companyId = $this->isGlobalDashboardRequest()
+        $globalAuthorization = $resolver->resolve($userId, null);
+        $isPlatformAdmin = $this->hasPlatformAdminRole($globalAuthorization->roleSlugs());
+        $companyId = $this->isGlobalDashboardRequest() && $isPlatformAdmin
             ? null
             : $this->resolveCompanyId($tenantRepository, $resolver, $userId);
 
@@ -55,9 +57,8 @@ final class IdentityMiddleware
             $_SESSION['company_id'] = $companyId;
         }
 
-        $globalAuthorization = $resolver->resolve($userId, null);
         $authorization = $this->supportAuthorization($resolver, $companyId)
-            ?? ($this->hasPlatformAdminRole($globalAuthorization->roleSlugs())
+            ?? ($isPlatformAdmin
                 ? $globalAuthorization
                 : $resolver->resolve($userId, $companyId));
         $_SESSION['permissions'] = $authorization->permissions();
@@ -237,8 +238,7 @@ final class IdentityMiddleware
 
     private function hasPlatformAdminRole(array $roles): bool
     {
-        return in_array('super-admin', $roles, true)
-            || in_array('master', $roles, true);
+        return in_array('super-admin', $roles, true);
     }
 
     private function uuid(): string

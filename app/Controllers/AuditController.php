@@ -148,7 +148,6 @@ final class AuditController extends Controller
         ))->resolve($userId, null);
         $roles = $authorization->roleSlugs();
 
-        return in_array('master', $roles, true)
-            || in_array('super-admin', $roles, true);
+        return in_array('super-admin', $roles, true);
     }
 }

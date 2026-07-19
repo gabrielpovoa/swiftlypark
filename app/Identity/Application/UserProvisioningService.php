@@ -82,15 +82,17 @@ final class UserProvisioningService
             ]);
             $userId = (int) $this->connection->lastInsertId();
 
-            $userRole = $this->connection->prepare(
-                'INSERT INTO user_roles (user_id, role_id, created_by)
-                 VALUES (:user_id, :role_id, :created_by)'
-            );
-            $userRole->execute([
-                'user_id' => $userId,
-                'role_id' => $roleId,
-                'created_by' => $this->actor?->userId(),
-            ]);
+            if ($role['slug'] === 'super-admin') {
+                $userRole = $this->connection->prepare(
+                    'INSERT INTO user_roles (user_id, role_id, created_by)
+                     VALUES (:user_id, :role_id, :created_by)'
+                );
+                $userRole->execute([
+                    'user_id' => $userId,
+                    'role_id' => $roleId,
+                    'created_by' => $this->actor?->userId(),
+                ]);
+            }
 
             $companyUser = $this->connection->prepare(
                 'INSERT INTO company_user (company_id, user_id, role_id, created_at)

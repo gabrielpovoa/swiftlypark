@@ -193,7 +193,6 @@ final class TenantMiddleware
             return false;
         }
 
-        return in_array('super-admin', $authorization->roleSlugs(), true)
-            || in_array('master', $authorization->roleSlugs(), true);
+        return in_array('super-admin', $authorization->roleSlugs(), true);
     }
 }

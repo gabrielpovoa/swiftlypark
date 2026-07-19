@@ -38,6 +38,7 @@ nunca na raiz do projeto.
 30. [REFACTOR-030 — Proteção da identidade do Super-Admin](REFACTOR-030-PROTECT-SUPER-ADMIN-IDENTITY.md)
 31. [REFACTOR-031 — Governança SaaS para administradores](REFACTOR-031-TENANT-ADMIN-GOVERNANCE.md)
 32. [REFACTOR-032 — Ciclo de usuários pelo administrador](REFACTOR-032-TENANT-ADMIN-USER-LIFECYCLE.md)
+33. [REFACTOR-033 — Visão financeira do administrador](REFACTOR-033-TENANT-ADMIN-FINANCE-OVERVIEW.md)
 
 ## Retomada rápida
 

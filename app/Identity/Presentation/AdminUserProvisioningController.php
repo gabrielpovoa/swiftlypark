@@ -10,7 +10,7 @@ use App\Repositories\AuditLogRepository;
 use App\Exceptions\ForbiddenException;
 use App\Services\AuditService;
 use App\Services\PasswordGeneratorService;
-use App\Services\PasswordRecoveryMailer;
+use App\Services\QueuedPasswordRecoveryMailer;
 use Config\Database;
 use Core\Controller;
 use DateTimeImmutable;
@@ -101,7 +101,7 @@ final class AdminUserProvisioningController extends Controller
                     'login_id' => $user['id_login'],
                 ]);
 
-                $mailer = new PasswordRecoveryMailer();
+                $mailer = QueuedPasswordRecoveryMailer::fromConnection($connection);
                 $mailer->sendTemporaryPassword($user['email'], $temporaryPassword);
 
                 $connection->commit();
@@ -705,4 +705,3 @@ final class AdminUserProvisioningController extends Controller
     }
 
 }
-

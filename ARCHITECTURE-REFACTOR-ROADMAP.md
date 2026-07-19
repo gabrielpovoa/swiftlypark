@@ -47,7 +47,7 @@ trabalho sem depender do histórico da conversa.
 | 011 | `feature/add-financial-ledger` | Livro financeiro unificado e auditável | Concluída |
 | 012 | `feature/add-financial-integration-tests` | Fluxos críticos validados contra MySQL | Concluída |
 | 013 | `feature/add-concurrency-tests` | Check-in, checkout e renovação concorrentes cobertos | Concluída |
-| 014 | `feature/add-background-job-queue` | E-mails e trabalhos pesados fora da requisição | Pendente |
+| 014 | `feature/add-background-job-queue` | E-mails e trabalhos pesados fora da requisição | Concluída |
 
 ## Estrutura alvo
 

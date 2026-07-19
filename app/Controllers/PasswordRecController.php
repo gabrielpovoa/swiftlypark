@@ -9,7 +9,7 @@ use App\Exceptions\InvalidResetAuthorizationException;
 use App\Repositories\PasswordResetRepository;
 use App\Repositories\UserRepository;
 use App\Services\OtpService;
-use App\Services\PasswordRecoveryMailer;
+use App\Services\QueuedPasswordRecoveryMailer;
 use Config\Database;
 use Core\Controller;
 use Throwable;
@@ -36,7 +36,7 @@ final class PasswordRecController extends Controller
             $connection,
             new PasswordResetRepository($connection),
             new UserRepository($connection),
-            new PasswordRecoveryMailer()
+            QueuedPasswordRecoveryMailer::fromConnection($connection)
         );
     }
 

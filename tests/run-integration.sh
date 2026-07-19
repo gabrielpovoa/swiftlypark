@@ -4,3 +4,4 @@ set -euo pipefail
 php cli/migrate.php migrate
 php tests/Integration/FinancialLedgerIntegrationTest.php
 php tests/Integration/ConcurrencyIntegrationTest.php
+php tests/Integration/JobQueueIntegrationTest.php

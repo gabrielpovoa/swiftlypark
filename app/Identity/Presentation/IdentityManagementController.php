@@ -12,6 +12,7 @@ use App\Transactions\TransactionManager;
 use Config\Database;
 use Core\Controller;
 use Throwable;
+use App\Services\QueuedPasswordRecoveryMailer;
 
 final class IdentityManagementController extends Controller
 {
@@ -101,7 +102,10 @@ final class IdentityManagementController extends Controller
             new IdentityManagementRepository($connection),
             new AuditLogRepository($connection),
             new TransactionManager($connection),
-            IdentityContext::current()
+            IdentityContext::current(),
+            null,
+            null,
+            QueuedPasswordRecoveryMailer::fromConnection($connection)
         );
 
         try {
@@ -170,4 +174,3 @@ final class IdentityManagementController extends Controller
         exit;
     }
 }
-

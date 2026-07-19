@@ -10,7 +10,7 @@ use App\Identity\Domain\Events\UserCreatedEvent;
 use App\Services\AuditService;
 use App\Services\NotificationService;
 use App\Services\PasswordGeneratorService;
-use App\Services\PasswordRecoveryMailer;
+use App\Services\QueuedPasswordRecoveryMailer;
 use DomainException;
 use PDO;
 
@@ -26,7 +26,7 @@ final class UserProvisioningService
     ) {
         $this->notifications ??= new NotificationService();
         $this->passwords ??= new PasswordGeneratorService();
-        $this->mailer ??= new PasswordRecoveryMailer();
+        $this->mailer ??= QueuedPasswordRecoveryMailer::fromConnection($this->connection);
     }
 
     public function create(
@@ -461,4 +461,3 @@ final class UserProvisioningService
         }
     }
 }
-

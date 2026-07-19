@@ -13,7 +13,6 @@ use App\Identity\Infrastructure\IdentityManagementRepository;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuthorizationService;
 use App\Services\PasswordGeneratorService;
-use App\Services\PasswordRecoveryMailer;
 use App\Transactions\TransactionManager;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -32,7 +31,9 @@ final class IdentityManagementService
     ) {
         $this->tenantContext ??= TenantContext::instance();
         $this->passwords ??= new PasswordGeneratorService();
-        $this->mailer ??= new PasswordRecoveryMailer();
+        if ($this->mailer === null) {
+            throw new RuntimeException('Mailer assíncrono não configurado para Identity.');
+        }
     }
 
     public function revoke(int $targetUserId): void
@@ -201,4 +202,3 @@ final class IdentityManagementService
         // Hook central para plugar um EventBus sem espalhar acoplamento pela camada de domínio.
     }
 }
-

@@ -5,7 +5,7 @@
 - Branch: `feature/fix-tenant-favicon-persistence`
 - Base: `develop`
 - Data: 19/07/2026
-- Estado: implementado e aguardando finalização Git Flow
+- Estado: concluído e integrado à `develop`
 
 ## Problema
 

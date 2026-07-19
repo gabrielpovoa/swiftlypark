@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 require dirname(__DIR__) . '/vendor/autoload.php';
+require_once dirname(__DIR__) . '/config/env.php';
+
+loadEnv(dirname(__DIR__) . '/.env');
+date_default_timezone_set('UTC');
+
 use App\Services\PasswordRecoveryMailer;
 use App\Shared\Application\JobWorker;
 use App\Shared\Infrastructure\Queue\PdoJobQueue;

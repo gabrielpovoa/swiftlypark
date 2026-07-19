@@ -40,6 +40,29 @@ services:
       - db
 
   # --------------------------------------------------------
+  # WORKER (fila assíncrona de e-mails)
+  # --------------------------------------------------------
+  worker:
+    build: .
+    container_name: swiftlypark-worker
+    restart: always
+    volumes:
+      - .:/var/www/html
+      - swiftly-uploads:/var/www/html/public/uploads
+    working_dir: /var/www/html
+    command: php cli/worker.php
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=parking
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - JOB_QUEUE_KEY=${JOB_QUEUE_KEY:-swiftlypark-local-job-queue-key-change-in-production}
+    networks:
+      - swiftly-network
+    depends_on:
+      - db
+
+  # --------------------------------------------------------
   # BANCO DE DADOS (MySQL 8)
   # --------------------------------------------------------
   db:

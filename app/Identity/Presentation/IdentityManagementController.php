@@ -117,7 +117,7 @@ final class IdentityManagementController extends Controller
             );
 
             $_SESSION['identity_success'] = sprintf(
-                'Usuário #%d criado. A senha temporária foi enviada por e-mail.',
+                'Usuário #%d criado. A senha temporária foi adicionada à fila de envio.',
                 $userId
             );
             unset(
@@ -148,7 +148,7 @@ final class IdentityManagementController extends Controller
     {
         $this->executeAction(function (IdentityManagementService $service): void {
             $service->reactivate((int) ($_POST['user_id'] ?? 0));
-            $_SESSION['identity_success'] = 'Usuário reativado e senha temporária enviada.';
+            $_SESSION['identity_success'] = 'Usuário reativado e senha temporária adicionada à fila de envio.';
         });
     }
 

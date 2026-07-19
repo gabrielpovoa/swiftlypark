@@ -17,7 +17,7 @@ use Throwable;
 final class PasswordRecController extends Controller
 {
     private const BLIND_RESPONSE =
-        'Se o e-mail existir em nossa base de dados, um código de recuperação foi enviado.';
+        'Se o e-mail existir em nossa base de dados, um código de recuperação foi adicionado à fila de envio.';
 
     private OtpService $otpService;
 

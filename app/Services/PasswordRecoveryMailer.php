@@ -17,20 +17,9 @@ final class PasswordRecoveryMailer implements PasswordRecoveryMailerInterface
         $mailer = new PHPMailer(true);
 
         try {
-            $mailer->isSMTP();
-            $mailer->Host = (string) getenv('MAIL_HOST');
-            $mailer->SMTPAuth = true;
-            $mailer->Username = (string) getenv('MAIL_USERNAME');
-            $mailer->Password = (string) getenv('MAIL_PASSWORD');
-            $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mailer->Port = (int) getenv('MAIL_PORT');
-            $mailer->CharSet = 'UTF-8';
-            $mailer->setFrom(
-                (string) getenv('MAIL_USERNAME'),
-                (string) (getenv('MAIL_FROM_NAME') ?: 'SwiftlyPark')
-            );
+            $this->configureSmtp($mailer);
             $mailer->addAddress($email);
-            $mailer->isHTML(false);
+            $mailer->isHTML(true);
             $mailer->Subject = 'Código de recuperação SwiftlyPark';
             $mailer->Body = $this->buildHtmlTemplate(
                 'Recuperação de acesso',
@@ -91,20 +80,9 @@ final class PasswordRecoveryMailer implements PasswordRecoveryMailerInterface
         $mailer = new PHPMailer(true);
 
         try {
-            $mailer->isSMTP();
-            $mailer->Host = (string) getenv('MAIL_HOST');
-            $mailer->SMTPAuth = true;
-            $mailer->Username = (string) getenv('MAIL_USERNAME');
-            $mailer->Password = (string) getenv('MAIL_PASSWORD');
-            $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mailer->Port = (int) getenv('MAIL_PORT');
-            $mailer->CharSet = 'UTF-8';
-            $mailer->setFrom(
-                (string) getenv('MAIL_USERNAME'),
-                (string) (getenv('MAIL_FROM_NAME') ?: 'SwiftlyPark')
-            );
+            $this->configureSmtp($mailer);
             $mailer->addAddress($email);
-            $mailer->isHTML(false);
+            $mailer->isHTML(true);
             $mailer->Subject = $subject;
             $mailer->Body = $this->buildHtmlTemplate(
                 $title,
@@ -126,6 +104,37 @@ final class PasswordRecoveryMailer implements PasswordRecoveryMailerInterface
                 $exception
             );
         }
+    }
+
+    private function configureSmtp(PHPMailer $mailer): void
+    {
+        $host = trim((string) getenv('MAIL_HOST'));
+        $username = trim((string) getenv('MAIL_USERNAME'));
+        $password = (string) getenv('MAIL_PASSWORD');
+        $port = (int) getenv('MAIL_PORT');
+
+        if ($host === '' || $username === '' || $password === '' || $port < 1) {
+            throw new RuntimeException('Configuração SMTP incompleta no ambiente do worker.');
+        }
+
+        $encryption = strtolower(trim((string) (getenv('MAIL_ENCRYPTION') ?: 'tls')));
+
+        $mailer->isSMTP();
+        $mailer->Host = $host;
+        $mailer->SMTPAuth = true;
+        $mailer->Username = $username;
+        $mailer->Password = $password;
+        $mailer->Port = $port;
+        $mailer->CharSet = 'UTF-8';
+        $mailer->SMTPSecure = match ($encryption) {
+            'ssl', 'smtps' => PHPMailer::ENCRYPTION_SMTPS,
+            'none', '' => '',
+            default => PHPMailer::ENCRYPTION_STARTTLS,
+        };
+        $mailer->setFrom(
+            $username,
+            (string) (getenv('MAIL_FROM_NAME') ?: 'SwiftlyPark')
+        );
     }
 
     private function buildHtmlTemplate(string $title, string $subtitle, string $highlight, string $footer): string

@@ -105,7 +105,7 @@ final class AdminUserProvisioningController extends Controller
                 $mailer->sendTemporaryPassword($user['email'], $temporaryPassword);
 
                 $connection->commit();
-                $_SESSION['admin_success'] = 'Senha temporária enviada com sucesso.';
+                $_SESSION['admin_success'] = 'Senha temporária adicionada à fila de envio.';
             } catch (Throwable $throwable) {
                 if ($connection->inTransaction()) {
                     $connection->rollBack();
@@ -117,7 +117,7 @@ final class AdminUserProvisioningController extends Controller
             $_SESSION['admin_error'] = $exception->getMessage();
         } catch (Throwable $throwable) {
             error_log($throwable->getMessage());
-            $_SESSION['admin_error'] = 'Não foi possível enviar a senha temporária.';
+            $_SESSION['admin_error'] = 'Não foi possível enfileirar a senha temporária.';
         }
 
         $this->redirect();

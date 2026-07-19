@@ -116,7 +116,7 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                     <div class="md:col-span-2 flex flex-col gap-4 rounded-2xl border border-blue-500/20 bg-blue-500/[0.07] p-4 md:flex-row md:items-center md:justify-between">
                         <p class="flex items-start gap-2 text-sm text-blue-100/80">
                             <i data-lucide="mail-check" class="mt-0.5 h-4 w-4 shrink-0 text-blue-400"></i>
-                            Uma senha temporária será gerada, enviada por e-mail e deverá ser alterada no primeiro acesso.
+                            Uma senha temporária será gerada, adicionada à fila de e-mail e deverá ser alterada no primeiro acesso.
                         </p>
                         <button class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-black text-white hover:bg-blue-500">
                             <i data-lucide="user-round-check" class="h-4 w-4"></i>Criar usuário

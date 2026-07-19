@@ -178,7 +178,7 @@ $permissions ??= [];
                         </select>
                     </div>
                     <div class="md:col-span-2 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200/90">
-                        A senha temporária será enviada por e-mail e o usuário será obrigado a alterá-la no próximo acesso.
+                        A senha temporária será adicionada à fila de e-mail e o usuário será obrigado a alterá-la no próximo acesso.
                     </div>
                     <button class="md:col-span-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black px-5 py-3">
                         Enviar senha temporária

@@ -366,6 +366,16 @@ final class IdentityManagementRepository
             $parameters['company_id'] = (int) $filters['company_id'];
         }
 
+        if (($filters['exclude_super_admin'] ?? false) === true) {
+            $where[] = 'NOT EXISTS (
+                SELECT 1 FROM user_roles privileged_ur
+                INNER JOIN roles privileged_role
+                    ON privileged_role.id = privileged_ur.role_id
+                   AND privileged_role.slug = "super-admin"
+                WHERE privileged_ur.user_id = u.id_usuario
+            )';
+        }
+
         if (($filters['status'] ?? 'all') === 'active') {
             $where[] = 'u.deleted_at IS NULL';
         } elseif (($filters['status'] ?? 'all') === 'revoked') {

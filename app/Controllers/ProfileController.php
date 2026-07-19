@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Authorization\Repositories\RbacRepository;
+use App\Authorization\Services\UserAccessGuard;
 use App\Context\IdentityContext;
 use App\Services\AuthorizationService;
 use Config\Database;
@@ -30,6 +31,10 @@ class ProfileController extends Controller
             http_response_code(403);
             exit('Acesso negado.');
         }
+
+
+        (new UserAccessGuard((new Database())->connect(), $identity))
+            ->assertCanManage($targetUserId);
 
         $userModel = new User();
         $user = $userModel->getUserById($targetUserId);
@@ -95,6 +100,10 @@ class ProfileController extends Controller
             http_response_code(403);
             exit('Acesso negado.');
         }
+
+
+        (new UserAccessGuard((new Database())->connect(), $identity))
+            ->assertCanManage($targetUserId);
 
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $email = trim((string) ($_POST['email'] ?? ''));

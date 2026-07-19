@@ -415,7 +415,7 @@ $router->post('identity/permissions', permissionRequired('identity.manage', 'ide
     (new IdentityManagementController())->permissions();
 }));
 
-$router->get('admin', permissionRequired('identity.manage', 'admin', function () {
+$router->get('admin', superAdminRequired(function () {
     (new AdminUserProvisioningController())->index();
 }));
 $router->get('admin/dashboard', adminDashboardRequired(function () {

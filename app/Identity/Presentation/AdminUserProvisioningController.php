@@ -6,6 +6,7 @@ namespace App\Identity\Presentation;
 
 use App\Context\IdentityContext;
 use App\Authorization\Services\CompanyAccessGuard;
+use App\Authorization\Services\UserAccessGuard;
 use App\Identity\Application\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
 use App\Exceptions\ForbiddenException;
@@ -67,6 +68,9 @@ final class AdminUserProvisioningController extends Controller
                 throw new DomainException('Selecione um usuário válido.');
             }
 
+            (new UserAccessGuard($connection, IdentityContext::current()))
+                ->assertCanManage($userId);
+
             $user = $this->userForPasswordReset($connection, $userId);
             if ($user === null || $user['deleted_at'] !== null) {
                 throw new DomainException('Usuário indisponível para redefinição.');
@@ -114,6 +118,8 @@ final class AdminUserProvisioningController extends Controller
 
                 throw $throwable;
             }
+        } catch (ForbiddenException $exception) {
+            throw $exception;
         } catch (DomainException $exception) {
             $_SESSION['admin_error'] = $exception->getMessage();
         } catch (Throwable $throwable) {

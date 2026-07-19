@@ -228,6 +228,13 @@ final class IdentityManagementService
             return;
         }
 
+        if ($this->users->hasRole($targetUserId, 'super-admin')) {
+            throw new ForbiddenException(
+                'identity.manage',
+                'O perfil do Super-Admin é restrito à administração global.'
+            );
+        }
+
         $companyId = $this->tenantContext->getCompanyId();
         if ($companyId === null || !$this->users->hasCompanyMembership($targetUserId, $companyId)) {
             throw new ForbiddenException(

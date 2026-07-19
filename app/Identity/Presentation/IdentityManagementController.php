@@ -33,6 +33,7 @@ final class IdentityManagementController extends Controller
         $isSuperAdmin = in_array('super-admin', $identity->roleSlugs(), true);
         $scopeCompanyId = $isSuperAdmin ? null : TenantContext::instance()->getCompanyId();
         $filters = $this->filters($scopeCompanyId);
+        $filters['exclude_super_admin'] = !$isSuperAdmin;
         $users = $repository->paginate($page, self::PER_PAGE, $filters);
         $canManageIdentity = (new AuthorizationService($identity))->can('identity.manage');
         $canAssignPrivileged = in_array('super-admin', $identity->roleSlugs(), true);

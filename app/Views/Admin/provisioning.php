@@ -22,7 +22,7 @@ $permissions ??= [];
             <div>
                 <span class="text-blue-500 text-xs font-black uppercase tracking-[0.3em]">Super-master</span>
                 <h1 class="text-4xl font-black text-white mt-2">Governança SaaS</h1>
-                <p class="text-slate-500 mt-2">Crie empresas, provisione usuários e controle vínculos de acesso por tenant.</p>
+                <p class="text-slate-500 mt-2">Acompanhe a governança da plataforma e controle vínculos de acesso por tenant.</p>
             </div>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-right">
                 <div class="rounded-2xl bg-white/[0.03] border border-white/10 px-5 py-4">
@@ -186,53 +186,6 @@ $permissions ??= [];
                 </form>
             </section>
 
-            <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6 xl:col-span-2">
-                <div class="flex items-center justify-between gap-4 mb-6">
-                    <div>
-                        <span class="text-[10px] text-blue-400 font-black uppercase tracking-widest">Acesso</span>
-                        <h2 class="text-xl text-white font-black mt-1">Adicionar novo usuário</h2>
-                    </div>
-                    <i data-lucide="user-plus" class="w-7 h-7 text-blue-400"></i>
-                </div>
-
-                <form method="POST" action="/admin/users/create" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Nome</label>
-                        <input name="name" required maxlength="255" placeholder="Ana Operadora"
-                               class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">E-mail</label>
-                        <input type="email" name="email" required placeholder="ana@empresa.com"
-                               class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Empresa</label>
-                        <select name="company_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
-                            <option value="">Selecione</option>
-                            <?php foreach ($companies as $company): ?>
-                                <option value="<?= (int) $company['id'] ?>"><?= $escape($company['name']) ?> · <?= $escape($company['slug']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Papel</label>
-                        <select name="role_id" required class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
-                            <option value="">Selecione</option>
-                            <?php foreach ($roles as $role): ?>
-                                <option value="<?= (int) $role['id'] ?>"><?= $escape($role['label'] ?: $role['name']) ?> · <?= $escape($role['slug']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="md:col-span-2 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-sm text-blue-100/90">
-                        A senha temporária será gerada automaticamente e enviada por e-mail.
-                    </div>
-                    <button class="md:col-span-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black px-5 py-3">
-                        Provisionar usuário
-                    </button>
-                </form>
-            </section>
         </div>
 
         <div class="grid grid-cols-1 gap-6">

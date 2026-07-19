@@ -90,6 +90,29 @@ final class IdentityManagementRepository
         )->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function activeCompanies(): array
+    {
+        return $this->connection->query(
+            'SELECT id, name, slug
+             FROM companies
+             WHERE deleted_at IS NULL
+             ORDER BY name ASC'
+        )->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function assignableRoles(bool $canAssignPrivileged): array
+    {
+        $where = $canAssignPrivileged
+            ? 'WHERE is_active = 1'
+            : "WHERE is_active = 1 AND slug NOT IN ('master', 'super-admin')";
+
+        return $this->connection->query(
+            'SELECT id, slug, name, label
+             FROM roles ' . $where . '
+             ORDER BY display_priority ASC, name ASC'
+        )->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function findUserForUpdate(int $userId): ?array
     {
         $statement = $this->connection->prepare(
@@ -272,4 +295,3 @@ final class IdentityManagementRepository
         ];
     }
 }
-

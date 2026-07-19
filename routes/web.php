@@ -324,6 +324,9 @@ $router->get('audit', authRequired(function () {
 $router->get('identity', permissionRequired('identity.view', 'identity', function () {
     (new IdentityManagementController())->index();
 }));
+$router->post('identity/create', permissionRequired('identity.manage', 'identity/create', function () {
+    (new IdentityManagementController())->create();
+}));
 $router->post('identity/revoke', permissionRequired('identity.manage', 'identity/revoke', function () {
     (new IdentityManagementController())->revoke();
 }));

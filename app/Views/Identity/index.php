@@ -11,6 +11,11 @@ $filters ??= [
     'is_filtered' => false,
 ];
 $companies ??= [];
+$provisioningCompanies ??= [];
+$assignableRoles ??= [];
+$canManageIdentity ??= false;
+$provisioningFormOpen ??= false;
+$provisioningOld ??= [];
 $pageUrl = static function (int $targetPage) use ($filters): string {
     $query = array_filter([
         'q' => $filters['query'] ?? '',
@@ -54,6 +59,71 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
             <div class="mb-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 px-5 py-4 text-emerald-400 font-bold"><?= $escape($success) ?></div>
         <?php elseif ($error): ?>
             <div class="mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 px-5 py-4 text-rose-400 font-bold"><?= $escape($error) ?></div>
+        <?php endif; ?>
+
+        <?php if ($canManageIdentity): ?>
+            <details <?= $provisioningFormOpen ? 'open' : '' ?> class="group mb-6 overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/[0.08] to-violet-500/[0.04] shadow-2xl shadow-blue-950/10">
+                <summary class="flex cursor-pointer list-none flex-col justify-between gap-4 p-5 md:flex-row md:items-center md:p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10 text-blue-300">
+                            <i data-lucide="user-plus" class="h-6 w-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Provisionamento</span>
+                            <h2 class="mt-1 text-xl font-black text-white">Adicionar novo usuário</h2>
+                            <p class="mt-1 text-sm text-slate-500">Cadastre o acesso e defina a empresa e o perfil inicial.</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black text-white shadow-lg shadow-blue-600/20 transition group-hover:bg-blue-500">
+                        <span class="group-open:hidden">Novo usuário</span>
+                        <span class="hidden group-open:inline">Fechar formulário</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform group-open:rotate-180"></i>
+                    </span>
+                </summary>
+
+                <form method="POST" action="/identity/create" class="grid grid-cols-1 gap-4 border-t border-white/10 bg-black/10 p-5 md:grid-cols-2 md:p-6">
+                    <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                    <div>
+                        <label for="new-user-name" class="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Nome completo</label>
+                        <input id="new-user-name" name="name" required maxlength="255" autocomplete="name" placeholder="Ana Operadora" value="<?= $escape($provisioningOld['name'] ?? '') ?>"
+                               class="w-full rounded-xl border border-white/10 bg-[#090c12] px-4 py-3 text-white outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                    </div>
+                    <div>
+                        <label for="new-user-email" class="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">E-mail</label>
+                        <input id="new-user-email" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="ana@empresa.com" value="<?= $escape($provisioningOld['email'] ?? '') ?>"
+                               class="w-full rounded-xl border border-white/10 bg-[#090c12] px-4 py-3 text-white outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                    </div>
+                    <div>
+                        <label for="new-user-company" class="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Empresa inicial</label>
+                        <select id="new-user-company" name="company_id" required
+                                class="w-full rounded-xl border border-white/10 bg-[#090c12] px-4 py-3 text-white outline-none focus:border-blue-500">
+                            <option value="">Selecione uma empresa</option>
+                            <?php foreach ($provisioningCompanies as $company): ?>
+                                <option value="<?= (int) $company['id'] ?>" <?= (int) $company['id'] === (int) ($provisioningOld['company_id'] ?? 0) ? 'selected' : '' ?>><?= $escape($company['name']) ?> · <?= $escape($company['slug']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="new-user-role" class="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-500">Perfil inicial</label>
+                        <select id="new-user-role" name="role_id" required
+                                class="w-full rounded-xl border border-white/10 bg-[#090c12] px-4 py-3 text-white outline-none focus:border-blue-500">
+                            <option value="">Selecione um perfil</option>
+                            <?php foreach ($assignableRoles as $role): ?>
+                                <option value="<?= (int) $role['id'] ?>" <?= (int) $role['id'] === (int) ($provisioningOld['role_id'] ?? 0) ? 'selected' : '' ?>><?= $escape($role['label'] ?: $role['name']) ?> · <?= $escape($role['slug']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2 flex flex-col gap-4 rounded-2xl border border-blue-500/20 bg-blue-500/[0.07] p-4 md:flex-row md:items-center md:justify-between">
+                        <p class="flex items-start gap-2 text-sm text-blue-100/80">
+                            <i data-lucide="mail-check" class="mt-0.5 h-4 w-4 shrink-0 text-blue-400"></i>
+                            Uma senha temporária será gerada, enviada por e-mail e deverá ser alterada no primeiro acesso.
+                        </p>
+                        <button class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-black text-white hover:bg-blue-500">
+                            <i data-lucide="user-round-check" class="h-4 w-4"></i>Criar usuário
+                        </button>
+                    </div>
+                </form>
+            </details>
         <?php endif; ?>
 
         <section class="mb-6 rounded-3xl border border-white/10 bg-[#11151e]/90 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-6">

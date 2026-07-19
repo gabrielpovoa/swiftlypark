@@ -26,6 +26,7 @@ nunca na raiz do projeto.
 18. [REFACTOR-018 — Finance global](REFACTOR-018-GLOBAL-SUPER-ADMIN-FINANCE.md)
 19. [REFACTOR-019 — Precedência do contexto financeiro](REFACTOR-019-FIX-FINANCE-CONTEXT-PRECEDENCE.md)
 20. [REFACTOR-020 — Leitura da trilha de auditoria](REFACTOR-020-IMPROVE-AUDIT-LOG-READABILITY.md)
+21. [REFACTOR-021 — Provisionamento centralizado de usuários](REFACTOR-021-CENTRALIZE-USER-PROVISIONING.md)
 
 ## Retomada rápida
 

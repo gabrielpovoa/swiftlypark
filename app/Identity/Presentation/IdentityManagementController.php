@@ -7,12 +7,15 @@ namespace App\Identity\Presentation;
 use App\Context\IdentityContext;
 use App\Identity\Infrastructure\IdentityManagementRepository;
 use App\Identity\Application\IdentityManagementService;
+use App\Identity\Application\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
+use App\Services\AuditService;
 use App\Transactions\TransactionManager;
 use Config\Database;
 use Core\Controller;
 use Throwable;
 use App\Services\QueuedPasswordRecoveryMailer;
+use DomainException;
 
 final class IdentityManagementController extends Controller
 {
@@ -26,6 +29,9 @@ final class IdentityManagementController extends Controller
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $filters = $this->filters();
         $users = $repository->paginate($page, self::PER_PAGE, $filters);
+        $identity = IdentityContext::current();
+        $canManageIdentity = in_array('identity.manage', $identity->permissions(), true);
+        $canAssignPrivileged = in_array('super-admin', $identity->roleSlugs(), true);
 
         foreach ($users as &$user) {
             $user['role_slugs'] = $user['roles'] === null
@@ -45,6 +51,17 @@ final class IdentityManagementController extends Controller
             'users' => $users,
             'permissions' => $repository->permissions(),
             'companies' => $repository->companiesForFilter(),
+            'provisioningCompanies' => $canManageIdentity
+                ? $repository->activeCompanies()
+                : [],
+            'assignableRoles' => $canManageIdentity
+                ? $repository->assignableRoles($canAssignPrivileged)
+                : [],
+            'canManageIdentity' => $canManageIdentity,
+            'provisioningFormOpen' => (bool) ($_SESSION['identity_provisioning_error'] ?? false),
+            'provisioningOld' => is_array($_SESSION['identity_provisioning_old'] ?? null)
+                ? $_SESSION['identity_provisioning_old']
+                : [],
             'filters' => $filters,
             'page' => $page,
             'totalPages' => max(
@@ -52,12 +69,71 @@ final class IdentityManagementController extends Controller
                 (int) ceil($repository->countUsers($filters) / self::PER_PAGE)
             ),
             'csrfToken' => $this->csrfToken(),
-            'currentUserId' => IdentityContext::current()->userId(),
+            'currentUserId' => $identity->userId(),
             'success' => $_SESSION['identity_success'] ?? null,
             'error' => $_SESSION['identity_error'] ?? null,
         ]);
 
-        unset($_SESSION['identity_success'], $_SESSION['identity_error']);
+        unset(
+            $_SESSION['identity_success'],
+            $_SESSION['identity_error'],
+            $_SESSION['identity_provisioning_error'],
+            $_SESSION['identity_provisioning_old']
+        );
+    }
+
+    public function create(): void
+    {
+        $this->startSession();
+        $_SESSION['identity_provisioning_error'] = true;
+        $_SESSION['identity_provisioning_old'] = [
+            'name' => substr(trim((string) ($_POST['name'] ?? '')), 0, 255),
+            'email' => substr(trim((string) ($_POST['email'] ?? '')), 0, 255),
+            'company_id' => (int) ($_POST['company_id'] ?? 0),
+            'role_id' => (int) ($_POST['role_id'] ?? 0),
+        ];
+
+        if (!$this->hasValidCsrfToken()) {
+            $_SESSION['identity_error'] = 'A sessão expirou. Tente novamente.';
+            $this->redirect();
+        }
+
+        $connection = (new Database())->connect();
+        $identity = IdentityContext::current();
+
+        try {
+            $userId = (new UserProvisioningService(
+                $connection,
+                $identity,
+                new AuditService(
+                    new AuditLogRepository($connection),
+                    $identity
+                )
+            ))->create(
+                (string) ($_POST['name'] ?? ''),
+                (string) ($_POST['email'] ?? ''),
+                (int) ($_POST['company_id'] ?? 0),
+                (int) ($_POST['role_id'] ?? 0)
+            );
+
+            $_SESSION['identity_success'] = sprintf(
+                'Usuário #%d criado. A senha temporária foi enviada por e-mail.',
+                $userId
+            );
+            unset(
+                $_SESSION['identity_provisioning_error'],
+                $_SESSION['identity_provisioning_old']
+            );
+        } catch (\App\Exceptions\ForbiddenException $exception) {
+            throw $exception;
+        } catch (DomainException $exception) {
+            $_SESSION['identity_error'] = $exception->getMessage();
+        } catch (Throwable $throwable) {
+            error_log($throwable->getMessage());
+            $_SESSION['identity_error'] = 'Não foi possível criar o usuário.';
+        }
+
+        $this->redirect();
     }
 
     public function revoke(): void

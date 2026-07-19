@@ -411,6 +411,9 @@ $router->get('api/v1/user/tenants', authIdentityRequired(function () {
 $router->post('api/v1/tenant/switch', authIdentityRequired(function () {
     (new ApiTenantController())->switchTenant();
 }));
+$router->post('api/v1/tenant/global', authIdentityRequired(function () {
+    (new ApiTenantController())->switchGlobal();
+}));
 $router->post('api/v1/support/profile', authIdentityRequired(function () {
     (new ApiTenantController())->supportProfile();
 }));

@@ -90,6 +90,20 @@
         return payload;
     }
 
+    async function switchGlobal() {
+        const response = await fetch('/api/v1/tenant/global', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.error) {
+            throw new Error(payload.error || 'Não foi possível ativar o contexto global.');
+        }
+        setCurrentCompanyId(null);
+
+        return payload;
+    }
+
     async function updateSupportProfile(form) {
         const formData = new FormData(form);
         const permissions = formData.getAll('extra_permissions[]')
@@ -146,8 +160,20 @@
             select.dataset.bound = 'true';
             select.addEventListener('change', async () => {
                 if (select.value === '__global__') {
-                    setCurrentCompanyId(null);
-                    window.location.href = '/admin/dashboard';
+                    setSwitcherLoading(container, true);
+                    try {
+                        const payload = await switchGlobal();
+                        window.location.href = payload.redirect_url || '/admin/dashboard';
+                    } catch (error) {
+                        setSwitcherLoading(container, false);
+                        window.Swal?.fire({
+                            icon: 'error',
+                            title: 'Troca bloqueada',
+                            text: error.message,
+                            background: '#111827',
+                            color: '#e2e8f0',
+                        });
+                    }
                     return;
                 }
 

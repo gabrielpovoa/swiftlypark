@@ -51,11 +51,15 @@ if ($isPlatformAdmin && $supportCompanyId !== false && $supportCompanyId !== nul
     }
 }
 $requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
-$financeCompanyFilter = (string) ($_GET['company_id'] ?? 'all');
+$hasExplicitFinanceFilter = array_key_exists('company_id', $_GET);
+$financeCompanyFilter = (string) ($_GET['company_id'] ?? '');
 $isGlobalFinanceView = $isPlatformAdmin
     && is_string($requestPath)
     && ($requestPath === '/finance' || str_starts_with($requestPath, '/finance/'))
-    && ($financeCompanyFilter === '' || $financeCompanyFilter === 'all');
+    && (($hasExplicitFinanceFilter
+            && ($financeCompanyFilter === '' || $financeCompanyFilter === 'all'))
+        || (!$hasExplicitFinanceFilter
+            && ($supportCompanyId === false || $supportCompanyId === null)));
 if ($isGlobalFinanceView) {
     $currentCompany = null;
     $currentCompanyId = null;

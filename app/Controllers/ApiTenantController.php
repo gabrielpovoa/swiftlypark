@@ -139,6 +139,34 @@ final class ApiTenantController extends Controller
         });
     }
 
+    public function switchGlobal(): void
+    {
+        $this->json(function (): array {
+            $this->startSession();
+            $connection = (new Database())->connect();
+            $identity = IdentityContext::current();
+            if (!$this->hasGlobalPlatformRole($connection, $identity->userId())) {
+                http_response_code(403);
+
+                return ['error' => 'Apenas administradores globais podem usar este contexto.'];
+            }
+
+            $authorization = (new RolePermissionResolver(
+                new RbacRepository($connection)
+            ))->resolve($identity->userId(), null);
+            unset($_SESSION['company_id'], $_SESSION['support_impersonation']);
+            $_SESSION['permissions'] = $authorization->permissions();
+            $_SESSION['role_slugs'] = $authorization->roleSlugs();
+            $_SESSION['role_metadata'] = $authorization->roleMetadata()->toArray();
+            TenantContext::instance()->clear();
+
+            return [
+                'current_company' => null,
+                'redirect_url' => '/admin/dashboard',
+            ];
+        });
+    }
+
     public function supportProfile(): void
     {
         $this->json(function (): array {

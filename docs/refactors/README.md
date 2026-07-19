@@ -24,6 +24,7 @@ nunca na raiz do projeto.
 16. [REFACTOR-016 — Upload de logo](REFACTOR-016-FIX-COMPANY-LOGO-UPLOAD-PATH.md)
 17. [REFACTOR-017 — Organização do projeto](REFACTOR-017-ORGANIZE-PROJECT-DOCUMENTATION.md)
 18. [REFACTOR-018 — Finance global](REFACTOR-018-GLOBAL-SUPER-ADMIN-FINANCE.md)
+19. [REFACTOR-019 — Precedência do contexto financeiro](REFACTOR-019-FIX-FINANCE-CONTEXT-PRECEDENCE.md)
 
 ## Retomada rápida
 

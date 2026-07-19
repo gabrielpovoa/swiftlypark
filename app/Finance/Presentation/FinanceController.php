@@ -221,8 +221,23 @@ final class FinanceController extends Controller
             return FinancialScope::company($companyId);
         }
 
-        $requested = (string) ($_GET['company_id'] ?? 'all');
-        if ($requested === '' || $requested === 'all') {
+        $hasExplicitFilter = array_key_exists('company_id', $_GET);
+        $requested = (string) ($_GET['company_id'] ?? '');
+        if ($hasExplicitFilter && ($requested === '' || $requested === 'all')) {
+            return FinancialScope::global();
+        }
+
+        if (!$hasExplicitFilter) {
+            $supportCompanyId = filter_var(
+                $_SESSION['support_impersonation']['company_id'] ?? null,
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1]]
+            );
+            if ($supportCompanyId !== false
+                && $this->company($connection, (int) $supportCompanyId) !== null) {
+                return FinancialScope::company((int) $supportCompanyId);
+            }
+
             return FinancialScope::global();
         }
 

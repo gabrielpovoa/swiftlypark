@@ -17,6 +17,8 @@ $metricLabels = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/images/favicons-swiftlypark.png">
+    <link rel="apple-touch-icon" href="/images/favicons-swiftlypark.png">
     <title><?= htmlspecialchars($title) ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -112,5 +114,13 @@ $metricLabels = [
             </table>
         </section>
     </main>
+    <script>
+        window.SwiftlyParkTenant = {
+            currentCompanyId: <?= json_encode($companyBrand['id'] ?? null, JSON_THROW_ON_ERROR) ?>,
+            currentCompany: <?= json_encode($companyBrand ?? null, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>,
+            tenants: []
+        };
+    </script>
+    <script src="/js/CompanyFavicon.js"></script>
 </body>
 </html>

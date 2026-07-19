@@ -111,3 +111,11 @@
         span { background: transparent !important; color: black !important; border: none !important; padding: 0 !important; }
     }
 </style>
+<script>
+    window.SwiftlyParkTenant = {
+        currentCompanyId: <?= json_encode($companyBrand['id'] ?? null, JSON_THROW_ON_ERROR) ?>,
+        currentCompany: <?= json_encode($companyBrand ?? null, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>,
+        tenants: []
+    };
+</script>
+<script src="/js/CompanyFavicon.js"></script>

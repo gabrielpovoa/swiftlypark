@@ -289,6 +289,7 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
 <script>
     window.SwiftlyParkTenant = Object.assign(window.SwiftlyParkTenant || {}, {
         currentCompanyId: <?= json_encode($currentCompanyId, JSON_THROW_ON_ERROR) ?>,
+        currentCompany: <?= json_encode($currentCompany?->toArray(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES) ?>,
         supportImpersonation: <?= json_encode($supportCompanyId !== false && $supportCompanyId !== null, JSON_THROW_ON_ERROR) ?>,
         supportProfile: <?= json_encode($supportProfile, JSON_THROW_ON_ERROR) ?>,
         tenants: <?= json_encode(array_map(

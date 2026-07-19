@@ -29,6 +29,7 @@ nunca na raiz do projeto.
 21. [REFACTOR-021 — Provisionamento centralizado de usuários](REFACTOR-021-CENTRALIZE-USER-PROVISIONING.md)
 22. [REFACTOR-022 — Grid de usuários ativos](REFACTOR-022-IDENTITY-ACTIVE-USER-GRID.md)
 23. [REFACTOR-023 — Logos maiores das empresas](REFACTOR-023-INCREASE-COMPANY-LOGO-SIZE.md)
+24. [REFACTOR-024 — Favicon dinâmico por empresa](REFACTOR-024-TENANT-DYNAMIC-FAVICON.md)
 
 ## Retomada rápida
 

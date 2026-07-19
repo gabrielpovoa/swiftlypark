@@ -79,7 +79,7 @@ persistência e integrações. `Presentation` adaptará HTTP, CLI e views.
 
 1. Partir de `develop` limpa e atualizada.
 2. Executar `git flow feature start <nome>`.
-3. Criar `REFACTOR-NNN-<TEMA>.md` na raiz.
+3. Criar `docs/refactors/REFACTOR-NNN-<TEMA>.md`.
 4. Registrar estado inicial, decisões, arquivos e riscos.
 5. Implementar uma única mudança arquitetural limitada.
 6. Executar testes proporcionais ao risco.
@@ -91,7 +91,7 @@ persistência e integrações. `Presentation` adaptará HTTP, CLI e views.
 ## Como retomar em um novo contexto
 
 1. Ler este arquivo por completo.
-2. Ler o último `REFACTOR-NNN-*.md` marcado como concluído ou em andamento.
+2. Ler o índice `docs/refactors/README.md` e o último `REFACTOR-NNN-*.md`.
 3. Executar `git status --short --branch`.
 4. Confirmar que a branch atual corresponde ao handoff.
 5. Executar os testes listados no handoff antes de alterar código.

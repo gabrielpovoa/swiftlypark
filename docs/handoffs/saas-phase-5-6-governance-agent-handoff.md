@@ -1,6 +1,6 @@
 # Handoff de Implementação SaaS — Fases 5, 6 e Governança Master
 
-Este documento registra as mudanças feitas após o handoff `docs/saas-phase-1-to-4-implementation-handoff.md`.
+Este documento registra as mudanças feitas após o handoff `saas-phase-1-to-4-implementation-handoff.md`.
 Ele serve para um novo agente ou desenvolvedor continuar a implementação sem reabrir toda a investigação.
 
 ## Escopo Entregue

@@ -49,7 +49,7 @@ Completed job payload cleanup passed
 ```
 
 O roteiro completo de validação está em
-`ARCHITECTURE-REFACTOR-TESTING.md`.
+`../architecture/refactor-testing.md`.
 
 ## Operação
 

@@ -52,7 +52,7 @@ incremental e não exige alteração no Composer nesta etapa.
 
 ## Alterações realizadas
 
-- Criado `ARCHITECTURE-REFACTOR-ROADMAP.md` como índice permanente.
+- Criado o roadmap arquitetural, atualmente em `docs/architecture/refactor-roadmap.md`.
 - Criado este handoff autocontido.
 - Formalizado o processo de uma feature Git Flow por modificação.
 - Formalizadas as dependências permitidas entre camadas.
@@ -69,7 +69,7 @@ incremental e não exige alteração no Composer nesta etapa.
 ## Critérios de aceite
 
 - [x] Feature criada pelo Git Flow a partir de `develop` limpa.
-- [x] Roadmap autocontido criado na raiz.
+- [x] Roadmap autocontido criado e posteriormente organizado em `docs/architecture/`.
 - [x] Invariantes funcionais e de segurança documentadas.
 - [x] Ordem das próximas features registrada.
 - [x] Validações finais executadas.

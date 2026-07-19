@@ -234,7 +234,7 @@ os dois referenciais deslocaria entradas e saídas em três horas.
 O banco atual, incluindo estrutura e dados, foi salvo em:
 
 ```text
-heidSQL/parking.sql
+database/legacy/heidisql/parking.sql
 ```
 
 O arquivo foi gerado com transação consistente e inclui rotinas, triggers e
@@ -251,7 +251,7 @@ original registrada pelo MySQL em UTC.
 A migração está em:
 
 ```text
-heidSQL/migration-fin-001-payment-date.sql
+database/legacy/heidisql/migration-fin-001-payment-date.sql
 ```
 
 Ordem obrigatória:
@@ -265,7 +265,7 @@ Ordem obrigatória:
 
 Em caso de falha antes da restrição `NOT NULL`, o backfill pode ser repetido,
 pois atualiza somente valores nulos. Como `ALTER TABLE` causa commit implícito
-no MySQL, o rollback deve ser realizado restaurando `heidSQL/parking.sql`.
+no MySQL, o rollback deve ser realizado restaurando `database/legacy/heidisql/parking.sql`.
 
 ---
 

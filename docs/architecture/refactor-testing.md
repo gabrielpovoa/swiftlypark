@@ -180,7 +180,7 @@ Esperado:
 - worktree limpo ao final;
 - implementação integrada localmente em `develop` somente por
   `git flow feature finish`;
-- handoffs `REFACTOR-003` até `REFACTOR-014` presentes na raiz;
+- handoffs `REFACTOR-003` até `REFACTOR-014` presentes em `docs/refactors/`;
 - nenhum push remoto é necessário para a validação local.
 
 ## 10. Critérios de aceite

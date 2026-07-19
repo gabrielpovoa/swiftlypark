@@ -669,7 +669,7 @@ nenhum usuário não-MASTER consegue acessar dados de outro tenant
 O contexto detalhado para continuidade por outro agente está em:
 
 ```text
-docs/multi-tenancy-implementation-context.md
+docs/handoffs/multi-tenancy-implementation-context.md
 ```
 
 Esse arquivo deve ser lido antes de iniciar qualquer implementação.

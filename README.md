@@ -65,9 +65,13 @@ swiftlypark/
 │   └── Views/               # Views PHP
 ├── config/                  # Configuração de banco
 ├── core/                    # Router e Controller base
-├── database/migrations/     # Migrações incrementais
-├── docs/specs/              # Especificações funcionais/técnicas
-├── heidSQL/parking.sql      # Dump/base inicial
+├── database/
+│   ├── migrations/          # Migrações incrementais
+│   └── legacy/heidisql/     # Dump e scripts SQL históricos
+├── docs/
+│   ├── architecture/        # Roadmap, testes e visão do sistema
+│   ├── refactors/           # Handoffs numerados de refatoração
+│   └── specs/               # Especificações funcionais/técnicas
 ├── public/                  # index.php, assets e uploads
 ├── routes/web.php           # Rotas HTTP
 ├── tests/                   # Testes de segurança, tenant e governança
@@ -116,7 +120,7 @@ Password: root
 Se o banco estiver vazio, importe o dump:
 
 ```text
-heidSQL/parking.sql
+database/legacy/heidisql/parking.sql
 ```
 
 O bootstrap da aplicação também cria/ajusta parte da infraestrutura SaaS automaticamente quando o app inicia, como tabelas de tenant, vínculos e colunas `company_id` em tabelas operacionais existentes.

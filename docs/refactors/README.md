@@ -37,6 +37,7 @@ nunca na raiz do projeto.
 29. [REFACTOR-029 — Administração da empresa por tenant](REFACTOR-029-TENANT-COMPANY-ADMINISTRATION.md)
 30. [REFACTOR-030 — Proteção da identidade do Super-Admin](REFACTOR-030-PROTECT-SUPER-ADMIN-IDENTITY.md)
 31. [REFACTOR-031 — Governança SaaS para administradores](REFACTOR-031-TENANT-ADMIN-GOVERNANCE.md)
+32. [REFACTOR-032 — Ciclo de usuários pelo administrador](REFACTOR-032-TENANT-ADMIN-USER-LIFECYCLE.md)
 
 ## Retomada rápida
 

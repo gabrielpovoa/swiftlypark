@@ -25,11 +25,6 @@ final class AuthorizationService
             return true;
         }
 
-        if ($permission === 'identity.manage'
-            && $this->hasAnyRole(['admin'])) {
-            return true;
-        }
-
         return in_array(
             $permission,
             $this->identity->permissions(),

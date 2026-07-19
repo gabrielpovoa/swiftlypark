@@ -7,7 +7,7 @@ $escape = static fn (mixed $value): string => htmlspecialchars(
 $filters ??= [
     'query' => '',
     'company_id' => null,
-    'status' => 'all',
+    'status' => 'active',
     'is_filtered' => false,
 ];
 $companies ??= [];
@@ -20,9 +20,9 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
     $query = array_filter([
         'q' => $filters['query'] ?? '',
         'company_id' => $filters['company_id'] ?? null,
-        'status' => ($filters['status'] ?? 'all') === 'all'
+        'status' => ($filters['status'] ?? 'active') === 'active'
             ? null
-            : ($filters['status'] ?? 'all'),
+            : ($filters['status'] ?? 'active'),
         'page' => $targetPage,
     ], static fn (mixed $value): bool => $value !== null && $value !== '');
 
@@ -176,9 +176,25 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
             </form>
         </section>
 
-        <div class="space-y-4">
+        <div class="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400">Diretório</span>
+                <h2 class="mt-1 text-xl font-black text-white">
+                    <?php if ($filters['status'] === 'active'): ?>
+                        Usuários ativos
+                    <?php elseif ($filters['status'] === 'revoked'): ?>
+                        Usuários revogados
+                    <?php else: ?>
+                        Todos os usuários
+                    <?php endif; ?>
+                </h2>
+            </div>
+            <span class="text-xs text-slate-600"><?= count($users) ?> resultado(s) nesta página</span>
+        </div>
+
+        <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
             <?php if ($users === []): ?>
-                <div class="rounded-2xl bg-white/[0.025] border border-dashed border-white/10 p-8 text-sm text-slate-500">
+                <div class="rounded-2xl bg-white/[0.025] border border-dashed border-white/10 p-8 text-sm text-slate-500 xl:col-span-2">
                     Nenhum usuário encontrado para os filtros selecionados.
                 </div>
             <?php endif; ?>
@@ -199,7 +215,7 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                 <article class="group overflow-hidden rounded-3xl border border-white/10 bg-[#11151e]/85 shadow-xl shadow-black/10 transition hover:border-blue-500/20 hover:bg-[#131824]">
                     <div class="h-1 bg-gradient-to-r <?= $isRevoked ? 'from-rose-500/70 via-rose-400/20' : 'from-blue-500/70 via-violet-500/30' ?> to-transparent"></div>
                     <div class="p-5 md:p-6">
-                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                    <div class="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-5">
                         <div class="flex min-w-0 items-start gap-4">
                             <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border <?= $isRevoked ? 'border-rose-500/20 bg-rose-500/10 text-rose-300' : 'border-blue-500/20 bg-gradient-to-br from-blue-500/15 to-violet-500/10 text-blue-300' ?> text-lg font-black">
                                 <?= $escape($initials) ?>
@@ -214,7 +230,7 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                                     <?= $isRevoked ? 'Acesso revogado' : 'Ativo' ?>
                                 </span>
                             </div>
-                            <p class="mt-1 flex items-center gap-2 text-sm text-slate-500"><i data-lucide="mail" class="h-3.5 w-3.5"></i><?= $escape($user['email']) ?></p>
+                            <p class="mt-1 flex items-center gap-2 break-all text-sm text-slate-500"><i data-lucide="mail" class="h-3.5 w-3.5 shrink-0"></i><?= $escape($user['email']) ?></p>
                             <div class="mt-3 flex flex-wrap gap-2">
                                 <?php if ($linkedCompanies === []): ?>
                                     <span class="rounded-lg bg-white/[0.04] text-slate-500 px-2 py-1 text-[10px] font-black uppercase tracking-widest">sem empresa vinculada</span>
@@ -229,20 +245,20 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                         </div>
 
                         <?php if (!$isSelf && !$isRevoked): ?>
-                            <form method="POST" action="/identity/revoke"
+                            <form method="POST" action="/identity/revoke" class="w-full 2xl:w-auto"
                                   onsubmit="return confirm('Confirma a revogação deste acesso?');">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
                                 <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
-                                <button class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 text-xs font-black transition-colors">
+                                <button class="inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 text-xs font-black transition-colors">
                                     <i data-lucide="user-x" class="h-4 w-4"></i>Revogar acesso
                                 </button>
                             </form>
                         <?php elseif (!$isSelf && $isRevoked): ?>
-                            <form method="POST" action="/identity/reactivate"
+                            <form method="POST" action="/identity/reactivate" class="w-full 2xl:w-auto"
                                   onsubmit="return confirm('Reativar este usuário e enviar uma nova senha temporária?');">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
                                 <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
-                                <button class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-xs font-black transition-colors">
+                                <button class="inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-xs font-black transition-colors">
                                     <i data-lucide="user-check" class="h-4 w-4"></i>Reativar
                                 </button>
                             </form>
@@ -257,7 +273,7 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                             <form method="POST" action="/identity/permissions" class="mt-4">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
                                 <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
                                     <?php foreach ($permissions as $permission): ?>
                                         <?php
                                         $permissionId = (int) $permission['id'];
@@ -313,7 +329,7 @@ $pageUrl = static function (int $targetPage) use ($filters): string {
                             <form method="POST" action="/identity/permissions" class="mt-4">
                                 <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
                                 <input type="hidden" name="user_id" value="<?= (int) $user['id_usuario'] ?>">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 2xl:grid-cols-2 gap-3">
                                     <?php foreach ($permissions as $permission): ?>
                                         <?php
                                         $permissionId = (int) $permission['id'];

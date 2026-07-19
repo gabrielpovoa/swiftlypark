@@ -213,10 +213,10 @@ final class IdentityManagementController extends Controller
             FILTER_VALIDATE_INT,
             ['options' => ['min_range' => 1]]
         );
-        $status = (string) ($_GET['status'] ?? 'all');
+        $status = (string) ($_GET['status'] ?? 'active');
         $status = in_array($status, ['all', 'active', 'revoked'], true)
             ? $status
-            : 'all';
+            : 'active';
 
         return [
             'query' => substr($query, 0, 120),
@@ -224,7 +224,7 @@ final class IdentityManagementController extends Controller
             'status' => $status,
             'is_filtered' => $query !== ''
                 || $companyId !== false
-                || $status !== 'all',
+                || $status !== 'active',
         ];
     }
 

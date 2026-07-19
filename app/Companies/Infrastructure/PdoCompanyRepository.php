@@ -48,7 +48,7 @@ final class PdoCompanyRepository implements CompanyRepository
         $statement->execute(['company_id' => $companyId, 'user_id' => $userId, 'role_id' => $roleId]);
     }
 
-    public function directory(array $filters): array
+    public function directory(array $filters, ?int $userId = null): array
     {
         $where = [];
         $parameters = [];
@@ -60,6 +60,11 @@ final class PdoCompanyRepository implements CompanyRepository
             $where[] = 'c.deleted_at IS NULL';
         } elseif ($filters['status'] === 'inactive') {
             $where[] = 'c.deleted_at IS NOT NULL';
+        }
+        if ($userId !== null) {
+            $where[] = 'EXISTS (SELECT 1 FROM company_user access_cu
+                WHERE access_cu.company_id = c.id AND access_cu.user_id = :access_user_id)';
+            $parameters['access_user_id'] = $userId;
         }
         $limit = $filters['is_filtered'] ? 50 : 12;
         $statement = $this->connection->prepare(
@@ -78,9 +83,20 @@ final class PdoCompanyRepository implements CompanyRepository
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function countAll(): int
+    public function countAll(?int $userId = null): int
     {
-        return (int) $this->connection->query('SELECT COUNT(*) FROM companies')->fetchColumn();
+        if ($userId === null) {
+            return (int) $this->connection->query('SELECT COUNT(*) FROM companies')->fetchColumn();
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT COUNT(DISTINCT c.id) FROM companies c
+             INNER JOIN company_user cu ON cu.company_id = c.id
+             WHERE cu.user_id = :user_id'
+        );
+        $statement->execute(['user_id' => $userId]);
+
+        return (int) $statement->fetchColumn();
     }
 
     public function findForUpdate(int $companyId): ?array

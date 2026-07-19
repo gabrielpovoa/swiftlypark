@@ -54,7 +54,7 @@ foreach ([
     }
 }
 
-if (!str_contains($repository, 'function activeCompanies()')
+if (!str_contains($repository, 'function activeCompanies(')
     || !str_contains($repository, 'function assignableRoles(')) {
     throw new RuntimeException('Opções seguras de empresa e perfil não foram disponibilizadas.');
 }

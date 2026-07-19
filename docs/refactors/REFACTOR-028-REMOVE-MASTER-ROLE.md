@@ -1,5 +1,9 @@
 # REFACTOR-028 — Remoção do papel Master
 
+> Atualização: o REFACTOR-029 manteve criação e desativação exclusivas do
+> `super-admin`, mas passou a permitir que `admin` consulte e edite somente sua
+> empresa vinculada, com validação de tenant no backend.
+
 ## Contexto
 
 O papel `master` sobrepunha responsabilidades do `super-admin`, gerava ambiguidade

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Identity\Presentation;
 
 use App\Context\IdentityContext;
+use App\Authorization\Services\CompanyAccessGuard;
 use App\Identity\Application\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
 use App\Exceptions\ForbiddenException;
@@ -210,6 +211,9 @@ final class AdminUserProvisioningController extends Controller
             $userId = (int) ($payload['user_id'] ?? 0);
             $companyId = (int) ($payload['company_id'] ?? 0);
             $permissionIds = $payload['permissions'] ?? [];
+
+            (new CompanyAccessGuard($connection, IdentityContext::current()))
+                ->assertCanManage($companyId);
 
             $this->syncTenantPermissionOverrides(
                 $connection,

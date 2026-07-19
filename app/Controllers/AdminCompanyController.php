@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Context\IdentityContext;
+use App\Authorization\Services\CompanyAccessGuard;
 use App\Companies\Application\RegisterCompany;
 use App\Companies\Application\ManageCompany;
 use App\Companies\Infrastructure\PdoCompanyRepository;
@@ -59,14 +60,17 @@ final class AdminCompanyController extends Controller
         $connection = (new Database())->connect();
         $filters = $this->companyFilters();
         $companies = new PdoCompanyRepository($connection);
+        $identity = IdentityContext::current();
+        $guard = new CompanyAccessGuard($connection, $identity);
+        $scopeUserId = $guard->isSuperAdmin() ? null : $identity->userId();
 
         $this->setView('Admin/companies', [
             'title' => 'Empresas - Governança SaaS',
-            'companies' => $companies->directory($filters),
+            'companies' => $companies->directory($filters, $scopeUserId),
             'companyFilters' => $filters,
-            'companiesCount' => $companies->countAll(),
-            'activeUsersCount' => $this->activeUsersCount($connection),
-            'passwordResetUsersCount' => $this->passwordResetUsersCount($connection),
+            'companiesCount' => $companies->countAll($scopeUserId),
+            'activeUsersCount' => $this->activeUsersCount($connection, $scopeUserId),
+            'passwordResetUsersCount' => $this->passwordResetUsersCount($connection, $scopeUserId),
             'canCreateCompany' => $this->canCreateCompany(),
             'csrfToken' => $this->csrfToken(),
             'success' => $_SESSION['admin_success'] ?? null,
@@ -80,13 +84,15 @@ final class AdminCompanyController extends Controller
     {
         $this->executeCompanyAction(function (\PDO $connection, array $payload): void {
             $identity = IdentityContext::current();
+            $companyId = (int) ($payload['company_id'] ?? 0);
+            (new CompanyAccessGuard($connection, $identity))->assertCanManage($companyId);
             (new ManageCompany(
                 $connection,
                 new PdoCompanyRepository($connection),
                 $identity,
                 new AuditService(new AuditLogRepository($connection), $identity)
             ))->update(
-                (int) ($payload['company_id'] ?? 0),
+                $companyId,
                 (string) ($payload['name'] ?? ''),
                 (string) ($payload['slug'] ?? ''),
                 $this->storeCompanyLogo($_FILES['logo'] ?? null)
@@ -109,18 +115,41 @@ final class AdminCompanyController extends Controller
 
 
 
-    private function activeUsersCount(\PDO $connection): int
+    private function activeUsersCount(\PDO $connection, ?int $scopeUserId): int
     {
-        return (int) $connection
-            ->query('SELECT COUNT(*) FROM usuario WHERE deleted_at IS NULL')
-            ->fetchColumn();
+        $sql = 'SELECT COUNT(DISTINCT u.id_usuario) FROM usuario u';
+        $parameters = [];
+        if ($scopeUserId !== null) {
+            $sql .= ' INNER JOIN company_user target_cu ON target_cu.user_id = u.id_usuario
+                      INNER JOIN company_user actor_cu ON actor_cu.company_id = target_cu.company_id
+                     WHERE actor_cu.user_id = :actor_user_id AND u.deleted_at IS NULL';
+            $parameters['actor_user_id'] = $scopeUserId;
+        } else {
+            $sql .= ' WHERE u.deleted_at IS NULL';
+        }
+        $statement = $connection->prepare($sql);
+        $statement->execute($parameters);
+
+        return (int) $statement->fetchColumn();
     }
 
-    private function passwordResetUsersCount(\PDO $connection): int
+    private function passwordResetUsersCount(\PDO $connection, ?int $scopeUserId): int
     {
-        return (int) $connection
-            ->query('SELECT COUNT(*) FROM usuario WHERE deleted_at IS NULL AND password_reset_required = 1')
-            ->fetchColumn();
+        $sql = 'SELECT COUNT(DISTINCT u.id_usuario) FROM usuario u';
+        $parameters = [];
+        if ($scopeUserId !== null) {
+            $sql .= ' INNER JOIN company_user target_cu ON target_cu.user_id = u.id_usuario
+                      INNER JOIN company_user actor_cu ON actor_cu.company_id = target_cu.company_id
+                     WHERE actor_cu.user_id = :actor_user_id
+                       AND u.deleted_at IS NULL AND u.password_reset_required = 1';
+            $parameters['actor_user_id'] = $scopeUserId;
+        } else {
+            $sql .= ' WHERE u.deleted_at IS NULL AND u.password_reset_required = 1';
+        }
+        $statement = $connection->prepare($sql);
+        $statement->execute($parameters);
+
+        return (int) $statement->fetchColumn();
     }
 
     private function companyFilters(): array
@@ -274,10 +303,10 @@ final class AdminCompanyController extends Controller
     private function assertGovernanceAdmin(): void
     {
         $roles = IdentityContext::current()->roleSlugs();
-        if (!in_array('super-admin', $roles, true)) {
+        if (!array_intersect(['admin', 'super-admin'], $roles)) {
             throw new ForbiddenException(
                 'admin.provision',
-                'Apenas SUPER-ADMIN pode gerenciar empresas.'
+                'Apenas ADMIN ou SUPER-ADMIN pode gerenciar empresas.'
             );
         }
     }

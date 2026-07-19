@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Identity\Presentation;
 
 use App\Context\IdentityContext;
+use App\Context\TenantContext;
 use App\Identity\Infrastructure\IdentityManagementRepository;
 use App\Identity\Application\IdentityManagementService;
 use App\Identity\Application\UserProvisioningService;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuditService;
+use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;
 use Config\Database;
 use Core\Controller;
@@ -27,22 +29,24 @@ final class IdentityManagementController extends Controller
         $connection = (new Database())->connect();
         $repository = new IdentityManagementRepository($connection);
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $filters = $this->filters();
-        $users = $repository->paginate($page, self::PER_PAGE, $filters);
         $identity = IdentityContext::current();
-        $canManageIdentity = in_array('identity.manage', $identity->permissions(), true);
+        $isSuperAdmin = in_array('super-admin', $identity->roleSlugs(), true);
+        $scopeCompanyId = $isSuperAdmin ? null : TenantContext::instance()->getCompanyId();
+        $filters = $this->filters($scopeCompanyId);
+        $users = $repository->paginate($page, self::PER_PAGE, $filters);
+        $canManageIdentity = (new AuthorizationService($identity))->can('identity.manage');
         $canAssignPrivileged = in_array('super-admin', $identity->roleSlugs(), true);
 
         foreach ($users as &$user) {
             $user['role_slugs'] = $user['roles'] === null
                 ? []
                 : explode(',', $user['roles']);
-            $user['direct_permissions'] = $repository->directPermissionIds(
-                (int) $user['id_usuario']
-            );
-            $user['role_permissions'] = $repository->rolePermissionIds(
-                (int) $user['id_usuario']
-            );
+            $user['direct_permissions'] = $scopeCompanyId === null
+                ? $repository->directPermissionIds((int) $user['id_usuario'])
+                : $repository->companyPermissionIds((int) $user['id_usuario'], $scopeCompanyId);
+            $user['role_permissions'] = $scopeCompanyId === null
+                ? $repository->rolePermissionIds((int) $user['id_usuario'])
+                : $repository->companyRolePermissionIds((int) $user['id_usuario'], $scopeCompanyId);
         }
         unset($user);
 
@@ -50,9 +54,9 @@ final class IdentityManagementController extends Controller
             'title' => 'Gestão de Identidade - SwiftlyPark',
             'users' => $users,
             'permissions' => $repository->permissions(),
-            'companies' => $repository->companiesForFilter(),
+            'companies' => $repository->companiesForFilter($scopeCompanyId),
             'provisioningCompanies' => $canManageIdentity
-                ? $repository->activeCompanies()
+                ? $repository->activeCompanies($scopeCompanyId)
                 : [],
             'assignableRoles' => $canManageIdentity
                 ? $repository->assignableRoles($canAssignPrivileged)
@@ -205,7 +209,7 @@ final class IdentityManagementController extends Controller
         return $_SESSION['identity_csrf'];
     }
 
-    private function filters(): array
+    private function filters(?int $scopeCompanyId = null): array
     {
         $query = trim((string) ($_GET['q'] ?? ''));
         $companyId = filter_var(
@@ -220,7 +224,8 @@ final class IdentityManagementController extends Controller
 
         return [
             'query' => substr($query, 0, 120),
-            'company_id' => $companyId === false ? null : (int) $companyId,
+            'company_id' => $scopeCompanyId
+                ?? ($companyId === false ? null : (int) $companyId),
             'status' => $status,
             'is_filtered' => $query !== ''
                 || $companyId !== false

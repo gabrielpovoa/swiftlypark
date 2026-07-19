@@ -206,6 +206,48 @@ function superAdminRequired($callback)
     };
 }
 
+function companyGovernanceRequired(string $route, $callback)
+{
+    return function (...$arguments) use ($route, $callback) {
+        try {
+            (new IdentityMiddleware())->handle(function () use ($route, $callback, $arguments) {
+                $identity = IdentityContext::current();
+                if (hasGlobalPlatformRole($identity->userId())) {
+                    $callback(...$arguments);
+
+                    return;
+                }
+
+                (new TenantMiddleware())->handle(function () use ($route, $callback, $arguments, $identity) {
+                    $middleware = new AuthorizeMiddleware(
+                        new AuthorizationService($identity),
+                        new SecurityAuditService(
+                            new AuditLogRepository((new Database())->connect()),
+                            $identity
+                        )
+                    );
+                    $middleware->handle(
+                        'identity.manage',
+                        $route,
+                        static fn () => $callback(...$arguments)
+                    );
+                });
+            });
+        } catch (AccessRevokedException $exception) {
+            header('Location: /login?revoked=1');
+            exit;
+        } catch (UnauthorizedException $exception) {
+            header('Location: /login');
+            exit;
+        } catch (ForbiddenException|SecurityCriticalException $exception) {
+            if ($exception instanceof SecurityCriticalException) {
+                auditSecurityCriticalException($exception);
+            }
+            (new Controller())->render403();
+        }
+    };
+}
+
 // Rota raiz: login ou home conforme sessão
 $router->get('', function () {
     session_start();
@@ -379,34 +421,34 @@ $router->get('admin', permissionRequired('identity.manage', 'admin', function ()
 $router->get('admin/dashboard', adminDashboardRequired(function () {
     (new DashboardGlobalController())->index();
 }));
-$router->get('admin/companies', superAdminRequired(function () {
+$router->get('admin/companies', companyGovernanceRequired('admin/companies', function () {
     (new AdminCompanyController())->companiesIndex();
 }));
-$router->get('admin/companies/pricing', superAdminRequired(function () {
+$router->get('admin/companies/pricing', companyGovernanceRequired('admin/companies/pricing', function () {
     (new AdminCompanyBillingController())->show();
 }));
-$router->get('admin/companies/company_id={company_id}', superAdminRequired(function (int $companyId) {
+$router->get('admin/companies/company_id={company_id}', companyGovernanceRequired('admin/companies/company', function (int $companyId) {
     (new AdminCompanyBillingController())->show($companyId);
 }));
 $router->post('admin/companies/create', superAdminRequired(function () {
     (new AdminCompanyController())->createCompany();
 }));
-$router->post('admin/companies/update', superAdminRequired(function () {
+$router->post('admin/companies/update', companyGovernanceRequired('admin/companies/update', function () {
     (new AdminCompanyController())->updateCompany();
 }));
-$router->post('admin/companies/pricing', superAdminRequired(function () {
+$router->post('admin/companies/pricing', companyGovernanceRequired('admin/companies/pricing', function () {
     (new AdminCompanyBillingController())->update();
 }));
-$router->post('admin/companies/company_id={company_id}', superAdminRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}', companyGovernanceRequired('admin/companies/company', function (int $companyId) {
     (new AdminCompanyBillingController())->update($companyId);
 }));
-$router->post('admin/companies/company_id={company_id}/contracts/create', superAdminRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}/contracts/create', companyGovernanceRequired('admin/companies/contracts/create', function (int $companyId) {
     (new AdminMonthlyContractController())->create($companyId);
 }));
-$router->post('admin/companies/company_id={company_id}/contracts/renew', superAdminRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}/contracts/renew', companyGovernanceRequired('admin/companies/contracts/renew', function (int $companyId) {
     (new AdminMonthlyContractController())->renew($companyId);
 }));
-$router->post('admin/companies/company_id={company_id}/contracts/cancel', superAdminRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}/contracts/cancel', companyGovernanceRequired('admin/companies/contracts/cancel', function (int $companyId) {
     (new AdminMonthlyContractController())->cancel($companyId);
 }));
 $router->post('admin/companies/deactivate', superAdminRequired(function () {

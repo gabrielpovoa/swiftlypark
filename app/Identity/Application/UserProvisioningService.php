@@ -48,6 +48,8 @@ final class UserProvisioningService
             throw new DomainException('Empresa e papel são obrigatórios.');
         }
 
+        $this->assertCanManageCompany($companyId);
+
         $company = $this->company($companyId);
         $role = $this->role($roleId);
         $this->assertCanAssignRole($role);
@@ -150,6 +152,9 @@ final class UserProvisioningService
             throw new DomainException('Usuário, empresa e papel são obrigatórios.');
         }
 
+
+        $this->assertCanManageCompany($companyId);
+
         if ($this->actor !== null
             && $this->actor->userId() === $userId
             && !in_array('super-admin', $this->actor->roleSlugs(), true)) {
@@ -231,6 +236,9 @@ final class UserProvisioningService
         if ($userId <= 0 || $companyId <= 0) {
             throw new DomainException('Usuário e empresa são obrigatórios.');
         }
+
+
+        $this->assertCanManageCompany($companyId);
 
         $user = $this->activeUser($userId);
         $company = $this->company($companyId);
@@ -460,6 +468,31 @@ final class UserProvisioningService
 
         if ($role['slug'] === 'super-admin') {
             throw new DomainException('Apenas SUPER-ADMIN pode conceder acesso global.');
+        }
+    }
+
+    private function assertCanManageCompany(int $companyId): void
+    {
+        if ($this->actor === null || in_array('super-admin', $this->actor->roleSlugs(), true)) {
+            return;
+        }
+
+        if (!in_array('admin', $this->actor->roleSlugs(), true)) {
+            throw new DomainException('Apenas usuários ADMIN ou SUPER-ADMIN podem provisionar acessos.');
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT 1 FROM company_user cu
+             INNER JOIN roles r ON r.id = cu.role_id AND r.slug = "admin" AND r.is_active = 1
+             WHERE cu.user_id = :user_id AND cu.company_id = :company_id LIMIT 1'
+        );
+        $statement->execute([
+            'user_id' => $this->actor->userId(),
+            'company_id' => $companyId,
+        ]);
+
+        if ($statement->fetchColumn() === false) {
+            throw new DomainException('Você não pode gerenciar usuários de outra empresa.');
         }
     }
 }

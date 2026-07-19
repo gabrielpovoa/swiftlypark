@@ -81,23 +81,30 @@ final class IdentityManagementRepository
         return (int) $statement->fetchColumn();
     }
 
-    public function companiesForFilter(): array
+    public function companiesForFilter(?int $companyId = null): array
     {
-        return $this->connection->query(
-            'SELECT id, name, slug, deleted_at
-             FROM companies
-             ORDER BY deleted_at IS NOT NULL ASC, name ASC'
-        )->fetchAll(PDO::FETCH_ASSOC);
+        $statement = $this->connection->prepare(
+            'SELECT id, name, slug, deleted_at FROM companies'
+            . ($companyId === null ? '' : ' WHERE id = :company_id')
+            . ' ORDER BY deleted_at IS NOT NULL ASC, name ASC'
+        );
+        $statement->execute($companyId === null ? [] : ['company_id' => $companyId]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function activeCompanies(): array
+    public function activeCompanies(?int $companyId = null): array
     {
-        return $this->connection->query(
+        $statement = $this->connection->prepare(
             'SELECT id, name, slug
              FROM companies
-             WHERE deleted_at IS NULL
+             WHERE deleted_at IS NULL'
+             . ($companyId === null ? '' : ' AND id = :company_id') . '
              ORDER BY name ASC'
-        )->fetchAll(PDO::FETCH_ASSOC);
+        );
+        $statement->execute($companyId === null ? [] : ['company_id' => $companyId]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function assignableRoles(bool $canAssignPrivileged): array
@@ -123,6 +130,17 @@ final class IdentityManagementRepository
         $user = $statement->fetch(PDO::FETCH_ASSOC);
 
         return $user === false ? null : $user;
+    }
+
+    public function hasCompanyMembership(int $userId, int $companyId): bool
+    {
+        $statement = $this->connection->prepare(
+            'SELECT 1 FROM company_user
+             WHERE user_id = :user_id AND company_id = :company_id LIMIT 1'
+        );
+        $statement->execute(['user_id' => $userId, 'company_id' => $companyId]);
+
+        return $statement->fetchColumn() !== false;
     }
 
     public function hasRole(int $userId, string $role): bool
@@ -223,6 +241,32 @@ final class IdentityManagementRepository
         return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
     }
 
+    public function companyPermissionIds(int $userId, int $companyId): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT permission_id FROM company_user_permissions
+             WHERE user_id = :user_id AND company_id = :company_id'
+        );
+        $statement->execute(['user_id' => $userId, 'company_id' => $companyId]);
+
+        return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function companyRolePermissionIds(int $userId, int $companyId): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT DISTINCT rp.permission_id
+             FROM company_user cu
+             INNER JOIN roles r ON r.id = cu.role_id AND r.is_active = 1
+             INNER JOIN role_permissions rp ON rp.role_id = r.id
+             INNER JOIN permissions p ON p.id = rp.permission_id AND p.is_active = 1
+             WHERE cu.user_id = :user_id AND cu.company_id = :company_id'
+        );
+        $statement->execute(['user_id' => $userId, 'company_id' => $companyId]);
+
+        return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     public function permissionSlugs(array $permissionIds): array
     {
         if ($permissionIds === []) {
@@ -265,6 +309,45 @@ final class IdentityManagementRepository
                 'granted_by' => $grantedBy,
             ]);
         }
+    }
+
+    public function syncCompanyPermissions(
+        int $userId,
+        int $companyId,
+        array $permissionIds,
+        int $grantedBy
+    ): void {
+        $delete = $this->connection->prepare(
+            'DELETE FROM company_user_permissions
+             WHERE user_id = :user_id AND company_id = :company_id'
+        );
+        $delete->execute(['user_id' => $userId, 'company_id' => $companyId]);
+
+        $insert = $this->connection->prepare(
+            'INSERT INTO company_user_permissions (user_id, company_id, permission_id, granted_by)
+             SELECT :user_id, :company_id, id, :granted_by FROM permissions
+             WHERE id = :permission_id AND is_active = 1'
+        );
+        foreach (array_unique($permissionIds) as $permissionId) {
+            $insert->execute([
+                'user_id' => $userId,
+                'company_id' => $companyId,
+                'permission_id' => $permissionId,
+                'granted_by' => $grantedBy,
+            ]);
+        }
+    }
+
+    public function activeCompanyMembershipsCount(int $userId): int
+    {
+        $statement = $this->connection->prepare(
+            'SELECT COUNT(*) FROM company_user cu
+             INNER JOIN companies c ON c.id = cu.company_id AND c.deleted_at IS NULL
+             WHERE cu.user_id = :user_id'
+        );
+        $statement->execute(['user_id' => $userId]);
+
+        return (int) $statement->fetchColumn();
     }
 
     private function userFilterSql(array $filters): array

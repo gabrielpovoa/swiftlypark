@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Billing\Presentation;
 
 use App\Context\IdentityContext;
+use App\Authorization\Services\CompanyAccessGuard;
 use App\Exceptions\ForbiddenException;
 use App\Billing\Infrastructure\MonthlyContractRepository;
 use App\Repositories\AuditLogRepository;
@@ -33,6 +34,8 @@ final class AdminCompanyBillingController extends Controller
         }
 
         $connection = (new Database())->connect();
+        $guard = new CompanyAccessGuard($connection, IdentityContext::current());
+        $guard->assertCanManage((int) $companyId);
         $statement = $connection->prepare(
             'SELECT id, name, legal_name, trade_name, cnpj, slug, logo_path, is_mensalista, deleted_at
              FROM companies WHERE id = :company_id AND deleted_at IS NULL LIMIT 1'
@@ -61,7 +64,9 @@ final class AdminCompanyBillingController extends Controller
             'tariffs' => $tariffs,
             'monthlyContracts' => (new MonthlyContractRepository($connection))
                 ->listForCompany((int) $companyId),
-            'availableUsers' => $this->availableUsers($connection, (int) $companyId),
+            'availableUsers' => $guard->isSuperAdmin()
+                ? $this->availableUsers($connection, (int) $companyId)
+                : [],
             'companyMembers' => $this->companyMembers($connection, (int) $companyId),
             'assignableRoles' => $this->assignableRoles($connection),
             'csrfToken' => $this->csrfToken(),
@@ -90,8 +95,10 @@ final class AdminCompanyBillingController extends Controller
             if ($companyId < 1) {
                 throw new DomainException('Empresa inválida.');
             }
-            $data = $this->validatedPayload();
             $connection = (new Database())->connect();
+            (new CompanyAccessGuard($connection, IdentityContext::current()))
+                ->assertCanManage($companyId);
+            $data = $this->validatedPayload();
             $connection->beginTransaction();
             try {
                 $company = $this->companyForUpdate($connection, $companyId);
@@ -266,8 +273,8 @@ final class AdminCompanyBillingController extends Controller
     private function assertGovernanceAdmin(): void
     {
         $roles = IdentityContext::current()->roleSlugs();
-        if (!in_array('super-admin', $roles, true)) {
-            throw new ForbiddenException('admin.provision', 'Apenas SUPER-ADMIN pode gerenciar empresas.');
+        if (!array_intersect(['admin', 'super-admin'], $roles)) {
+            throw new ForbiddenException('admin.provision', 'Apenas ADMIN ou SUPER-ADMIN pode gerenciar empresas.');
         }
     }
 

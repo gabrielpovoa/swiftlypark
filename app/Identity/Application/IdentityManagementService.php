@@ -39,11 +39,20 @@ final class IdentityManagementService
     public function revoke(int $targetUserId): void
     {
         (new AuthorizationService($this->identity))->check('identity.manage');
+        $this->assertTargetInScope($targetUserId);
 
         if ($targetUserId === $this->identity->userId()) {
             throw new ForbiddenException(
                 'identity.manage',
                 'Você não pode revogar o próprio acesso.'
+            );
+        }
+
+        if (!in_array('super-admin', $this->identity->roleSlugs(), true)
+            && $this->users->activeCompanyMembershipsCount($targetUserId) > 1) {
+            throw new ForbiddenException(
+                'identity.manage',
+                'Este usuário pertence a outras empresas e não pode ser revogado globalmente.'
             );
         }
 
@@ -78,6 +87,7 @@ final class IdentityManagementService
     public function syncPermissions(int $targetUserId, array $permissionIds): void
     {
         (new AuthorizationService($this->identity))->check('identity.manage');
+        $this->assertTargetInScope($targetUserId);
 
         if ($targetUserId === $this->identity->userId()
             && !in_array('super-admin', $this->identity->roleSlugs(), true)) {
@@ -102,13 +112,28 @@ final class IdentityManagementService
                 throw new RuntimeException('Usuário indisponível para alteração.');
             }
 
-            $before = $this->users->directPermissionIds($targetUserId);
-            $this->users->syncPermissions(
-                $targetUserId,
-                $permissionIds,
-                $this->identity->userId()
-            );
-            $after = $this->users->directPermissionIds($targetUserId);
+            $companyId = $this->tenantContext->getCompanyId();
+            $isSuperAdmin = in_array('super-admin', $this->identity->roleSlugs(), true);
+            $before = $isSuperAdmin
+                ? $this->users->directPermissionIds($targetUserId)
+                : $this->users->companyPermissionIds($targetUserId, (int) $companyId);
+            if ($isSuperAdmin) {
+                $this->users->syncPermissions(
+                    $targetUserId,
+                    $permissionIds,
+                    $this->identity->userId()
+                );
+            } else {
+                $this->users->syncCompanyPermissions(
+                    $targetUserId,
+                    (int) $companyId,
+                    $permissionIds,
+                    $this->identity->userId()
+                );
+            }
+            $after = $isSuperAdmin
+                ? $this->users->directPermissionIds($targetUserId)
+                : $this->users->companyPermissionIds($targetUserId, (int) $companyId);
             $this->audit('USER_PERMISSIONS_UPDATED', $targetUserId, [
                 'target_user_id' => $targetUserId,
                 'target_email' => $target['email'],
@@ -125,6 +150,7 @@ final class IdentityManagementService
     public function reactivate(int $targetUserId): void
     {
         (new AuthorizationService($this->identity))->check('identity.manage');
+        $this->assertTargetInScope($targetUserId);
 
         if ($targetUserId === $this->identity->userId()) {
             throw new ForbiddenException(
@@ -194,6 +220,21 @@ final class IdentityManagementService
             'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))
                 ->format('Y-m-d H:i:s.u'),
         ]);
+    }
+
+    private function assertTargetInScope(int $targetUserId): void
+    {
+        if (in_array('super-admin', $this->identity->roleSlugs(), true)) {
+            return;
+        }
+
+        $companyId = $this->tenantContext->getCompanyId();
+        if ($companyId === null || !$this->users->hasCompanyMembership($targetUserId, $companyId)) {
+            throw new ForbiddenException(
+                'identity.manage',
+                'Você não pode gerenciar usuários de outra empresa.'
+            );
+        }
     }
 
     private function dispatch(object $event): void

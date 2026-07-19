@@ -13,27 +13,34 @@ if (in_array(false, [$routes, $navigation, $migration, $provisioning], true)) {
 }
 
 $companyRoutes = [
-    "get('admin/companies', superAdminRequired",
-    "get('admin/companies/pricing', superAdminRequired",
-    "get('admin/companies/company_id={company_id}', superAdminRequired",
-    "post('admin/companies/create', superAdminRequired",
-    "post('admin/companies/update', superAdminRequired",
-    "post('admin/companies/pricing', superAdminRequired",
-    "post('admin/companies/company_id={company_id}', superAdminRequired",
-    "post('admin/companies/company_id={company_id}/contracts/create', superAdminRequired",
-    "post('admin/companies/company_id={company_id}/contracts/renew', superAdminRequired",
-    "post('admin/companies/company_id={company_id}/contracts/cancel', superAdminRequired",
-    "post('admin/companies/deactivate', superAdminRequired",
+    "get('admin/companies', companyGovernanceRequired",
+    "get('admin/companies/pricing', companyGovernanceRequired",
+    "get('admin/companies/company_id={company_id}', companyGovernanceRequired",
+    "post('admin/companies/update', companyGovernanceRequired",
+    "post('admin/companies/pricing', companyGovernanceRequired",
+    "post('admin/companies/company_id={company_id}', companyGovernanceRequired",
+    "post('admin/companies/company_id={company_id}/contracts/create', companyGovernanceRequired",
+    "post('admin/companies/company_id={company_id}/contracts/renew', companyGovernanceRequired",
+    "post('admin/companies/company_id={company_id}/contracts/cancel', companyGovernanceRequired",
 ];
 
 foreach ($companyRoutes as $route) {
     if (!str_contains($routes, $route)) {
-        throw new RuntimeException("Rota sem proteção exclusiva de super-admin: {$route}");
+        throw new RuntimeException("Rota sem proteção de governança por empresa: {$route}");
     }
 }
 
-if (!str_contains($navigation, "'role' => 'super-admin'")) {
-    throw new RuntimeException('O menu Empresas deve ser ocultado para outros papéis.');
+foreach ([
+    "post('admin/companies/create', superAdminRequired",
+    "post('admin/companies/deactivate', superAdminRequired",
+] as $globalOnlyRoute) {
+    if (!str_contains($routes, $globalOnlyRoute)) {
+        throw new RuntimeException("Operação global sem proteção de super-admin: {$globalOnlyRoute}");
+    }
+}
+
+if (!str_contains($navigation, "'roles' => ['admin', 'super-admin']")) {
+    throw new RuntimeException('O menu da empresa deve aparecer para admin e super-admin.');
 }
 
 foreach (['UPDATE company_user', 'DELETE FROM user_roles', 'DELETE FROM role_permissions', 'DELETE FROM roles'] as $sql) {

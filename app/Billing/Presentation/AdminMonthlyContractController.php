@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Billing\Presentation;
 
 use App\Context\IdentityContext;
+use App\Authorization\Services\CompanyAccessGuard;
 use App\Exceptions\ForbiddenException;
 use App\Billing\Infrastructure\MonthlyContractRepository;
 use App\Repositories\AuditLogRepository;
@@ -162,6 +163,8 @@ final class AdminMonthlyContractController extends Controller
             }
 
             $connection = (new Database())->connect();
+            (new CompanyAccessGuard($connection, IdentityContext::current()))
+                ->assertCanManage($companyId);
             $connection->beginTransaction();
             try {
                 if (!$this->companyExistsForUpdate($connection, $companyId)) {
@@ -312,10 +315,10 @@ final class AdminMonthlyContractController extends Controller
     private function assertGovernanceAdmin(): void
     {
         $roles = IdentityContext::current()->roleSlugs();
-        if (!in_array('super-admin', $roles, true)) {
+        if (!array_intersect(['admin', 'super-admin'], $roles)) {
             throw new ForbiddenException(
                 'admin.provision',
-                'Apenas SUPER-ADMIN pode gerenciar empresas.'
+                'Apenas ADMIN ou SUPER-ADMIN pode gerenciar empresas.'
             );
         }
     }

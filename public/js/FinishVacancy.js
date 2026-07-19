@@ -90,8 +90,8 @@ document.querySelectorAll('.finalizar').forEach(button => {
                         currency: 'BRL'
                     });
                     const message = data.monthly
-                        ? 'Estadia mensalista encerrada sem nova cobrança.'
-                        : `Pagamento de ${amount} registrado e vaga liberada.`;
+                        ? 'Estadia mensalista encerrada sem nova cobrança. O recibo foi enviado para seu e-mail.'
+                        : `Pagamento de ${amount} registrado e vaga liberada. O recibo foi enviado para seu e-mail.`;
                     await Swal.fire('Finalizado!', message, 'success');
                     window.location.reload();
                 } else {

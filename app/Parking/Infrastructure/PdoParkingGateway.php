@@ -16,6 +16,7 @@
     use App\Repositories\Decorators\TransactionalAuditDecorator;
     use App\Services\AuditService;
     use App\Services\AuthorizationService;
+    use App\Services\QueuedCheckoutReceiptMailer;
     use App\Transactions\TransactionManager;
     use App\Shared\Domain\ValueObject\VehiclePlate;
     use App\Shared\Domain\ValueObject\Money;
@@ -440,11 +441,33 @@
                     ],
                 ]);
 
+                $company = TenantContext::instance()->getCompany();
+                (QueuedCheckoutReceiptMailer::fromConnection($this->db))->sendReceipt([
+                    'recipient_email' => IdentityContext::current()->email(),
+                    'operator_user_id' => IdentityContext::current()->userId(),
+                    'company_id' => $companyId,
+                    'company_name' => $company?->name() ?? 'SwiftlyPark',
+                    'company_logo_path' => $company?->logoPath(),
+                    'stay_id' => (int) $vagaPreenchida['id_vaga_preenchida'],
+                    'transaction_id' => $transactionId,
+                    'vacancy_id' => $idVaga,
+                    'customer_name' => (string) ($vagaPreenchida['nome_cliente'] ?? ''),
+                    'plate' => (string) ($vagaPreenchida['placa'] ?? ''),
+                    'vehicle_type' => (string) ($vagaPreenchida['tipo_veiculo'] ?? ''),
+                    'entry_at' => $horaEntrada->format('d/m/Y H:i'),
+                    'exit_at' => $horaSaidaInput->format('d/m/Y H:i'),
+                    'duration_minutes' => $durationMinutes,
+                    'billing_model' => $isMonthly ? 'MONTHLY' : 'ROTATING',
+                    'payment_method' => $isMonthly ? null : $normalizedPaymentMethod,
+                    'amount' => (float) ($calculation['total'] ?? 0),
+                ]);
+
                 return [
                     'monthly' => $isMonthly,
                     'duration_minutes' => $durationMinutes,
                     'amount' => $calculation['total'] ?? 0.0,
                     'transaction_id' => $transactionId,
+                    'receipt_queued' => true,
                 ];
             });
         }

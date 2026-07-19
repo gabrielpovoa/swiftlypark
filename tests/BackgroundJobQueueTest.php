@@ -5,10 +5,12 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Contracts\PasswordRecoveryMailerInterface;
+use App\Contracts\CheckoutReceiptMailerInterface;
 use App\Shared\Application\JobWorker;
 use App\Shared\Domain\JobQueue;
 use App\Shared\Infrastructure\Security\EncryptedPayload;
 use App\Services\QueuedPasswordRecoveryMailer;
+use App\Services\QueuedCheckoutReceiptMailer;
 
 final class MemoryJobQueue implements JobQueue
 {
@@ -41,6 +43,11 @@ final class CapturingQueueMailer implements PasswordRecoveryMailerInterface
     public function sendTemporaryPassword(string $email, string $temporaryPassword): void { $this->messages[] = compact('email', 'temporaryPassword'); }
     public function sendReactivationPassword(string $email, string $temporaryPassword): void { $this->messages[] = compact('email', 'temporaryPassword'); }
 }
+final class CapturingReceiptMailer implements CheckoutReceiptMailerInterface
+{
+    public array $receipts = [];
+    public function sendReceipt(array $receipt): void { $this->receipts[] = $receipt; }
+}
 
 $cipher = new EncryptedPayload('test-job-queue-key-with-32-characters');
 $encrypted = $cipher->encrypt(['email' => 'user@example.test', 'temporaryPassword' => 'Secret123']);
@@ -58,12 +65,23 @@ if (!$tamperRejected) {
     throw new RuntimeException('Payload adulterado foi aceito.');
 }
 $queue = new MemoryJobQueue(); $mailer = new CapturingQueueMailer();
+$receiptMailer = new CapturingReceiptMailer();
 (new QueuedPasswordRecoveryMailer($queue, $cipher))->sendTemporaryPassword(
     'user@example.test',
     'Secret123'
 );
-(new JobWorker($queue, $cipher, $mailer))->runOnce('mail');
+(new JobWorker($queue, $cipher, $mailer, $receiptMailer))->runOnce('mail');
 if ($queue->jobs[1]['status'] !== 'COMPLETED' || $mailer->messages[0]['temporaryPassword'] !== 'Secret123') {
     throw new RuntimeException('Worker não concluiu o job de e-mail.');
+}
+
+(new QueuedCheckoutReceiptMailer($queue, $cipher))->sendReceipt([
+    'recipient_email' => 'operator@example.test',
+    'stay_id' => 27,
+]);
+(new JobWorker($queue, $cipher, $mailer, $receiptMailer))->runOnce('mail');
+if ($queue->jobs[2]['status'] !== 'COMPLETED'
+    || $receiptMailer->receipts[0]['stay_id'] !== 27) {
+    throw new RuntimeException('Worker não concluiu o recibo de checkout.');
 }
 echo "Background job queue test passed\n";

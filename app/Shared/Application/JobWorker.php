@@ -2,14 +2,19 @@
 declare(strict_types=1);
 namespace App\Shared\Application;
 use App\Contracts\PasswordRecoveryMailerInterface;
+use App\Contracts\CheckoutReceiptMailerInterface;
 use App\Shared\Domain\JobQueue;
 use App\Shared\Infrastructure\Security\EncryptedPayload;
 use RuntimeException;
 use Throwable;
 final class JobWorker
 {
-    public function __construct(private readonly JobQueue $jobs, private readonly EncryptedPayload $cipher,
-        private readonly PasswordRecoveryMailerInterface $mailer) {}
+    public function __construct(
+        private readonly JobQueue $jobs,
+        private readonly EncryptedPayload $cipher,
+        private readonly PasswordRecoveryMailerInterface $mailer,
+        private readonly CheckoutReceiptMailerInterface $receiptMailer
+    ) {}
     public function runOnce(string $queue = 'mail'): bool
     {
         $job = $this->jobs->reserve($queue);
@@ -23,6 +28,7 @@ final class JobWorker
                     (string) $payload['email'], (string) $payload['temporaryPassword']),
                 'mail.reactivation_password' => $this->mailer->sendReactivationPassword(
                     (string) $payload['email'], (string) $payload['temporaryPassword']),
+                'mail.checkout_receipt' => $this->receiptMailer->sendReceipt($payload),
                 default => throw new RuntimeException('Tipo de job não suportado.'),
             };
             $this->jobs->complete((int) $job['id']);

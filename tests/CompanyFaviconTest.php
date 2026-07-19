@@ -33,11 +33,18 @@ foreach ([
     "context.fillStyle = '#11151e'",
     'drawContainedImage(context, image)',
     'resolved.origin === window.location.origin',
+    'let refreshSequence = 0',
+    'applyFavicon(logoUrl)',
+    'refreshId === refreshSequence',
     'refreshCompanyFavicon(currentCompanyLogo(context))',
 ] as $marker) {
     if (!str_contains($script, $marker)) {
         throw new RuntimeException('Transformação segura do favicon incompleta: ' . $marker);
     }
+}
+
+if (str_contains($script, "async function refreshCompanyFavicon(logoPath) {\n        applyFavicon(FALLBACK_FAVICON);")) {
+    throw new RuntimeException('A atualização com logo ainda pisca para o favicon padrão.');
 }
 
 if (!str_contains($head, 'rel="icon"')

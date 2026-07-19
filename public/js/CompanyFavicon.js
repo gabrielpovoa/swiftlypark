@@ -5,6 +5,7 @@
     const CANVAS_SIZE = 128;
     const LOGO_PADDING = 18;
     const CACHE_PREFIX = 'swiftlypark.company-favicon.v1:';
+    let refreshSequence = 0;
 
     function faviconLinks() {
         const selectors = [
@@ -135,12 +136,27 @@
     }
 
     async function refreshCompanyFavicon(logoPath) {
-        applyFavicon(FALLBACK_FAVICON);
+        const refreshId = ++refreshSequence;
+        const logoUrl = normalizeLogoUrl(logoPath);
+
+        if (!logoUrl) {
+            applyFavicon(FALLBACK_FAVICON);
+            return;
+        }
+
+        // Mantém a identidade da empresa visível enquanto o canvas prepara a
+        // versão quadrada. Isso também evita o retorno visual ao fallback.
+        applyFavicon(logoUrl);
 
         try {
-            applyFavicon(await createCompanyFavicon(logoPath));
+            const favicon = await createCompanyFavicon(logoUrl);
+            if (refreshId === refreshSequence) {
+                applyFavicon(favicon);
+            }
         } catch (_) {
-            applyFavicon(FALLBACK_FAVICON);
+            if (refreshId === refreshSequence) {
+                applyFavicon(FALLBACK_FAVICON);
+            }
         }
     }
 

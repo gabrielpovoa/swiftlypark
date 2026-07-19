@@ -39,6 +39,7 @@ nunca na raiz do projeto.
 31. [REFACTOR-031 — Governança SaaS para administradores](REFACTOR-031-TENANT-ADMIN-GOVERNANCE.md)
 32. [REFACTOR-032 — Ciclo de usuários pelo administrador](REFACTOR-032-TENANT-ADMIN-USER-LIFECYCLE.md)
 33. [REFACTOR-033 — Visão financeira do administrador](REFACTOR-033-TENANT-ADMIN-FINANCE-OVERVIEW.md)
+34. [REFACTOR-034 — Persistência do favicon da empresa](REFACTOR-034-TENANT-FAVICON-PERSISTENCE.md)
 
 ## Retomada rápida
 

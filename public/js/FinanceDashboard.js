@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const month = document.getElementById("finance-month");
+    const company = document.getElementById("finance-company");
     if (!month) return;
 
     let dailyChart;
@@ -10,7 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const load = async () => {
-        const response = await fetch(`/finance/data?month=${encodeURIComponent(month.value)}`);
+        const companyQuery = company ? `&company_id=${encodeURIComponent(company.value)}` : "";
+        const response = await fetch(`/finance/data?month=${encodeURIComponent(month.value)}${companyQuery}`);
         if (!response.ok) {
             let message = "Falha ao carregar dados financeiros.";
             try {
@@ -27,11 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const printLink = document.getElementById("finance-print");
 
         if (exportLink) {
-            exportLink.href = `/finance/export?month=${encodeURIComponent(month.value)}`;
+            exportLink.href = `/finance/export?month=${encodeURIComponent(month.value)}${companyQuery}`;
         }
 
         if (printLink) {
-            printLink.href = `/finance/print?month=${encodeURIComponent(month.value)}`;
+            printLink.href = `/finance/print?month=${encodeURIComponent(month.value)}${companyQuery}`;
         }
 
         document.getElementById("gross-revenue").textContent =
@@ -212,5 +214,11 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     month.addEventListener("change", () => load().catch(renderError));
+    company?.addEventListener("change", () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("company_id", company.value);
+        window.history.replaceState({}, "", url);
+        load().catch(renderError);
+    });
     load().catch(renderError);
 });

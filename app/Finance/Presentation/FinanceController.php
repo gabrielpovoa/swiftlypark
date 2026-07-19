@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Finance\Presentation;
 
+use App\Authorization\Repositories\RbacRepository;
+use App\Authorization\Services\RolePermissionResolver;
 use App\Context\IdentityContext;
 use App\Context\TenantContext;
 use App\Finance\Infrastructure\FinancialAdjustmentRepository;
@@ -12,11 +14,14 @@ use App\Finance\Infrastructure\PdoFinancialLedgerRepository;
 use App\Finance\Application\FinancialAdjustmentService;
 use App\Finance\Application\FinancialAuditService;
 use App\Finance\Application\FinancialReportService;
+use App\Finance\Domain\FinancialScope;
 use App\Repositories\AuditLogRepository;
 use App\Services\AuthorizationService;
 use App\Transactions\TransactionManager;
 use Config\Database;
 use Core\Controller;
+use DomainException;
+use PDO;
 use Throwable;
 
 final class FinanceController extends Controller
@@ -27,16 +32,26 @@ final class FinanceController extends Controller
         $this->startSession();
         $connection = (new Database())->connect();
         $authorization = new AuthorizationService(IdentityContext::current());
+        $scope = $this->financialScope($connection);
+        $repository = new FinancialReportRepository($connection, $scope);
 
         $this->setView('Finance/index', [
             'title' => 'BI Financeiro - SwiftlyPark',
-            'transactions' => (new FinancialReportRepository($connection))
-                ->recentTransactions(),
-            'canAdjust' => $authorization->can('finance.adjust'),
+            'transactions' => $repository->recentTransactions(),
+            'canAdjust' => $authorization->can('finance.adjust')
+                && !$scope->isGlobal()
+                && TenantContext::instance()->getCompanyId() === $scope->companyId(),
             'csrfToken' => $this->csrfToken(),
             'success' => $_SESSION['finance_success'] ?? null,
             'error' => $_SESSION['finance_error'] ?? null,
-            'companyBrand' => TenantContext::instance()->getCompany()?->toArray(),
+            'companyBrand' => $scope->isGlobal()
+                ? null
+                : $this->company($connection, (int) $scope->companyId()),
+            'financeCompanies' => $this->isGlobalSuperAdmin($connection)
+                ? $this->companies($connection)
+                : [],
+            'selectedCompanyId' => $scope->companyId(),
+            'isGlobalFinance' => $scope->isGlobal(),
         ]);
         unset($_SESSION['finance_success'], $_SESSION['finance_error']);
     }
@@ -48,9 +63,11 @@ final class FinanceController extends Controller
 
         try {
             $connection = (new Database())->connect();
+            $scope = $this->financialScope($connection);
             $data = (new FinancialReportService(
-                new FinancialReportRepository($connection)
+                new FinancialReportRepository($connection, $scope)
             ))->dashboard($month);
+            $data['scope'] = ['global' => $scope->isGlobal(), 'company_id' => $scope->companyId()];
             header('Content-Type: application/json; charset=UTF-8');
             echo json_encode($data, JSON_THROW_ON_ERROR);
         } catch (Throwable $throwable) {
@@ -106,8 +123,9 @@ final class FinanceController extends Controller
 
         try {
             $connection = (new Database())->connect();
+            $scope = $this->financialScope($connection);
             $data = (new FinancialReportService(
-                new FinancialReportRepository($connection)
+                new FinancialReportRepository($connection, $scope)
             ))->dashboard($month);
         } catch (Throwable $throwable) {
             error_log($throwable->getMessage());
@@ -165,8 +183,9 @@ final class FinanceController extends Controller
 
         try {
             $connection = (new Database())->connect();
+            $scope = $this->financialScope($connection);
             $data = (new FinancialReportService(
-                new FinancialReportRepository($connection)
+                new FinancialReportRepository($connection, $scope)
             ))->dashboard($month);
         } catch (Throwable $throwable) {
             error_log($throwable->getMessage());
@@ -179,7 +198,9 @@ final class FinanceController extends Controller
             'title' => 'Relatório Financeiro - SwiftlyPark',
             'month' => $month,
             'data' => $data,
-            'companyBrand' => TenantContext::instance()->getCompany()?->toArray(),
+            'companyBrand' => $scope->isGlobal()
+                ? null
+                : $this->company($connection, (int) $scope->companyId()),
         ], false);
     }
 
@@ -187,6 +208,63 @@ final class FinanceController extends Controller
     {
         (new AuthorizationService(IdentityContext::current()))
             ->check($permission);
+    }
+
+    private function financialScope(PDO $connection): FinancialScope
+    {
+        if (!$this->isGlobalSuperAdmin($connection)) {
+            $companyId = TenantContext::instance()->getCompanyId();
+            if ($companyId === null) {
+                throw new DomainException('Selecione uma empresa para acessar o financeiro.');
+            }
+
+            return FinancialScope::company($companyId);
+        }
+
+        $requested = (string) ($_GET['company_id'] ?? 'all');
+        if ($requested === '' || $requested === 'all') {
+            return FinancialScope::global();
+        }
+
+        $companyId = filter_var(
+            $requested,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+        if ($companyId === false || $this->company($connection, (int) $companyId) === null) {
+            throw new DomainException('Empresa inválida para o relatório financeiro.');
+        }
+
+        return FinancialScope::company((int) $companyId);
+    }
+
+    private function isGlobalSuperAdmin(PDO $connection): bool
+    {
+        $authorization = (new RolePermissionResolver(
+            new RbacRepository($connection)
+        ))->resolve(IdentityContext::current()->userId(), null);
+
+        return in_array('super-admin', $authorization->roleSlugs(), true);
+    }
+
+    private function companies(PDO $connection): array
+    {
+        return $connection->query(
+            'SELECT id, name, slug, logo_path FROM companies
+             WHERE deleted_at IS NULL ORDER BY name ASC'
+        )->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function company(PDO $connection, int $companyId): ?array
+    {
+        $statement = $connection->prepare(
+            'SELECT id, name, slug, logo_path FROM companies
+             WHERE id = :company_id AND deleted_at IS NULL LIMIT 1'
+        );
+        $statement->execute(['company_id' => $companyId]);
+        $company = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return $company === false ? null : $company;
     }
 
     private function csrfToken(): string

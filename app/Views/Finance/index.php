@@ -20,6 +20,16 @@
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row gap-3">
+                <?php if (!empty($financeCompanies)): ?>
+                    <select id="finance-company" class="rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
+                        <option value="all" <?= $isGlobalFinance ? 'selected' : '' ?>>Todas as empresas</option>
+                        <?php foreach ($financeCompanies as $financeCompany): ?>
+                            <option value="<?= (int) $financeCompany['id'] ?>" <?= (int) $selectedCompanyId === (int) $financeCompany['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($financeCompany['name'], ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
                 <input id="finance-month" type="month" value="<?= date('Y-m') ?>"
                        class="rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
                 <a id="finance-export"
@@ -106,7 +116,7 @@
                         <option value="">Transação</option>
                         <?php foreach ($transactions as $transaction): ?>
                             <option value="<?= (int) $transaction['id_transacao'] ?>">
-                                #<?= (int) $transaction['id_transacao'] ?> · <?= htmlspecialchars($transaction['placa']) ?> · R$ <?= number_format((float) $transaction['valor'], 2, ',', '.') ?>
+                                #<?= (int) $transaction['id_transacao'] ?> · <?= htmlspecialchars($transaction['placa']) ?> · <?= htmlspecialchars($transaction['company_name'] ?? '') ?> · R$ <?= number_format((float) $transaction['valor'], 2, ',', '.') ?>
                             </option>
                         <?php endforeach; ?>
                     </select>

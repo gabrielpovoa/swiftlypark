@@ -7,6 +7,7 @@ require dirname(__DIR__, 2) . '/vendor/autoload.php';
 use App\Companies\Domain\Company;
 use App\Context\TenantContext;
 use App\Finance\Domain\LedgerEntry;
+use App\Finance\Domain\FinancialScope;
 use App\Finance\Infrastructure\FinancialReportRepository;
 use App\Finance\Infrastructure\PdoFinancialLedgerRepository;
 use App\Shared\Domain\ValueObject\Money;
@@ -60,7 +61,10 @@ try {
         $companyId, (string) $company['name'], (string) $company['slug'],
         $company['logo_path'] !== null ? (string) $company['logo_path'] : null, true
     ));
-    $summary = (new FinancialReportRepository($connection))->summary($start, $end);
+    $summary = (new FinancialReportRepository(
+        $connection,
+        FinancialScope::company($companyId)
+    ))->summary($start, $end);
     if ((float) $summary['gross_revenue'] + 0.001 < (float) $after['credits']) {
         throw new RuntimeException('Relatório não leu os créditos do ledger.');
     }

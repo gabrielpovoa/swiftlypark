@@ -36,6 +36,7 @@ nunca na raiz do projeto.
 28. [REFACTOR-028 — Remoção do papel Master](REFACTOR-028-REMOVE-MASTER-ROLE.md)
 29. [REFACTOR-029 — Administração da empresa por tenant](REFACTOR-029-TENANT-COMPANY-ADMINISTRATION.md)
 30. [REFACTOR-030 — Proteção da identidade do Super-Admin](REFACTOR-030-PROTECT-SUPER-ADMIN-IDENTITY.md)
+31. [REFACTOR-031 — Governança SaaS para administradores](REFACTOR-031-TENANT-ADMIN-GOVERNANCE.md)
 
 ## Retomada rápida
 

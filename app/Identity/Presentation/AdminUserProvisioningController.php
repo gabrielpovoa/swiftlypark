@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Identity\Presentation;
 
 use App\Context\IdentityContext;
+use App\Context\TenantContext;
 use App\Authorization\Services\CompanyAccessGuard;
 use App\Authorization\Services\UserAccessGuard;
 use App\Identity\Application\UserProvisioningService;
@@ -28,18 +29,23 @@ final class AdminUserProvisioningController extends Controller
         $this->assertGovernanceAdmin();
 
         $connection = (new Database())->connect();
-        $filters = $this->userFilters();
+        $isSuperAdmin = in_array('super-admin', IdentityContext::current()->roleSlugs(), true);
+        $scopeCompanyId = $isSuperAdmin ? null : TenantContext::instance()->getCompanyId();
+        if (!$isSuperAdmin && $scopeCompanyId === null) {
+            throw new ForbiddenException('tenant.access', 'Empresa ativa não encontrada.');
+        }
+        $filters = $this->userFilters($scopeCompanyId, !$isSuperAdmin);
 
         $this->setView('Admin/provisioning', [
             'title' => 'Governança SaaS - SwiftlyPark',
-            'companies' => $this->companies($connection),
+            'companies' => $this->companies($connection, $scopeCompanyId),
             'roles' => $this->assignableRoles($connection),
             'permissions' => $this->permissions($connection),
-            'activeUsers' => $this->activeUsers($connection),
+            'activeUsers' => $this->activeUsers($connection, $scopeCompanyId, !$isSuperAdmin),
             'users' => $this->users($connection, $filters),
             'userFilters' => $filters,
-            'activeUsersCount' => $this->activeUsersCount($connection),
-            'passwordResetUsersCount' => $this->passwordResetUsersCount($connection),
+            'activeUsersCount' => $this->activeUsersCount($connection, $scopeCompanyId, !$isSuperAdmin),
+            'passwordResetUsersCount' => $this->passwordResetUsersCount($connection, $scopeCompanyId, !$isSuperAdmin),
             'csrfToken' => $this->csrfToken(),
             'success' => $_SESSION['admin_success'] ?? null,
             'error' => $_SESSION['admin_error'] ?? null,
@@ -250,17 +256,21 @@ final class AdminUserProvisioningController extends Controller
         return $user === false ? null : $user;
     }
 
-    private function companies(\PDO $connection): array
+    private function companies(\PDO $connection, ?int $scopeCompanyId): array
     {
-        return $connection->query(
+        $statement = $connection->prepare(
             'SELECT
                 c.id, c.name, c.slug, c.logo_path, COUNT(cu.user_id) AS users_count
              FROM companies c
              LEFT JOIN company_user cu ON cu.company_id = c.id
-             WHERE c.deleted_at IS NULL
+             WHERE c.deleted_at IS NULL'
+             . ($scopeCompanyId === null ? '' : ' AND c.id = :scope_company_id') . '
              GROUP BY c.id, c.name, c.slug, c.logo_path
              ORDER BY c.name ASC'
-        )->fetchAll(\PDO::FETCH_ASSOC);
+        );
+        $statement->execute($scopeCompanyId === null ? [] : ['scope_company_id' => $scopeCompanyId]);
+
+        return $statement->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     private function permissions(\PDO $connection): array
@@ -273,9 +283,20 @@ final class AdminUserProvisioningController extends Controller
         )->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    private function activeUsers(\PDO $connection): array
+    private function activeUsers(\PDO $connection, ?int $scopeCompanyId, bool $excludeSuperAdmin): array
     {
-        return $connection->query(
+        $where = ['u.deleted_at IS NULL'];
+        $parameters = [];
+        if ($scopeCompanyId !== null) {
+            $where[] = 'cu.company_id = :scope_company_id';
+            $parameters['scope_company_id'] = $scopeCompanyId;
+        }
+        if ($excludeSuperAdmin) {
+            $where[] = 'NOT EXISTS (SELECT 1 FROM user_roles protected_ur
+                INNER JOIN roles protected_role ON protected_role.id = protected_ur.role_id
+                WHERE protected_ur.user_id = u.id_usuario AND protected_role.slug = "super-admin")';
+        }
+        $statement = $connection->prepare(
             'SELECT
                 u.id_usuario,
                 u.nome,
@@ -294,10 +315,13 @@ final class AdminUserProvisioningController extends Controller
              LEFT JOIN roles r ON r.id = cu.role_id AND r.is_active = 1
              LEFT JOIN companies c ON c.id = cu.company_id AND c.deleted_at IS NULL
                 AND r.id IS NOT NULL
-             WHERE u.deleted_at IS NULL
+             WHERE ' . implode(' AND ', $where) . '
              GROUP BY u.id_usuario, u.nome, u.email
              ORDER BY u.nome ASC, u.email ASC'
-        )->fetchAll(\PDO::FETCH_ASSOC);
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(\PDO::FETCH_ASSOC);
     }
 
 
@@ -335,6 +359,12 @@ final class AdminUserProvisioningController extends Controller
 
         if ($filters['password_reset_required']) {
             $where[] = 'u.password_reset_required = 1';
+        }
+
+        if ($filters['exclude_super_admin']) {
+            $where[] = 'NOT EXISTS (SELECT 1 FROM user_roles protected_ur
+                INNER JOIN roles protected_role ON protected_role.id = protected_ur.role_id
+                WHERE protected_ur.user_id = u.id_usuario AND protected_role.slug = "super-admin")';
         }
 
         $limit = $filters['is_filtered'] ? 20 : 3;
@@ -397,11 +427,9 @@ final class AdminUserProvisioningController extends Controller
         return $statement->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    private function activeUsersCount(\PDO $connection): int
+    private function activeUsersCount(\PDO $connection, ?int $scopeCompanyId, bool $excludeSuperAdmin): int
     {
-        return (int) $connection
-            ->query('SELECT COUNT(*) FROM usuario WHERE deleted_at IS NULL')
-            ->fetchColumn();
+        return $this->scopedUserCount($connection, $scopeCompanyId, $excludeSuperAdmin, false);
     }
 
     private function syncTenantPermissionOverrides(
@@ -526,14 +554,12 @@ final class AdminUserProvisioningController extends Controller
         return $statement->fetchAll(\PDO::FETCH_COLUMN);
     }
 
-    private function passwordResetUsersCount(\PDO $connection): int
+    private function passwordResetUsersCount(\PDO $connection, ?int $scopeCompanyId, bool $excludeSuperAdmin): int
     {
-        return (int) $connection
-            ->query('SELECT COUNT(*) FROM usuario WHERE deleted_at IS NULL AND password_reset_required = 1')
-            ->fetchColumn();
+        return $this->scopedUserCount($connection, $scopeCompanyId, $excludeSuperAdmin, true);
     }
 
-    private function userFilters(): array
+    private function userFilters(?int $scopeCompanyId = null, bool $excludeSuperAdmin = false): array
     {
         $query = trim((string) ($_GET['q'] ?? ''));
         $companyId = filter_var(
@@ -545,12 +571,44 @@ final class AdminUserProvisioningController extends Controller
 
         return [
             'query' => substr($query, 0, 120),
-            'company_id' => $companyId === false ? null : (int) $companyId,
+            'company_id' => $scopeCompanyId ?? ($companyId === false ? null : (int) $companyId),
             'password_reset_required' => $passwordResetRequired,
+            'exclude_super_admin' => $excludeSuperAdmin,
             'is_filtered' => $query !== ''
                 || $companyId !== false
                 || $passwordResetRequired,
         ];
+    }
+
+    private function scopedUserCount(
+        \PDO $connection,
+        ?int $scopeCompanyId,
+        bool $excludeSuperAdmin,
+        bool $passwordResetOnly
+    ): int {
+        $where = ['u.deleted_at IS NULL'];
+        $parameters = [];
+        $join = '';
+        if ($scopeCompanyId !== null) {
+            $join = ' INNER JOIN company_user scope_cu ON scope_cu.user_id = u.id_usuario';
+            $where[] = 'scope_cu.company_id = :scope_company_id';
+            $parameters['scope_company_id'] = $scopeCompanyId;
+        }
+        if ($excludeSuperAdmin) {
+            $where[] = 'NOT EXISTS (SELECT 1 FROM user_roles protected_ur
+                INNER JOIN roles protected_role ON protected_role.id = protected_ur.role_id
+                WHERE protected_ur.user_id = u.id_usuario AND protected_role.slug = "super-admin")';
+        }
+        if ($passwordResetOnly) {
+            $where[] = 'u.password_reset_required = 1';
+        }
+        $statement = $connection->prepare(
+            'SELECT COUNT(DISTINCT u.id_usuario) FROM usuario u' . $join
+            . ' WHERE ' . implode(' AND ', $where)
+        );
+        $statement->execute($parameters);
+
+        return (int) $statement->fetchColumn();
     }
 
 

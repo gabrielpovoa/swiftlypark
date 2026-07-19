@@ -1,5 +1,8 @@
 # REFACTOR-030 — Proteção da identidade do Super-Admin
 
+> Atualização: o REFACTOR-031 reabriu `/admin` para administradores, mantendo a
+> exclusão de super-admins e aplicando escopo obrigatório da empresa ativa.
+
 ## Objetivo
 
 Impedir que usuários sem papel global `super-admin` visualizem ou executem ações

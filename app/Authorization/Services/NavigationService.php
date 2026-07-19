@@ -16,7 +16,8 @@ final class NavigationService
         ['href' => '#', 'icon' => 'printer', 'label' => 'Relatórios', 'permission' => 'report.view', 'class' => 'js-print-logs', 'id' => 'btn-print-logs', 'scope' => 'tenant'],
         ['href' => '/audit', 'icon' => 'search-check', 'label' => 'Auditoria', 'permission' => 'audit.view', 'scope' => 'tenant'],
         ['href' => '/identity', 'icon' => 'users-round', 'label' => 'Usuários', 'permission' => 'identity.view', 'scope' => 'platform'],
-        ['href' => '/admin', 'icon' => 'building-2', 'label' => 'Governança SaaS', 'permission' => 'identity.manage', 'scope' => 'platform'],
+        ['href' => '/admin/companies', 'icon' => 'building-2', 'label' => 'Empresas', 'permission' => 'identity.manage', 'scope' => 'platform'],
+        ['href' => '/admin', 'icon' => 'shield-check', 'label' => 'Governança SaaS', 'permission' => 'identity.manage', 'scope' => 'platform'],
         ['href' => '/finance', 'icon' => 'chart-column', 'label' => 'Relatórios Financeiros', 'permission' => 'finance.view', 'scope' => 'tenant'],
     ];
 

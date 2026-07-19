@@ -54,45 +54,7 @@ $permissions ??= [];
             <div class="mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 px-5 py-4 text-rose-400 font-bold"><?= $escape($error) ?></div>
         <?php endif; ?>
 
-        <div class="grid grid-cols-1 xl:col-span-2 gap-6 mb-6">
-            <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6">
-                <div class="flex items-center justify-between gap-4 mb-6">
-                    <div>
-                        <span class="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Tenant</span>
-                        <h2 class="text-xl text-white font-black mt-1">Criar empresa</h2>
-                    </div>
-                    <i data-lucide="building-2" class="w-7 h-7 text-emerald-400"></i>
-                </div>
-
-                <form method="POST" action="/admin/companies/create" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
-                    <div class="md:col-span-2">
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Nome</label>
-                        <input name="name" required maxlength="255" placeholder="Minha Empresa"
-                               class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Slug</label>
-                        <input name="slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="minha-empresa"
-                               class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-[10px] uppercase tracking-widest text-slate-500 font-black mb-2">Logo</label>
-                        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp"
-                               class="w-full rounded-xl bg-[#131720] border border-white/10 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-black">
-                    </div>
-                    <button class="md:col-span-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black px-5 py-3">
-                        Criar empresa
-                    </button>
-                    <a href="/admin/companies" class="md:col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] text-slate-200 font-black px-5 py-3">
-                        <i data-lucide="building" class="w-4 h-4 text-emerald-400"></i>
-                        Ver empresas cadastradas
-                    </a>
-                </form>
-            </section>
-        </div>
-
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        <div class="hidden" aria-hidden="true">
             <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6">
                 <div class="flex items-center justify-between gap-4 mb-6">
                     <div>

@@ -61,11 +61,19 @@ final class AdminCompanyBillingController extends Controller
             'tariffs' => $tariffs,
             'monthlyContracts' => (new MonthlyContractRepository($connection))
                 ->listForCompany((int) $companyId),
+            'availableUsers' => $this->availableUsers($connection, (int) $companyId),
+            'companyMembers' => $this->companyMembers($connection, (int) $companyId),
+            'assignableRoles' => $this->assignableRoles($connection),
             'csrfToken' => $this->csrfToken(),
-            'success' => $_SESSION['pricing_success'] ?? null,
-            'error' => $_SESSION['pricing_error'] ?? null,
+            'success' => $_SESSION['pricing_success'] ?? $_SESSION['admin_success'] ?? null,
+            'error' => $_SESSION['pricing_error'] ?? $_SESSION['admin_error'] ?? null,
         ]);
-        unset($_SESSION['pricing_success'], $_SESSION['pricing_error']);
+        unset(
+            $_SESSION['pricing_success'],
+            $_SESSION['pricing_error'],
+            $_SESSION['admin_success'],
+            $_SESSION['admin_error']
+        );
     }
 
     public function update(?int $routeCompanyId = null): void
@@ -92,12 +100,13 @@ final class AdminCompanyBillingController extends Controller
                 }
                 $this->assertSlugAvailable($connection, $data['slug'], $companyId);
                 $connection->prepare(
-                    'UPDATE companies SET name = :trade_name, legal_name = :legal_name,
+                    'UPDATE companies SET name = :company_name, legal_name = :legal_name,
                      trade_name = :trade_name, slug = :slug,
                      logo_path = COALESCE(:logo_path, logo_path),
                      is_mensalista = :is_mensalista, updated_at = NOW(6)
                      WHERE id = :company_id'
                 )->execute([
+                    'company_name' => $data['trade_name'],
                     'trade_name' => $data['trade_name'],
                     'legal_name' => $data['legal_name'] !== '' ? $data['legal_name'] : null,
                     'slug' => $data['slug'],
@@ -262,6 +271,56 @@ final class AdminCompanyBillingController extends Controller
         }
     }
 
+    private function availableUsers(PDO $connection, int $companyId): array
+    {
+        $statement = $connection->prepare(
+            'SELECT u.id_usuario, u.nome, u.email
+             FROM usuario u
+             WHERE u.deleted_at IS NULL
+               AND NOT EXISTS (
+                   SELECT 1 FROM company_user cu
+                   WHERE cu.user_id = u.id_usuario AND cu.company_id = :company_id
+               )
+             ORDER BY u.nome ASC, u.email ASC'
+        );
+        $statement->execute(['company_id' => $companyId]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function companyMembers(PDO $connection, int $companyId): array
+    {
+        $statement = $connection->prepare(
+            'SELECT u.id_usuario, u.nome, u.email,
+                    COALESCE(r.label, r.name, r.slug) AS role_label, r.slug AS role_slug
+             FROM company_user cu
+             INNER JOIN usuario u ON u.id_usuario = cu.user_id AND u.deleted_at IS NULL
+             LEFT JOIN roles r ON r.id = cu.role_id
+             WHERE cu.company_id = :company_id
+             ORDER BY u.nome ASC, u.email ASC'
+        );
+        $statement->execute(['company_id' => $companyId]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function assignableRoles(PDO $connection): array
+    {
+        $canAssignPrivileged = in_array(
+            'super-admin',
+            IdentityContext::current()->roleSlugs(),
+            true
+        );
+        $where = $canAssignPrivileged
+            ? 'WHERE is_active = 1'
+            : "WHERE is_active = 1 AND slug NOT IN ('master', 'super-admin')";
+
+        return $connection->query(
+            'SELECT id, slug, name, label FROM roles ' . $where
+            . ' ORDER BY display_priority ASC, name ASC'
+        )->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     private function startSession(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -298,4 +357,3 @@ final class AdminCompanyBillingController extends Controller
         exit;
     }
 }
-

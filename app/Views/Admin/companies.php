@@ -54,6 +54,47 @@ $error ??= null;
             <div class="mb-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 px-5 py-4 text-rose-400 font-bold"><?= $escape($error) ?></div>
         <?php endif; ?>
 
+        <?php if ($canCreateCompany ?? false): ?>
+            <details class="group mb-6 overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.035]">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-4 p-6 marker:content-none">
+                    <div class="flex items-center gap-4">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                            <i data-lucide="building-2" class="h-5 w-5"></i>
+                        </span>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-emerald-400">Novo tenant</span>
+                            <h2 class="mt-1 text-lg font-black text-white">Criar empresa</h2>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-slate-500 transition-transform group-open:rotate-180"></i>
+                </summary>
+                <form method="POST" action="/admin/companies/create" enctype="multipart/form-data" class="grid grid-cols-1 gap-4 border-t border-white/10 p-6 md:grid-cols-2">
+                    <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        Nome da empresa
+                        <input name="name" required maxlength="255" placeholder="SafePark"
+                               class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base normal-case tracking-normal text-white outline-none focus:border-emerald-500">
+                    </label>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        Slug
+                        <input name="slug" required maxlength="120" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="safe-park"
+                               class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base normal-case tracking-normal text-white outline-none focus:border-emerald-500">
+                    </label>
+                    <label class="company-logo-dropzone md:col-span-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 px-5 py-8 text-center transition hover:border-emerald-500/50 hover:bg-emerald-500/[0.04]">
+                        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="sr-only" data-company-logo-input>
+                        <i data-lucide="image-up" class="mb-3 h-6 w-6 text-emerald-400"></i>
+                        <strong class="text-sm text-white" data-company-logo-label>Arraste a logo ou clique para selecionar</strong>
+                        <span class="mt-1 text-xs text-slate-500">PNG, JPG ou WEBP · máximo de 2 MB</span>
+                    </label>
+                    <div class="md:col-span-2 flex justify-end">
+                        <button class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 font-black text-black hover:bg-emerald-400">
+                            <i data-lucide="plus" class="h-4 w-4"></i> Criar empresa
+                        </button>
+                    </div>
+                </form>
+            </details>
+        <?php endif; ?>
+
         <section class="rounded-2xl border border-white/10 bg-white/[0.025] p-6 mb-6">
             <form method="GET" action="/admin/companies" class="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3 items-end">
                 <div>
@@ -173,3 +214,26 @@ $error ??= null;
         </section>
     </div>
 </section>
+
+<script>
+document.querySelectorAll('[data-company-logo-input]').forEach((input) => {
+    const dropzone = input.closest('label');
+    const label = dropzone?.querySelector('[data-company-logo-label]');
+    input.addEventListener('change', () => {
+        if (label && input.files?.[0]) label.textContent = input.files[0].name;
+    });
+    ['dragenter', 'dragover'].forEach((eventName) => dropzone?.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.add('border-emerald-500');
+    }));
+    dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('border-emerald-500'));
+    dropzone?.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropzone.classList.remove('border-emerald-500');
+        if (event.dataTransfer?.files?.length) {
+            input.files = event.dataTransfer.files;
+            input.dispatchEvent(new Event('change'));
+        }
+    });
+});
+</script>

@@ -594,6 +594,15 @@ final class AdminUserProvisioningController extends Controller
             $_SESSION['admin_error'] = 'Não foi possível concluir o provisionamento.';
         }
 
+        $companyId = filter_var(
+            $_POST['return_company_id'] ?? null,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]]
+        );
+        if ($companyId !== false) {
+            $this->redirectCompanyPricing((int) $companyId);
+        }
+
         $this->redirect();
     }
 

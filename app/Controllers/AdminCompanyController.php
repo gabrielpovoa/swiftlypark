@@ -67,6 +67,7 @@ final class AdminCompanyController extends Controller
             'companiesCount' => $companies->countAll(),
             'activeUsersCount' => $this->activeUsersCount($connection),
             'passwordResetUsersCount' => $this->passwordResetUsersCount($connection),
+            'canCreateCompany' => $this->canCreateCompany(),
             'csrfToken' => $this->csrfToken(),
             'success' => $_SESSION['admin_success'] ?? null,
             'error' => $_SESSION['admin_error'] ?? null,
@@ -190,7 +191,7 @@ final class AdminCompanyController extends Controller
             $_SESSION['admin_error'] = 'Não foi possível concluir o provisionamento.';
         }
 
-        $this->redirect();
+        $this->redirectCompanies();
     }
 
     private function jsonResponse(callable $action): void
@@ -281,6 +282,14 @@ final class AdminCompanyController extends Controller
                 'Apenas usuários MASTER ou ADMIN podem provisionar acessos.'
             );
         }
+    }
+
+    private function canCreateCompany(): bool
+    {
+        return array_intersect(
+            ['master', 'super-admin', 'admin'],
+            IdentityContext::current()->roleSlugs()
+        ) !== [];
     }
 
     private function payload(): array

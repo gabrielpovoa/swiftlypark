@@ -58,13 +58,16 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
             <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
             <input type="hidden" name="company_id" value="<?= (int) $company['id'] ?>">
 
-            <section class="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-                <div class="mb-5">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400">Identidade empresarial</span>
-                    <h2 class="mt-1 text-2xl font-black text-white">Dados cadastrais</h2>
-                    <p class="mt-2 text-sm text-slate-500">O nome fantasia é o nome apresentado aos usuários em toda a plataforma.</p>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <details class="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-4 p-6 marker:content-none">
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400">Identidade empresarial</span>
+                        <h2 class="mt-1 text-2xl font-black text-white">Dados cadastrais</h2>
+                        <p class="mt-2 text-sm text-slate-500">Nome, razão social, slug e identidade visual.</p>
+                    </div>
+                    <i data-lucide="chevron-down" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
+                </summary>
+                <div class="grid grid-cols-1 gap-4 border-t border-white/10 p-6 md:grid-cols-2">
                     <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
                         Razão social
                         <input name="legal_name" maxlength="255"
@@ -86,10 +89,13 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
                                placeholder="nome-da-empresa"
                                class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base normal-case tracking-normal text-white outline-none focus:border-indigo-500">
                     </label>
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                        Logo
-                        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp"
-                               class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-3 py-2 text-sm normal-case tracking-normal text-white file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-500 file:px-3 file:py-2 file:text-xs file:font-black file:text-white">
+                    <label class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 px-5 py-6 text-center transition hover:border-indigo-500/50 hover:bg-indigo-500/[0.04]">
+                        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="sr-only" data-company-logo-input>
+                        <i data-lucide="image-up" class="mb-2 h-6 w-6 text-indigo-400"></i>
+                        <strong class="text-sm normal-case tracking-normal text-white" data-company-logo-label>
+                            <?= !empty($company['logo_path']) ? 'Substituir logo atual' : 'Arraste a logo ou clique para selecionar' ?>
+                        </strong>
+                        <span class="mt-1 text-xs normal-case tracking-normal text-slate-500">PNG, JPG ou WEBP · máximo de 2 MB</span>
                     </label>
                     <label class="md:col-span-2 text-[10px] font-black uppercase tracking-widest text-slate-600">
                         CNPJ · disponível em uma próxima etapa
@@ -97,8 +103,13 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
                                placeholder="00.000.000/0000-00"
                                class="mt-2 w-full cursor-not-allowed rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-base normal-case tracking-normal text-slate-600 opacity-70">
                     </label>
+                    <div class="md:col-span-2 flex justify-end">
+                        <button class="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-3 text-sm font-black normal-case tracking-normal text-white hover:bg-indigo-400">
+                            <i data-lucide="save" class="h-4 w-4"></i> Salvar dados da empresa
+                        </button>
+                    </div>
                 </div>
-            </section>
+            </details>
 
             <section class="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
                 <div class="mb-5">
@@ -186,6 +197,65 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
             </div>
         </form>
 
+        <section class="mt-10 rounded-3xl border border-cyan-500/20 bg-cyan-500/[0.035] p-6">
+            <div class="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-cyan-400">Acessos do tenant</span>
+                    <h2 class="mt-1 text-2xl font-black text-white">Pessoas vinculadas</h2>
+                    <p class="mt-2 text-sm text-slate-500">Adicione pessoas existentes ou remova o acesso especificamente desta empresa.</p>
+                </div>
+                <span class="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-300"><?= count($companyMembers) ?> vínculos</span>
+            </div>
+
+            <form method="POST" action="/admin/users/link-company" class="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-black/20 p-5 md:grid-cols-[1fr_240px_auto] md:items-end">
+                <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                <input type="hidden" name="company_id" value="<?= (int) $company['id'] ?>">
+                <input type="hidden" name="return_company_id" value="<?= (int) $company['id'] ?>">
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">Pessoa
+                    <select name="user_id" required class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base normal-case tracking-normal text-white">
+                        <option value="">Selecione uma pessoa</option>
+                        <?php foreach ($availableUsers as $availableUser): ?>
+                            <option value="<?= (int) $availableUser['id_usuario'] ?>"><?= $escape($availableUser['nome']) ?> · <?= $escape($availableUser['email']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">Perfil
+                    <select name="role_id" required class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base normal-case tracking-normal text-white">
+                        <option value="">Selecione</option>
+                        <?php foreach ($assignableRoles as $role): ?>
+                            <option value="<?= (int) $role['id'] ?>"><?= $escape($role['label'] ?: $role['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <button class="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3 font-black text-black hover:bg-cyan-400">
+                    <i data-lucide="user-round-plus" class="h-4 w-4"></i> Vincular
+                </button>
+            </form>
+
+            <div class="mt-4 divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                <?php if ($companyMembers === []): ?>
+                    <p class="p-5 text-sm text-slate-500">Nenhuma pessoa vinculada a esta empresa.</p>
+                <?php endif; ?>
+                <?php foreach ($companyMembers as $member): ?>
+                    <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="min-w-0">
+                            <strong class="block truncate text-white"><?= $escape($member['nome']) ?></strong>
+                            <span class="block truncate text-xs text-slate-500"><?= $escape($member['email']) ?> · <?= $escape($member['role_label'] ?? 'Sem perfil') ?></span>
+                        </div>
+                        <form method="POST" action="/admin/users/remove-company" onsubmit="return confirm('Remover o acesso desta pessoa à empresa?');">
+                            <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
+                            <input type="hidden" name="company_id" value="<?= (int) $company['id'] ?>">
+                            <input type="hidden" name="return_company_id" value="<?= (int) $company['id'] ?>">
+                            <input type="hidden" name="user_id" value="<?= (int) $member['id_usuario'] ?>">
+                            <button class="inline-flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-400 hover:bg-rose-500 hover:text-white">
+                                <i data-lucide="user-round-minus" class="h-4 w-4"></i> Remover
+                            </button>
+                        </form>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
         <section class="mt-10 rounded-3xl border border-amber-500/20 bg-amber-500/[0.04] p-6">
             <div class="mb-6">
                 <span class="text-[10px] font-black uppercase tracking-widest text-amber-400">Contratos pré-pagos</span>
@@ -267,3 +337,26 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
         </section>
     </div>
 </section>
+
+<script>
+document.querySelectorAll('[data-company-logo-input]').forEach((input) => {
+    const dropzone = input.closest('label');
+    const label = dropzone?.querySelector('[data-company-logo-label]');
+    input.addEventListener('change', () => {
+        if (label && input.files?.[0]) label.textContent = input.files[0].name;
+    });
+    ['dragenter', 'dragover'].forEach((eventName) => dropzone?.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.add('border-indigo-500');
+    }));
+    dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('border-indigo-500'));
+    dropzone?.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropzone.classList.remove('border-indigo-500');
+        if (event.dataTransfer?.files?.length) {
+            input.files = event.dataTransfer.files;
+            input.dispatchEvent(new Event('change'));
+        }
+    });
+});
+</script>

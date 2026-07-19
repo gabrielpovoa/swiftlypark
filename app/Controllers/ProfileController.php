@@ -21,7 +21,6 @@ class ProfileController extends Controller
         $identity = IdentityContext::current();
         $roleSlugs = $identity->roleSlugs();
         $canManageUsers = in_array('admin', $roleSlugs, true)
-            || in_array('master', $roleSlugs, true)
             || in_array('super-admin', $roleSlugs, true);
 
         $requestedUserId = filter_input(INPUT_GET, 'user_id', FILTER_VALIDATE_INT);
@@ -89,7 +88,6 @@ class ProfileController extends Controller
         $identity = IdentityContext::current();
         $roleSlugs = $identity->roleSlugs();
         $canManageUsers = in_array('admin', $roleSlugs, true)
-            || in_array('master', $roleSlugs, true)
             || in_array('super-admin', $roleSlugs, true);
 
         $targetUserId = (int) ($_POST['target_user_id'] ?? $_SESSION['user_id']);
@@ -225,7 +223,6 @@ class ProfileController extends Controller
 
         $roleSlugs = $identity->roleSlugs();
         $canManageUsers = in_array('admin', $roleSlugs, true)
-            || in_array('master', $roleSlugs, true)
             || in_array('super-admin', $roleSlugs, true);
 
         $this->setView('Profile/profile', [

@@ -454,12 +454,12 @@ final class UserProvisioningService
             return;
         }
 
-        if (!array_intersect(['master', 'admin'], $this->actor->roleSlugs())) {
-            throw new DomainException('Apenas usuários MASTER ou ADMIN podem provisionar acessos.');
+        if (!in_array('admin', $this->actor->roleSlugs(), true)) {
+            throw new DomainException('Apenas usuários ADMIN ou SUPER-ADMIN podem provisionar acessos.');
         }
 
-        if (in_array($role['slug'], ['master', 'super-admin'], true)) {
-            throw new DomainException('Apenas SUPER-ADMIN pode conceder papel equivalente ou superior.');
+        if ($role['slug'] === 'super-admin') {
+            throw new DomainException('Apenas SUPER-ADMIN pode conceder acesso global.');
         }
     }
 }

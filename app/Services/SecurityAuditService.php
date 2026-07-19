@@ -110,7 +110,7 @@ final class SecurityAuditService
                     'attempted_company_id' => $attemptedCompanyId,
                     'threshold' => self::TENANT_SCAN_THRESHOLD,
                     'window_minutes' => 10,
-                    'alert_target' => 'MASTER',
+                    'alert_target' => 'SUPER_ADMIN',
                 ]
             );
         }

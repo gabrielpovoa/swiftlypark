@@ -33,6 +33,7 @@ nunca na raiz do projeto.
 25. [REFACTOR-025 — Favicon sem borda branca](REFACTOR-025-REMOVE-FAVICON-WHITE-BORDER.md)
 26. [REFACTOR-026 — Entrega confiável de e-mails](REFACTOR-026-RELIABLE-EMAIL-DELIVERY.md)
 27. [REFACTOR-027 — Dashboard administrativo por empresa](REFACTOR-027-SCOPE-ADMIN-DASHBOARD-BY-COMPANY.md)
+28. [REFACTOR-028 — Remoção do papel Master](REFACTOR-028-REMOVE-MASTER-ROLE.md)
 
 ## Retomada rápida
 

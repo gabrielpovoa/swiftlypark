@@ -26,7 +26,7 @@ final class AuthorizationService
         }
 
         if ($permission === 'identity.manage'
-            && $this->hasAnyRole(['master', 'super-admin', 'admin'])) {
+            && $this->hasAnyRole(['admin'])) {
             return true;
         }
 

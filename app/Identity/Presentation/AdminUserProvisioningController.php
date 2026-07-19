@@ -298,7 +298,7 @@ final class AdminUserProvisioningController extends Controller
         $canAssignPrivileged = in_array('super-admin', $roles, true);
         $where = $canAssignPrivileged
             ? 'WHERE is_active = 1'
-            : "WHERE is_active = 1 AND slug NOT IN ('master', 'super-admin')";
+            : "WHERE is_active = 1 AND slug <> 'super-admin'";
 
         return $connection->query(
             'SELECT id, slug, name, label
@@ -691,12 +691,11 @@ final class AdminUserProvisioningController extends Controller
     private function assertGovernanceAdmin(): void
     {
         $roles = IdentityContext::current()->roleSlugs();
-        if (!in_array('master', $roles, true)
-            && !in_array('super-admin', $roles, true)
+        if (!in_array('super-admin', $roles, true)
             && !in_array('admin', $roles, true)) {
             throw new ForbiddenException(
                 'admin.provision',
-                'Apenas usuários MASTER ou ADMIN podem provisionar acessos.'
+                'Apenas usuários ADMIN ou SUPER-ADMIN podem provisionar acessos.'
             );
         }
     }

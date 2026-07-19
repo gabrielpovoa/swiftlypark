@@ -266,8 +266,8 @@ final class AdminCompanyBillingController extends Controller
     private function assertGovernanceAdmin(): void
     {
         $roles = IdentityContext::current()->roleSlugs();
-        if (!array_intersect(['master', 'super-admin', 'admin'], $roles)) {
-            throw new ForbiddenException('admin.provision', 'Apenas usuários MASTER ou ADMIN podem provisionar acessos.');
+        if (!in_array('super-admin', $roles, true)) {
+            throw new ForbiddenException('admin.provision', 'Apenas SUPER-ADMIN pode gerenciar empresas.');
         }
     }
 
@@ -313,7 +313,7 @@ final class AdminCompanyBillingController extends Controller
         );
         $where = $canAssignPrivileged
             ? 'WHERE is_active = 1'
-            : "WHERE is_active = 1 AND slug NOT IN ('master', 'super-admin')";
+            : "WHERE is_active = 1 AND slug <> 'super-admin'";
 
         return $connection->query(
             'SELECT id, slug, name, label FROM roles ' . $where

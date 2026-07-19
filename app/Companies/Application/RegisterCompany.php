@@ -53,8 +53,7 @@ final class RegisterCompany
     {
         if ($this->actor === null) { return null; }
         $slugs = $this->actor->roleSlugs();
-        $slug = in_array('super-admin', $slugs, true) ? 'super-admin'
-            : (in_array('master', $slugs, true) ? 'master' : null);
+        $slug = in_array('super-admin', $slugs, true) ? 'super-admin' : null;
         if ($slug === null) { return null; }
         $statement = $this->connection->prepare('SELECT id, slug FROM roles WHERE slug = :slug AND is_active = 1 LIMIT 1');
         $statement->execute(['slug' => $slug]);

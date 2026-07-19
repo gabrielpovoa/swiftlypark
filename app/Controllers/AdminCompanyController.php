@@ -274,12 +274,10 @@ final class AdminCompanyController extends Controller
     private function assertGovernanceAdmin(): void
     {
         $roles = IdentityContext::current()->roleSlugs();
-        if (!in_array('master', $roles, true)
-            && !in_array('super-admin', $roles, true)
-            && !in_array('admin', $roles, true)) {
+        if (!in_array('super-admin', $roles, true)) {
             throw new ForbiddenException(
                 'admin.provision',
-                'Apenas usuários MASTER ou ADMIN podem provisionar acessos.'
+                'Apenas SUPER-ADMIN pode gerenciar empresas.'
             );
         }
     }
@@ -287,7 +285,7 @@ final class AdminCompanyController extends Controller
     private function canCreateCompany(): bool
     {
         return array_intersect(
-            ['master', 'super-admin', 'admin'],
+            ['super-admin'],
             IdentityContext::current()->roleSlugs()
         ) !== [];
     }

@@ -20,7 +20,7 @@ $permissions ??= [];
     <div class="max-w-7xl mx-auto">
         <header class="flex flex-col xl:flex-row xl:items-end justify-between gap-5 mb-8">
             <div>
-                <span class="text-blue-500 text-xs font-black uppercase tracking-[0.3em]">Super-master</span>
+                <span class="text-blue-500 text-xs font-black uppercase tracking-[0.3em]">Super-Admin</span>
                 <h1 class="text-4xl font-black text-white mt-2">Governança SaaS</h1>
                 <p class="text-slate-500 mt-2">Acompanhe a governança da plataforma e controle vínculos de acesso por tenant.</p>
             </div>

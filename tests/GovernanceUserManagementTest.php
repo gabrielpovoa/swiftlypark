@@ -98,17 +98,17 @@ $connection->exec(
 $connection->exec("INSERT INTO companies (id, name, slug) VALUES (1, 'SwiftlyPark', 'swiftlypark')");
 $connection->exec("INSERT INTO companies (id, name, slug) VALUES (2, 'Empresa B', 'empresa-b')");
 $connection->exec("INSERT INTO roles (id, slug, display_priority, is_active) VALUES (3, 'admin', 10, 1)");
-$connection->exec("INSERT INTO roles (id, slug, display_priority, is_active) VALUES (4, 'master', 1, 1)");
+$connection->exec("INSERT INTO roles (id, slug, display_priority, is_active) VALUES (4, 'super-admin', 1, 1)");
 
 $identity = new RequestIdentity(
     99,
-    'master@example.test',
+    'super-admin@example.test',
     '127.0.0.1',
     '00000000-0000-4000-8000-000000000099',
     new DateTimeImmutable('2026-07-12 00:00:00', new DateTimeZone('UTC')),
     ['identity.manage'],
-    ['master'],
-    ['role' => 'master', 'label' => 'Master', 'icon' => 'shield']
+    ['super-admin'],
+    ['role' => 'super-admin', 'label' => 'Super Admin', 'icon' => 'shield']
 );
 $mailer = new CapturingMailer();
 $service = new UserProvisioningService(
@@ -179,7 +179,7 @@ $companyId = (new RegisterCompany(
     $connection,
     new PdoCompanyRepository($connection),
     $identity
-))->execute('Nova Master', 'nova-master');
+))->execute('Nova Empresa', 'nova-empresa');
 $actorMembership = $connection
     ->query(
         'SELECT role_id FROM company_user WHERE user_id = 99 AND company_id = '
@@ -188,7 +188,7 @@ $actorMembership = $connection
     ->fetchColumn();
 
 if ((int) $actorMembership !== 4) {
-    fwrite(STDERR, "Expected creator to be linked to the new company with master role\n");
+    fwrite(STDERR, "Expected creator to be linked to the new company with super-admin role\n");
     exit(1);
 }
 

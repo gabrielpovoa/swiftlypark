@@ -104,7 +104,7 @@ final class IdentityManagementRepository
     {
         $where = $canAssignPrivileged
             ? 'WHERE is_active = 1'
-            : "WHERE is_active = 1 AND slug NOT IN ('master', 'super-admin')";
+            : "WHERE is_active = 1 AND slug <> 'super-admin'";
 
         return $this->connection->query(
             'SELECT id, slug, name, label
@@ -137,14 +137,14 @@ final class IdentityManagementRepository
         return $statement->fetchColumn() !== false;
     }
 
-    public function countActiveMastersForUpdate(): int
+    public function countActiveSuperAdminsForUpdate(): int
     {
         $statement = $this->connection->query(
             "SELECT DISTINCT u.id_usuario
              FROM usuario u
              INNER JOIN user_roles ur ON ur.user_id = u.id_usuario
              INNER JOIN roles r ON r.id = ur.role_id
-             WHERE r.slug = 'master' AND u.deleted_at IS NULL
+             WHERE r.slug = 'super-admin' AND u.deleted_at IS NULL
              FOR UPDATE"
         );
 

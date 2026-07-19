@@ -177,6 +177,35 @@ function adminDashboardRequired($callback)
     };
 }
 
+function superAdminRequired($callback)
+{
+    return function (...$arguments) use ($callback) {
+        try {
+            (new IdentityMiddleware())->handle(function () use ($callback, $arguments) {
+                $identity = IdentityContext::current();
+
+                if (!hasGlobalPlatformRole($identity->userId())) {
+                    (new Controller())->render403();
+                }
+
+                $callback(...$arguments);
+            });
+        } catch (AccessRevokedException $exception) {
+            header('Location: /login?revoked=1');
+            exit;
+        } catch (UnauthorizedException $exception) {
+            header('Location: /login');
+            exit;
+        } catch (ForbiddenException|SecurityCriticalException $exception) {
+            if ($exception instanceof SecurityCriticalException) {
+                auditSecurityCriticalException($exception);
+            }
+
+            (new Controller())->render403();
+        }
+    };
+}
+
 // Rota raiz: login ou home conforme sessão
 $router->get('', function () {
     session_start();
@@ -350,37 +379,37 @@ $router->get('admin', permissionRequired('identity.manage', 'admin', function ()
 $router->get('admin/dashboard', adminDashboardRequired(function () {
     (new DashboardGlobalController())->index();
 }));
-$router->get('admin/companies', permissionRequired('identity.manage', 'admin/companies', function () {
+$router->get('admin/companies', superAdminRequired(function () {
     (new AdminCompanyController())->companiesIndex();
 }));
-$router->get('admin/companies/pricing', permissionRequired('identity.manage', 'admin/companies/pricing', function () {
+$router->get('admin/companies/pricing', superAdminRequired(function () {
     (new AdminCompanyBillingController())->show();
 }));
-$router->get('admin/companies/company_id={company_id}', permissionRequired('identity.manage', 'admin/companies/company', function (int $companyId) {
+$router->get('admin/companies/company_id={company_id}', superAdminRequired(function (int $companyId) {
     (new AdminCompanyBillingController())->show($companyId);
 }));
-$router->post('admin/companies/create', authRequired(function () {
+$router->post('admin/companies/create', superAdminRequired(function () {
     (new AdminCompanyController())->createCompany();
 }));
-$router->post('admin/companies/update', authRequired(function () {
+$router->post('admin/companies/update', superAdminRequired(function () {
     (new AdminCompanyController())->updateCompany();
 }));
-$router->post('admin/companies/pricing', authRequired(function () {
+$router->post('admin/companies/pricing', superAdminRequired(function () {
     (new AdminCompanyBillingController())->update();
 }));
-$router->post('admin/companies/company_id={company_id}', authRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}', superAdminRequired(function (int $companyId) {
     (new AdminCompanyBillingController())->update($companyId);
 }));
-$router->post('admin/companies/company_id={company_id}/contracts/create', authRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}/contracts/create', superAdminRequired(function (int $companyId) {
     (new AdminMonthlyContractController())->create($companyId);
 }));
-$router->post('admin/companies/company_id={company_id}/contracts/renew', authRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}/contracts/renew', superAdminRequired(function (int $companyId) {
     (new AdminMonthlyContractController())->renew($companyId);
 }));
-$router->post('admin/companies/company_id={company_id}/contracts/cancel', authRequired(function (int $companyId) {
+$router->post('admin/companies/company_id={company_id}/contracts/cancel', superAdminRequired(function (int $companyId) {
     (new AdminMonthlyContractController())->cancel($companyId);
 }));
-$router->post('admin/companies/deactivate', authRequired(function () {
+$router->post('admin/companies/deactivate', superAdminRequired(function () {
     (new AdminCompanyController())->deactivateCompany();
 }));
 $router->post('admin/users/create', authRequired(function () {

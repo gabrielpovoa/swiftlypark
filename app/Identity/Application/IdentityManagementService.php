@@ -58,11 +58,11 @@ final class IdentityManagementService
                 throw new RuntimeException('O acesso deste usuário já foi revogado.');
             }
 
-            if ($this->users->hasRole($targetUserId, 'master')
-                && $this->users->countActiveMastersForUpdate() <= 1) {
+            if ($this->users->hasRole($targetUserId, 'super-admin')
+                && $this->users->countActiveSuperAdminsForUpdate() <= 1) {
                 throw new ForbiddenException(
                     'identity.manage',
-                    'O último usuário Master ativo não pode ser revogado.'
+                    'O último Super-Admin ativo não pode ser revogado.'
                 );
             }
 
@@ -80,11 +80,10 @@ final class IdentityManagementService
         (new AuthorizationService($this->identity))->check('identity.manage');
 
         if ($targetUserId === $this->identity->userId()
-            && !in_array('master', $this->identity->roleSlugs(), true)
             && !in_array('super-admin', $this->identity->roleSlugs(), true)) {
             throw new ForbiddenException(
                 'identity.manage',
-                'Apenas MASTER pode alterar as próprias permissões extras.'
+                'Apenas SUPER-ADMIN pode alterar as próprias permissões extras.'
             );
         }
 

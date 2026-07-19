@@ -28,8 +28,7 @@ $globalAuthorization = (new RolePermissionResolver(
     new RbacRepository($connection)
 ))->resolve($identity->userId(), null);
 $globalRoleSlugs = $globalAuthorization->roleSlugs();
-$isPlatformAdmin = in_array('master', $globalRoleSlugs, true)
-    || in_array('super-admin', $globalRoleSlugs, true);
+$isPlatformAdmin = in_array('super-admin', $globalRoleSlugs, true);
 $supportCompanyId = filter_var(
     $_SESSION['support_impersonation']['company_id'] ?? null,
     FILTER_VALIDATE_INT,

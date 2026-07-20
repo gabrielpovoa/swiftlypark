@@ -41,6 +41,7 @@ nunca na raiz do projeto.
 33. [REFACTOR-033 — Visão financeira do administrador](REFACTOR-033-TENANT-ADMIN-FINANCE-OVERVIEW.md)
 34. [REFACTOR-034 — Persistência do favicon da empresa](REFACTOR-034-TENANT-FAVICON-PERSISTENCE.md)
 35. [REFACTOR-035 — Recibo por e-mail no checkout](REFACTOR-035-CHECKOUT-EMAIL-RECEIPT.md)
+36. [REFACTOR-036 — Fundação de CI/CD com Git Flow](REFACTOR-036-CI-CD-GITFLOW-FOUNDATION.md)
 
 ## Retomada rápida
 

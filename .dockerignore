@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.env
+.env.*
+!.env.example
+vendor
+public/uploads
+tests
+docs
+*.log

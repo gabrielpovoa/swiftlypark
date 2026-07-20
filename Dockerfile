@@ -32,7 +32,7 @@ RUN a2enmod rewrite
 # --------------------------------------------------------
 # 4. DocumentRoot apontando para /public
 # --------------------------------------------------------
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
  && sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
@@ -54,8 +54,17 @@ WORKDIR /var/www/html
 # --------------------------------------------------------
 COPY . /var/www/html
 
+# A imagem gerada pelo pipeline deve ser executável sem depender do volume do
+# workspace ou de um composer install durante a inicialização.
+RUN composer install \
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress \
+    --optimize-autoloader
+
 # --------------------------------------------------------
-# 7. Permissões corretas
+# 7. Dependências e permissões corretas
 # --------------------------------------------------------
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/public

@@ -1,6 +1,7 @@
 {
   "name": "meu/projeto",
   "description": "Projeto MVC em PHP",
+  "license": "proprietary",
   "autoload": {
     "psr-4": {
       "App\\": "app/",

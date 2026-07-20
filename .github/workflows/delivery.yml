@@ -1,0 +1,55 @@
+name: Delivery candidate
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: delivery-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    name: Build delivery candidate (no deploy)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      CANDIDATE_BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build candidate image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: swiftlypark:${{ env.CANDIDATE_BRANCH }}-${{ env.CANDIDATE_SHA }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Export candidate
+        env:
+          IMAGE_TAG: swiftlypark:${{ env.CANDIDATE_BRANCH }}-${{ env.CANDIDATE_SHA }}
+        run: docker save "$IMAGE_TAG" | gzip > swiftlypark-image.tar.gz
+      - name: Store candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftlypark-${{ env.CANDIDATE_BRANCH }}-${{ env.CANDIDATE_SHA }}
+          path: swiftlypark-image.tar.gz
+          retention-days: 7
+          if-no-files-found: error

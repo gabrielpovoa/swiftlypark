@@ -1,3 +1,4 @@
+{{-- Blade: alertas de segurança --}}
 <?php
 $alerts = $alerts ?? [];
 $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');

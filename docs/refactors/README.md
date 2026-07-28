@@ -45,6 +45,7 @@ nunca na raiz do projeto.
 37. [REFACTOR-037 — Tipos de vaga por empresa](REFACTOR-037-COMPANY-VEHICLE-TYPE-TOGGLE.md)
 38. [REFACTOR-038 — Blade nas views pesadas](REFACTOR-038-BLADE-HEAVY-VIEWS.md)
 39. [REFACTOR-039 — Blade nas pastas menores de views](REFACTOR-039-BLADE-SMALL-VIEW-FOLDERS.md)
+40. [REFACTOR-040 — Conclusão da migração das views para Blade](REFACTOR-040-BLADE-FINAL-VIEWS.md)
 
 ## Retomada rápida
 

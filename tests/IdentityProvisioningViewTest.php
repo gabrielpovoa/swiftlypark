@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $identityView = file_get_contents($root . '/app/Views/Identity/index.blade.php');
-$governanceView = file_get_contents($root . '/app/Views/Admin/provisioning.php');
+$governanceView = file_get_contents($root . '/app/Views/Admin/provisioning.blade.php');
 $controller = file_get_contents(
     $root . '/app/Identity/Presentation/IdentityManagementController.php'
 );

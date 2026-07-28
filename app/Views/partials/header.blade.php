@@ -1,3 +1,4 @@
+{{-- Blade: navegação e contexto do tenant --}}
 <?php
 use App\Authorization\Services\NavigationService;
 use App\Authorization\Repositories\RbacRepository;
@@ -265,7 +266,7 @@ $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, '
             <span class="block text-[11px] font-black text-white truncate uppercase tracking-tighter">
                 <?= htmlspecialchars(implode(' ', array_slice(explode(' ', $userName), 0, 2))) ?>
             </span>
-                <?php $this->partial('role-badge', ['roleMetadata' => $roleMetadata]); ?>
+                {!! $renderPartial('role-badge', ['roleMetadata' => $roleMetadata]) !!}
             </div>
         </a>
 

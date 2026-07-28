@@ -1,3 +1,4 @@
+{{-- Blade: governança e provisionamento --}}
 <?php
 $escape = static fn (mixed $value): string => htmlspecialchars(
     (string) $value,

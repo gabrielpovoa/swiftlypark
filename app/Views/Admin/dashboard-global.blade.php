@@ -1,3 +1,4 @@
+{{-- Blade: dashboard global --}}
 <?php
 $escape = fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $formatNumber = fn ($value): string => number_format((float) $value, 0, ',', '.');
@@ -81,7 +82,7 @@ $cards = [
             </section>
         </div>
 
-        <?php $this->partial('security-alerts-widget', ['alerts' => $securityAlerts]); ?>
+        {!! $renderPartial('security-alerts-widget', ['alerts' => $securityAlerts]) !!}
     </div>
 </section>
 

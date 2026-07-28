@@ -63,7 +63,19 @@
 
         private function renderPartial(string $partial, array $data = []): string
         {
+            $bladePartial = $this->viewsPath
+                . 'partials'
+                . DIRECTORY_SEPARATOR
+                . $partial
+                . '.blade.php';
             $partialFile = $this->viewsPath . 'partials' . DIRECTORY_SEPARATOR . $partial . '.php';
+
+            if (file_exists($bladePartial)) {
+                return $this->blade->render(
+                    'partials/' . $partial,
+                    $this->bladeData($data)
+                );
+            }
 
             if (!file_exists($partialFile)) {
                 throw new Exception("Partial '{$partial}' não encontrada em {$partialFile}");

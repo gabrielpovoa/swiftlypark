@@ -1,4 +1,4 @@
-<?php
+@php
 
 $escape = static fn (mixed $value): string => htmlspecialchars(
     (string) $value,
@@ -13,7 +13,7 @@ $vehicleTypes = [
 ];
 $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
 $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
-?>
+@endphp
 
 <section class="min-h-screen bg-[#0b0e14] text-slate-300 p-5 md:p-10">
     <div class="max-w-6xl mx-auto">
@@ -24,7 +24,7 @@ $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
                     Diretório de empresas
                 </a>
                 <span class="block text-amber-400 text-xs font-black uppercase tracking-[0.3em]">Pricing Engine</span>
-                <h1 class="text-4xl font-black text-white mt-2"><?= $escape($company['name']) ?></h1>
+                <h1 class="text-4xl font-black text-white mt-2">{{ $company['name'] }}</h1>
                 <p class="text-slate-500 mt-2">Informações cadastrais, modelo de cobrança e valores utilizados no checkout.</p>
             </div>
             <div class="flex flex-wrap items-stretch justify-end gap-3">
@@ -32,11 +32,11 @@ $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
                     <i data-lucide="search-check" class="h-4 w-4 text-blue-400"></i>Auditar
                 </a>
                 <div class="flex min-h-[88px] items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-                <?php if (!empty($company['logo_path'])): ?>
-                    <img src="/uploads/<?= $escape($company['logo_path']) ?>" alt="Logo <?= $escape($company['name']) ?>" class="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20">
-                <?php else: ?>
+                @if (!empty($company['logo_path']))
+                    <img src="/uploads/{{ $company['logo_path'] }}" alt="Logo {{ $company['name'] }}" class="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20">
+                @else
                     <i data-lucide="building-2" class="w-7 h-7 text-amber-300"></i>
-                <?php endif; ?>
+                @endif
                 <div>
                     <span class="block text-[9px] font-black uppercase tracking-widest text-slate-500">Empresa #<?= (int) $company['id'] ?></span>
                     <strong class="text-white"><?= $escape($company['slug']) ?></strong>
@@ -45,15 +45,15 @@ $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
             </div>
         </header>
 
-        <?php if ($success): ?>
+        @if ($success)
             <div role="status" class="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 font-bold text-emerald-400">
-                <?= $escape($success) ?>
+                {{ $success }}
             </div>
-        <?php elseif ($error): ?>
+        @elseif ($error)
             <div role="alert" class="mb-6 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-5 py-4 font-bold text-rose-400">
-                <?= $escape($error) ?>
+                {{ $error }}
             </div>
-        <?php endif; ?>
+        @endif
 
         <form method="POST" enctype="multipart/form-data" action="/admin/companies/company_id=<?= (int) $company['id'] ?>" class="space-y-6">
             <input type="hidden" name="csrf_token" value="<?= $escape($csrfToken) ?>">
@@ -119,22 +119,24 @@ $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
                     <p class="mt-2 text-sm text-slate-500">Tipos desabilitados não aparecem no check-in, na criação de vagas ou em novos contratos.</p>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <?php foreach ($vehicleTypes as $vehicleType => $metadata): ?>
-                        <?php $isEnabled = in_array($vehicleType, $enabledVehicleTypes, true); ?>
+                    @foreach ($vehicleTypes as $vehicleType => $metadata)
+                        @php
+                            $isEnabled = in_array($vehicleType, $enabledVehicleTypes, true);
+                        @endphp
                         <label class="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4 has-[:checked]:border-violet-500/50 has-[:checked]:bg-violet-500/10">
                             <span class="flex items-center gap-3">
-                                <i data-lucide="<?= $escape($metadata['icon']) ?>" class="h-5 w-5 text-violet-400"></i>
-                                <strong class="text-sm text-white"><?= $escape($metadata['label']) ?></strong>
+                                <i data-lucide="{{ $metadata['icon'] }}" class="h-5 w-5 text-violet-400"></i>
+                                <strong class="text-sm text-white">{{ $metadata['label'] }}</strong>
                             </span>
                             <span class="relative inline-flex h-6 w-11 items-center">
-                                <input type="checkbox" name="vehicle_types[]" value="<?= $escape($vehicleType) ?>"
-                                       <?= $isEnabled ? 'checked' : '' ?>
-                                       class="peer sr-only" data-vehicle-type-toggle="<?= $escape($vehicleType) ?>">
+                                <input type="checkbox" name="vehicle_types[]" value="{{ $vehicleType }}"
+                                       @checked($isEnabled)
+                                       class="peer sr-only" data-vehicle-type-toggle="{{ $vehicleType }}">
                                 <span class="absolute inset-0 rounded-full bg-slate-700 transition peer-checked:bg-violet-500"></span>
                                 <span class="relative ml-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"></span>
                             </span>
                         </label>
-                    <?php endforeach; ?>
+                    @endforeach
                 </div>
             </section>
 
@@ -145,12 +147,12 @@ $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <label class="cursor-pointer rounded-2xl border border-white/10 bg-black/20 p-5 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-500/10">
-                        <input type="radio" name="billing_model" value="rotating" <?= !$isMonthly ? 'checked' : '' ?> class="text-blue-500">
+                        <input type="radio" name="billing_model" value="rotating" @checked(!$isMonthly) class="text-blue-500">
                         <strong class="ml-2 text-white">Rotativo · pós-pago</strong>
                         <span class="mt-2 block text-sm text-slate-500">Calcula o valor pelo tempo e registra o pagamento no checkout.</span>
                     </label>
                     <label class="cursor-pointer rounded-2xl border border-white/10 bg-black/20 p-5 has-[:checked]:border-amber-400 has-[:checked]:bg-amber-500/10">
-                        <input type="radio" name="billing_model" value="monthly" <?= $isMonthly ? 'checked' : '' ?> class="text-amber-400">
+                        <input type="radio" name="billing_model" value="monthly" @checked($isMonthly) class="text-amber-400">
                         <strong class="ml-2 text-white">Híbrido · mensalista + rotativo</strong>
                         <span class="mt-2 block text-sm text-slate-500">Contratos vigentes são pré-pagos; veículos avulsos usam o tarifário rotativo no checkout.</span>
                     </label>
@@ -170,18 +172,20 @@ $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
                 </div>
 
                 <div class="space-y-4">
-                    <?php foreach ($vehicleTypes as $vehicleType => $metadata): ?>
-                        <?php $tariff = $tariffs[$vehicleType] ?? []; ?>
-                        <?php $isEnabled = in_array($vehicleType, $enabledVehicleTypes, true); ?>
-                        <article class="rounded-2xl border border-white/10 bg-black/20 p-5 <?= $isEnabled ? '' : 'hidden' ?>"
-                                 data-tariff-card="<?= $escape($vehicleType) ?>">
+                    @foreach ($vehicleTypes as $vehicleType => $metadata)
+                        @php
+                            $tariff = $tariffs[$vehicleType] ?? [];
+                            $isEnabled = in_array($vehicleType, $enabledVehicleTypes, true);
+                        @endphp
+                        <article class="rounded-2xl border border-white/10 bg-black/20 p-5 {{ $isEnabled ? '' : 'hidden' }}"
+                                 data-tariff-card="{{ $vehicleType }}">
                             <div class="mb-4 flex items-center gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
-                                    <i data-lucide="<?= $escape($metadata['icon']) ?>" class="w-5 h-5"></i>
+                                    <i data-lucide="{{ $metadata['icon'] }}" class="w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <h3 class="font-black text-white"><?= $escape($metadata['label']) ?></h3>
-                                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-500"><?= $escape($vehicleType) ?></span>
+                                    <h3 class="font-black text-white">{{ $metadata['label'] }}</h3>
+                                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">{{ $vehicleType }}</span>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -211,7 +215,7 @@ $enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
                                 </label>
                             </div>
                         </article>
-                    <?php endforeach; ?>
+                    @endforeach
                 </div>
             </section>
 

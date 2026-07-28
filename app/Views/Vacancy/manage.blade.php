@@ -1,5 +1,3 @@
-<?php $this->partial('head', ['title' => $title]); ?>
-
 <section class="min-h-screen w-full bg-[#0f1117] text-slate-200 p-6 md:p-10 selection:bg-blue-500/30">
 
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end mb-10 gap-6">

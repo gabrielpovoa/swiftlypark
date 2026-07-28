@@ -2,3 +2,5 @@
 .env*
 !.env.example
 .idea/
+/storage/framework/views/*
+!/storage/framework/views/.gitkeep

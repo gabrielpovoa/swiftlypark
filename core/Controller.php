@@ -2,29 +2,40 @@
     namespace Core;
 
     use Exception;
+    use Core\View\BladeViewRenderer;
 
     class Controller
     {
         private $viewsPath;
+        private BladeViewRenderer $blade;
 
         public function __construct()
         {
             $this->viewsPath = dirname(__DIR__) . '/app/Views/';
+            $this->blade = new BladeViewRenderer(
+                $this->viewsPath,
+                dirname(__DIR__) . '/storage/framework/views'
+            );
         }
 
         protected function setView($view, $data = [], $useLayout = true)
         {
-            $viewFile = $this->viewsPath . str_replace(['.', '/'], DIRECTORY_SEPARATOR, $view) . '.php';
+            $relativeView = str_replace(['.', '/'], DIRECTORY_SEPARATOR, $view);
+            $bladeFile = $this->viewsPath . $relativeView . '.blade.php';
+            $viewFile = $this->viewsPath . $relativeView . '.php';
 
-            if (!file_exists($viewFile)) {
-                throw new Exception("View '{$view}' não encontrada em {$viewFile}");
+            if (file_exists($bladeFile)) {
+                $content = $this->blade->render((string) $view, $data);
+                extract($data);
+            } else {
+                if (!file_exists($viewFile)) {
+                    throw new Exception("View '{$view}' não encontrada.");
+                }
+                extract($data);
+                ob_start();
+                require $viewFile;
+                $content = ob_get_clean();
             }
-
-            extract($data);
-
-            ob_start();
-            require $viewFile;
-            $content = ob_get_clean();
 
             if ($useLayout) {
                 $layoutFile = $this->viewsPath . 'Home' . DIRECTORY_SEPARATOR . 'home.php';

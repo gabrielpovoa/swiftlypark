@@ -1,5 +1,3 @@
-<?php $this->partial('head', ['title' => $title]); ?>
-
 <section class="min-h-screen w-full bg-[#0b0e14] flex items-center justify-center p-6 relative overflow-hidden">
 
     <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/5 blur-[100px] rounded-full pointer-events-none"></div>
@@ -11,24 +9,24 @@
                 <i data-lucide="plus-circle" class="w-8 h-8"></i>
             </div>
             <h1 class="text-3xl md:text-4xl font-black text-white tracking-tighter italic">
-                <?= htmlspecialchars($title) ?>
+                {{ $title }}
             </h1>
             <p class="text-slate-500 text-sm font-medium mt-2">Expanda a capacidade do seu estacionamento</p>
         </header>
 
-        <?php if (!empty($errorMessage)): ?>
+        @if (!empty($errorMessage))
             <div role="alert" aria-live="assertive" class="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-2xl mb-6 text-sm font-bold">
                 <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-                <?= htmlspecialchars($errorMessage) ?>
+                {{ $errorMessage }}
             </div>
-        <?php endif; ?>
+        @endif
 
-        <?php if (!empty($successMessage)): ?>
+        @if (!empty($successMessage))
             <div role="status" aria-live="polite" class="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-3 rounded-2xl mb-6 text-sm font-bold">
                 <i data-lucide="check-circle" class="w-5 h-5"></i>
-                <?= htmlspecialchars($successMessage) ?>
+                {{ $successMessage }}
             </div>
-        <?php endif; ?>
+        @endif
 
         <form action="/CreateVacancy/store" method="POST" class="space-y-6" aria-label="Formulário para criação de novas vagas">
 
@@ -42,15 +40,15 @@
                                    focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all
                                    appearance-none cursor-pointer">
                         <option value="" class="bg-[#0b0e14]">Selecione um tipo...</option>
-                        <?php
+                        @php
                         $typeLabels = ['carro' => 'Carro', 'moto' => 'Moto',
                             'caminhao' => 'Caminhão', 'app' => 'App (Uber/99)'];
-                        foreach (($enabledVehicleTypes ?? []) as $enabledType):
-                        ?>
-                            <option value="<?= htmlspecialchars($enabledType, ENT_QUOTES, 'UTF-8') ?>" class="bg-[#0b0e14]">
-                                <?= htmlspecialchars($typeLabels[$enabledType] ?? $enabledType, ENT_QUOTES, 'UTF-8') ?>
+                        @endphp
+                        @foreach (($enabledVehicleTypes ?? []) as $enabledType)
+                            <option value="{{ $enabledType }}" class="bg-[#0b0e14]">
+                                {{ $typeLabels[$enabledType] ?? $enabledType }}
                             </option>
-                        <?php endforeach; ?>
+                        @endforeach
                     </select>
 
                     <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">

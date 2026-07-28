@@ -1,4 +1,4 @@
-<?php $this->partial('head', ['title' => $title]); ?>
+{!! $renderPartial('head', ['title' => $title]) !!}
 
 <body style="margin:0; padding:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f0f2f5; color:#334155;">
 
@@ -16,7 +16,7 @@
                             </tr>
                         </table>
                         <h1 style="margin:0; font-size:18px; color:#ffffff; font-weight:800; letter-spacing:1px; text-transform: uppercase; font-family: sans-serif;">
-                            <?= htmlspecialchars($title) ?>
+                            {{ $title }}
                         </h1>
                     </td>
                 </tr>

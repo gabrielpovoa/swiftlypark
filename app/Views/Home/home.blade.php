@@ -1,5 +1,5 @@
-<?php $this->partial('head', ['title' => $title]); ?>
-<?php $this->partial('header'); ?>
+{!! $renderPartial('head', ['title' => $title]) !!}
+{!! $renderPartial('header') !!}
 
 <main class="relative flex-1 min-h-screen bg-[#0b0e14] transition-all duration-500 ease-in-out ml-20 group-hover:ml-72 overflow-x-hidden">
 
@@ -32,7 +32,7 @@
                 </div>
             </div>
         <?php endif; ?>
-        <?= $content ?? '' ?>
+        {!! $content ?? '' !!}
     </div>
 
 </main>
@@ -58,7 +58,7 @@
 
 
 
-<?php $this->partial('footer'); ?>
+{!! $renderPartial('footer') !!}
 
 <style>
 

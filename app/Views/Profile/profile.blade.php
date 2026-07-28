@@ -1,3 +1,4 @@
+{{-- Blade: perfil e permissões --}}
 <?php
 $userName = $user['nome'] ?? 'Visitante';
 $userEmail = $user['email'] ?? 'não informado';
@@ -55,7 +56,7 @@ $roleMetadata = $roleMetadata ?? [
                         <?= htmlspecialchars($userEmail) ?>
                     </p>
                     <div class="mt-3">
-                        <?php $this->partial('role-badge', ['roleMetadata' => $roleMetadata]); ?>
+                        {!! $renderPartial('role-badge', ['roleMetadata' => $roleMetadata]) !!}
                     </div>
                 </div>
 

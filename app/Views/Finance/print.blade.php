@@ -1,3 +1,4 @@
+{{-- Blade: impressão financeira --}}
 <?php
 $metricLabels = [
     'gross_revenue' => 'Faturamento bruto',

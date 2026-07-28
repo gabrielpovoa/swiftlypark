@@ -7,9 +7,9 @@ $expectations = [
     'app/Views/partials/header.php' => 'h-12 w-12',
     'app/Views/Admin/companies.blade.php' => 'h-16 w-16',
     'app/Views/Admin/company-pricing.blade.php' => 'h-16 w-16',
-    'app/Views/Finance/index.php' => 'h-20 w-20',
-    'app/Views/Finance/print.php' => 'h-20 w-20',
-    'app/Views/Logs/print.php' => 'h-20 w-20',
+    'app/Views/Finance/index.blade.php' => 'h-20 w-20',
+    'app/Views/Finance/print.blade.php' => 'h-20 w-20',
+    'app/Views/Logs/print.blade.php' => 'h-20 w-20',
 ];
 
 foreach ($expectations as $relativePath => $sizeMarker) {

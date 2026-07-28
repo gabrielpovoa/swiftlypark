@@ -7,8 +7,8 @@ $script = file_get_contents($root . '/public/js/CompanyFavicon.js');
 $head = file_get_contents($root . '/app/Views/partials/head.php');
 $header = file_get_contents($root . '/app/Views/partials/header.php');
 $footer = file_get_contents($root . '/app/Views/partials/footer.php');
-$financePrint = file_get_contents($root . '/app/Views/Finance/print.php');
-$logsPrint = file_get_contents($root . '/app/Views/Logs/print.php');
+$financePrint = file_get_contents($root . '/app/Views/Finance/print.blade.php');
+$logsPrint = file_get_contents($root . '/app/Views/Logs/print.blade.php');
 $fallback = $root . '/public/images/favicons-swiftlypark.png';
 
 if (in_array(false, [

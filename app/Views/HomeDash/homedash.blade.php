@@ -1,3 +1,4 @@
+{{-- Blade: dashboard operacional --}}
 <section class="min-h-screen w-full bg-[#0b0e14] text-slate-300 p-4 sm:p-6 lg:p-8 relative overflow-x-hidden">
 
     <div class="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none"></div>

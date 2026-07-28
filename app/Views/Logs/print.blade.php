@@ -1,4 +1,4 @@
-<?php $this->partial('head', ['title' => 'Relatório de Logs']); ?>
+{!! $renderPartial('head', ['title' => 'Relatório de Logs']) !!}
 
 <section class="min-h-screen w-full bg-[#0b0e14] p-4 md:p-10 relative overflow-hidden">
 

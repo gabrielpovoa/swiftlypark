@@ -1,4 +1,4 @@
-<?php $this->partial('head', ['title' => $title]); ?>
+{!! $renderPartial('head', ['title' => $title]) !!}
 
 <section class="relative min-h-screen w-full bg-[#0b0e14] overflow-hidden flex items-center justify-center p-6">
     <div class="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
@@ -17,7 +17,7 @@
             </h1>
 
             <p class="text-slate-400 text-base md:text-lg leading-relaxed mt-6 max-w-xl">
-                <?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?>
+                {{ $message }}
                 Se você acredita que deveria ter acesso, fale com um administrador do sistema.
             </p>
 

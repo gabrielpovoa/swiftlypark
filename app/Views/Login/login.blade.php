@@ -1,4 +1,4 @@
-<?php $this->partial('head', ['title' => $title]); ?>
+{!! $renderPartial('head', ['title' => $title]) !!}
 
     <section class="min-h-screen w-full bg-[#0b0e14] flex flex-col items-center justify-center p-6 relative overflow-hidden">
 
@@ -79,4 +79,4 @@
         .animate-shake { animation: shake 0.4s ease-in-out; }
     </style>
 
-<?php $this->partial('footer'); ?>
+{!! $renderPartial('footer') !!}

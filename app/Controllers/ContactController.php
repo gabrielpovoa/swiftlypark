@@ -76,18 +76,12 @@ class ContactController extends Controller
     // Atualizado para aceitar o clientName e passar para a View do e-mail
     private function getEmailTemplate($title, $message, $ticketNumber, $clientName)
     {
-        ob_start();
-        // As variáveis abaixo ficam disponíveis dentro de ticket.php
-        $data = [
+        return $this->renderTemplate('Contact/ticket', [
             'title' => $title,
             'message' => $message,
             'ticketNumber' => $ticketNumber,
-            'clientName' => $clientName
-        ];
-        extract($data);
-
-        include __DIR__ . '/../Views/Contact/ticket.php';
-        return ob_get_clean();
+            'clientName' => $clientName,
+        ]);
     }
 
     private function sendEmail($to, $subject, $body, $fromName = null)

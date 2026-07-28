@@ -1,3 +1,4 @@
+{{-- Blade: gestão de identidade --}}
 <?php
 $escape = static fn (mixed $value): string => htmlspecialchars(
     (string) $value,

@@ -44,6 +44,7 @@ nunca na raiz do projeto.
 36. [REFACTOR-036 — Fundação de CI/CD com Git Flow](REFACTOR-036-CI-CD-GITFLOW-FOUNDATION.md)
 37. [REFACTOR-037 — Tipos de vaga por empresa](REFACTOR-037-COMPANY-VEHICLE-TYPE-TOGGLE.md)
 38. [REFACTOR-038 — Blade nas views pesadas](REFACTOR-038-BLADE-HEAVY-VIEWS.md)
+39. [REFACTOR-039 — Blade nas pastas menores de views](REFACTOR-039-BLADE-SMALL-VIEW-FOLDERS.md)
 
 ## Retomada rápida
 

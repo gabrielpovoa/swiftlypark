@@ -1,4 +1,4 @@
-<?php $this->partial('head', ['title' => $title]); ?>
+{!! $renderPartial('head', ['title' => $title]) !!}
 
 <section class="min-h-screen w-full bg-[#0b0e14] flex items-center justify-center p-6 md:p-12 relative overflow-hidden">
 

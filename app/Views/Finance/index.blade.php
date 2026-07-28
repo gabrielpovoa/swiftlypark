@@ -1,3 +1,4 @@
+{{-- Blade: visão financeira --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <section class="min-h-screen bg-[#0b0e14] text-slate-300 p-5 md:p-10">

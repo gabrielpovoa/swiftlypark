@@ -1,4 +1,4 @@
-<?php $this->partial('head', ['title' => $title]); ?>
+{!! $renderPartial('head', ['title' => $title]) !!}
 
 <section class="min-h-screen w-full bg-[#0b0e14] flex items-center justify-center p-6 md:p-12 relative overflow-hidden">
 
@@ -11,7 +11,7 @@
 
             <header class="mb-10">
                 <h2 class="text-3xl md:text-4xl font-black text-white tracking-tighter mb-2">
-                    <?= htmlspecialchars($formTitle ?? 'Fale com a gente') ?>
+                    {{ $formTitle ?? 'Fale com a gente' }}
                 </h2>
                 <p class="text-slate-500 text-sm font-medium uppercase tracking-widest">Tempo médio de resposta: 2 horas</p>
             </header>

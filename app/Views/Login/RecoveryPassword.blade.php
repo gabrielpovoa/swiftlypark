@@ -1,4 +1,4 @@
-<?php $this->partial('head', ['title' => $title]); ?>
+{!! $renderPartial('head', ['title' => $title]) !!}
 
     <section class="min-h-screen w-full bg-[#0b0e14] flex flex-col items-center justify-center p-6 relative overflow-hidden">
 
@@ -116,4 +116,4 @@
         </div>
     </section>
 
-<?php $this->partial('footer'); ?>
+{!! $renderPartial('footer') !!}

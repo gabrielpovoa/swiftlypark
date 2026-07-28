@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$view = file_get_contents($root . '/app/Views/Identity/index.php');
+$view = file_get_contents($root . '/app/Views/Identity/index.blade.php');
 $controller = file_get_contents(
     $root . '/app/Identity/Presentation/IdentityManagementController.php'
 );

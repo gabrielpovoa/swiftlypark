@@ -6,6 +6,9 @@
     use App\Parking\Application\CreateVacancies;
     use App\Parking\Infrastructure\PdoVacancyCreator;
     use App\Services\AuthorizationService;
+    use App\Companies\Infrastructure\PdoCompanyVehicleTypeRepository;
+    use App\Context\TenantContext;
+    use Config\Database;
 
     final class CreateVacancyController extends Controller
     {
@@ -14,7 +17,8 @@
             $this->authorize();
 
             $this->setView('Vacancy/CreateVacancy', [
-                'title' => 'Adicionar Novas Vagas'
+                'title' => 'Adicionar Novas Vagas',
+                'enabledVehicleTypes' => $this->enabledVehicleTypes(),
             ]);
         }
 
@@ -37,6 +41,7 @@
 
             $this->setView('Vacancy/CreateVacancy', [
                 'title' => 'Adicionar Novas Vagas',
+                'enabledVehicleTypes' => $this->enabledVehicleTypes(),
                 'successMessage' => $success ? $successMessage : '',
                 'errorMessage' => !$success ? ($errorMessage ?? 'Erro ao criar vagas.') : ''
             ]);
@@ -46,5 +51,16 @@
         {
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vacancy.create');
+        }
+
+        private function enabledVehicleTypes(): array
+        {
+            $companyId = TenantContext::instance()->getCompanyId();
+            if ($companyId === null) {
+                return [];
+            }
+
+            return (new PdoCompanyVehicleTypeRepository((new Database())->connect()))
+                ->enabledTypes($companyId);
         }
     }

@@ -11,6 +11,8 @@ final class ParkingService
     public function __construct(private ParkingGateway $gateway) {}
 
     public function getAvailableCounts(): array { return $this->gateway->getAvailableCounts(); }
+    public function enabledVehicleTypes(): array { return $this->gateway->enabledVehicleTypes(); }
+    public function isVehicleTypeEnabled(string $type): bool { return $this->gateway->isVehicleTypeEnabled($type); }
     public function getFreeVagaByCategory(string $category): array|false { return $this->gateway->getFreeVagaByCategory($category); }
     public function getVacancyByType(string $category): array { return $this->gateway->getVacancyByType($category); }
     public function getVagaById(int $id): array|false { return $this->gateway->getVagaById($id); }

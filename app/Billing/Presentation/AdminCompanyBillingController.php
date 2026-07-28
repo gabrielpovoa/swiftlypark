@@ -8,6 +8,7 @@ use App\Context\IdentityContext;
 use App\Authorization\Services\CompanyAccessGuard;
 use App\Exceptions\ForbiddenException;
 use App\Billing\Infrastructure\MonthlyContractRepository;
+use App\Companies\Infrastructure\PdoCompanyVehicleTypeRepository;
 use App\Repositories\AuditLogRepository;
 use App\Security\InputSanitizer;
 use Config\Database;
@@ -62,6 +63,8 @@ final class AdminCompanyBillingController extends Controller
             'title' => 'Cobrança de ' . $company['name'],
             'company' => $company,
             'tariffs' => $tariffs,
+            'enabledVehicleTypes' => (new PdoCompanyVehicleTypeRepository($connection))
+                ->enabledTypes((int) $companyId),
             'monthlyContracts' => (new MonthlyContractRepository($connection))
                 ->listForCompany((int) $companyId),
             'availableUsers' => $guard->isSuperAdmin()
@@ -135,6 +138,10 @@ final class AdminCompanyBillingController extends Controller
                 foreach ($data['tariffs'] as $tariff) {
                     $upsert->execute(['company_id' => $companyId] + $tariff);
                 }
+                (new PdoCompanyVehicleTypeRepository($connection))->sync(
+                    $companyId,
+                    $data['enabled_vehicle_types']
+                );
                 $this->audit($connection, $companyId, $data, $company);
                 $connection->commit();
             } catch (Throwable $throwable) {
@@ -169,8 +176,18 @@ final class AdminCompanyBillingController extends Controller
             throw new DomainException('Informe um slug válido usando letras minúsculas, números e hífens.');
         }
         $payload = is_array($_POST['tariffs'] ?? null) ? $_POST['tariffs'] : [];
+        $submittedTypes = is_array($_POST['vehicle_types'] ?? null)
+            ? $_POST['vehicle_types']
+            : [];
+        $enabledTypes = array_values(array_filter(
+            PdoCompanyVehicleTypeRepository::TYPES,
+            static fn (string $type): bool => in_array($type, $submittedTypes, true)
+        ));
+        if ($enabledTypes === []) {
+            throw new DomainException('Mantenha ao menos um tipo de vaga habilitado.');
+        }
         $tariffs = [];
-        foreach (['carro', 'moto', 'caminhao', 'app'] as $type) {
+        foreach ($enabledTypes as $type) {
             $tariffs[$type] = $this->validateTariff(
                 $type,
                 is_array($payload[$type] ?? null) ? $payload[$type] : []
@@ -183,6 +200,7 @@ final class AdminCompanyBillingController extends Controller
             'slug' => $slug,
             'logo_path' => $this->storeLogo($_FILES['logo'] ?? null),
             'is_monthly' => $billingModel === 'monthly',
+            'enabled_vehicle_types' => $enabledTypes,
             'tariffs' => $tariffs,
         ];
     }
@@ -237,6 +255,7 @@ final class AdminCompanyBillingController extends Controller
                 'legal_name' => $data['legal_name'], 'trade_name' => $data['trade_name'],
                 'slug' => $data['slug'], 'logo_path' => $data['logo_path'] ?? $company['logo_path'],
                 'billing_model' => $data['is_monthly'] ? 'monthly' : 'rotating',
+                'enabled_vehicle_types' => $data['enabled_vehicle_types'],
                 'tariffs' => $data['tariffs']], JSON_THROW_ON_ERROR),
             'ip_address' => $identity->ipAddress(), 'request_id' => $identity->requestId(),
             'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s.u'),

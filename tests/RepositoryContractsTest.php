@@ -24,6 +24,8 @@ if ((new PriceCalculator($pricing))->calculate(1, 'carro', 41) !== 14.0) {
 
 $parkingGateway = new class implements ParkingGateway {
     public function getAvailableCounts() { return ['carro' => 3]; }
+    public function enabledVehicleTypes(): array { return ['carro']; }
+    public function isVehicleTypeEnabled(string $type): bool { return $type === 'carro'; }
     public function getFreeVagaByCategory(string $category) { return false; }
     public function getVacancyByType(string $category) { return []; }
     public function getVagaById(int $id) { return false; }

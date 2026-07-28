@@ -21,7 +21,11 @@
                 ['label' => 'APPS', 'count' => $counts['app'] ?? 0, 'type' => 'app', 'icon' => 'smartphone', 'color' => 'amber', 'popular' => true],
         ];
 
+        $enabledVehicleTypes = $enabledVehicleTypes ?? ['carro', 'moto', 'caminhao', 'app'];
         foreach ($items as $item):
+            if (!in_array($item['type'], $enabledVehicleTypes, true)) {
+                continue;
+            }
             $colorClass = [
                     'blue' => 'text-blue-500 bg-blue-500/10 border-blue-500/20',
                     'emerald' => 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',

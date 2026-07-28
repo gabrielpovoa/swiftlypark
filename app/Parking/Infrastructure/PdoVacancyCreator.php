@@ -15,6 +15,7 @@ use App\Services\AuditService;
 use App\Services\AuthorizationService;
 use App\Exceptions\ForbiddenException;
 use App\Transactions\TransactionManager;
+use App\Companies\Infrastructure\PdoCompanyVehicleTypeRepository;
 use Config\Database;
 use PDO;
 use Throwable;
@@ -56,6 +57,12 @@ final class PdoVacancyCreator implements VacancyCreator
                 $companyId = TenantContext::instance()->getCompanyId();
                 if ($companyId === null) {
                     throw new TenantNotSetException();
+                }
+                if (!(new PdoCompanyVehicleTypeRepository($this->db))->isEnabled(
+                    $companyId,
+                    $category
+                )) {
+                    throw new \DomainException('Este tipo de vaga está desabilitado para a empresa.');
                 }
 
                 for ($index = 0; $index < $amount; $index++) {

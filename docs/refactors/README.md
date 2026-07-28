@@ -42,6 +42,7 @@ nunca na raiz do projeto.
 34. [REFACTOR-034 — Persistência do favicon da empresa](REFACTOR-034-TENANT-FAVICON-PERSISTENCE.md)
 35. [REFACTOR-035 — Recibo por e-mail no checkout](REFACTOR-035-CHECKOUT-EMAIL-RECEIPT.md)
 36. [REFACTOR-036 — Fundação de CI/CD com Git Flow](REFACTOR-036-CI-CD-GITFLOW-FOUNDATION.md)
+37. [REFACTOR-037 — Tipos de vaga por empresa](REFACTOR-037-COMPANY-VEHICLE-TYPE-TOGGLE.md)
 
 ## Retomada rápida
 

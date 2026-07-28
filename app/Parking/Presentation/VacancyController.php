@@ -23,6 +23,7 @@ class VacancyController extends Controller
         $this->setview('Vacancy/vacancy', [
             'title' => 'Vagas Disponíveis',
             'counts' => $counts,
+            'enabledVehicleTypes' => $model->enabledVehicleTypes(),
             'canCheckin' => $this->authorization()->can('vehicle.checkin'),
             'canCreateVacancy' => $this->authorization()->can('vacancy.create')
         ]);
@@ -42,6 +43,9 @@ class VacancyController extends Controller
 
             if (!in_array($type, ['carro', 'moto', 'caminhao', 'app'], true)) {
                 $type = 'carro';
+            }
+            if (!$model->isVehicleTypeEnabled($type)) {
+                return $this->disabledVehicleType($type);
             }
 
             if($model->checkIfVehicleIsParked($plate)) {
@@ -153,6 +157,9 @@ class VacancyController extends Controller
 
         // Se for GET, exibe o formulário com uma vaga livre
         $type = $_GET['type'] ?? 'carro';
+        if (!$model->isVehicleTypeEnabled((string) $type)) {
+            return $this->disabledVehicleType((string) $type);
+        }
         $vagaLivre = $model->getFreeVagaByCategory($type);
 
         if (!$vagaLivre) {
@@ -170,6 +177,17 @@ class VacancyController extends Controller
             'title' => $vacancyDetails['title'],
             'details' => $vacancyDetails,
             'id_vaga' => $vagaLivre['id_vaga'],
+        ]);
+    }
+
+    private function disabledVehicleType(string $type): void
+    {
+        http_response_code(404);
+        $this->setview('Vacancy/noVacancy', [
+            'title' => 'Tipo de vaga indisponível',
+            'type' => $type,
+            'message' => 'Esta empresa não oferece check-in para esse tipo de veículo.',
+            'canCreateVacancy' => false,
         ]);
     }
 

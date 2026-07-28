@@ -12,6 +12,7 @@ $vehicleTypes = [
     'app' => ['label' => 'Aplicativo', 'icon' => 'smartphone'],
 ];
 $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
+$enabledVehicleTypes = $enabledVehicleTypes ?? array_keys($vehicleTypes);
 ?>
 
 <section class="min-h-screen bg-[#0b0e14] text-slate-300 p-5 md:p-10">
@@ -112,6 +113,32 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
             </details>
 
             <section class="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+                <div class="mb-6">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-violet-400">Tipos disponíveis</span>
+                    <h2 class="mt-1 text-2xl font-black text-white">Quais vagas a empresa oferece?</h2>
+                    <p class="mt-2 text-sm text-slate-500">Tipos desabilitados não aparecem no check-in, na criação de vagas ou em novos contratos.</p>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <?php foreach ($vehicleTypes as $vehicleType => $metadata): ?>
+                        <?php $isEnabled = in_array($vehicleType, $enabledVehicleTypes, true); ?>
+                        <label class="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4 has-[:checked]:border-violet-500/50 has-[:checked]:bg-violet-500/10">
+                            <span class="flex items-center gap-3">
+                                <i data-lucide="<?= $escape($metadata['icon']) ?>" class="h-5 w-5 text-violet-400"></i>
+                                <strong class="text-sm text-white"><?= $escape($metadata['label']) ?></strong>
+                            </span>
+                            <span class="relative inline-flex h-6 w-11 items-center">
+                                <input type="checkbox" name="vehicle_types[]" value="<?= $escape($vehicleType) ?>"
+                                       <?= $isEnabled ? 'checked' : '' ?>
+                                       class="peer sr-only" data-vehicle-type-toggle="<?= $escape($vehicleType) ?>">
+                                <span class="absolute inset-0 rounded-full bg-slate-700 transition peer-checked:bg-violet-500"></span>
+                                <span class="relative ml-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"></span>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
                 <div class="mb-5">
                     <span class="text-[10px] font-black uppercase tracking-widest text-blue-400">Modelo operacional</span>
                     <h2 class="mt-1 text-2xl font-black text-white">Como esta empresa cobra?</h2>
@@ -145,7 +172,9 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
                 <div class="space-y-4">
                     <?php foreach ($vehicleTypes as $vehicleType => $metadata): ?>
                         <?php $tariff = $tariffs[$vehicleType] ?? []; ?>
-                        <article class="rounded-2xl border border-white/10 bg-black/20 p-5">
+                        <?php $isEnabled = in_array($vehicleType, $enabledVehicleTypes, true); ?>
+                        <article class="rounded-2xl border border-white/10 bg-black/20 p-5 <?= $isEnabled ? '' : 'hidden' ?>"
+                                 data-tariff-card="<?= $escape($vehicleType) ?>">
                             <div class="mb-4 flex items-center gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
                                     <i data-lucide="<?= $escape($metadata['icon']) ?>" class="w-5 h-5"></i>
@@ -158,25 +187,25 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
                             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
                                     Valor base
-                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][valor_base]" min="0" step="0.01" required
+                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][valor_base]" min="0" step="0.01" required <?= $isEnabled ? '' : 'disabled' ?>
                                            value="<?= $escape($tariff['valor_base'] ?? '') ?>"
                                            class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base text-white outline-none focus:border-blue-500">
                                 </label>
                                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
                                     Valor adicional
-                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][valor_adicional]" min="0" step="0.01" required
+                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][valor_adicional]" min="0" step="0.01" required <?= $isEnabled ? '' : 'disabled' ?>
                                            value="<?= $escape($tariff['valor_adicional'] ?? '') ?>"
                                            class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base text-white outline-none focus:border-blue-500">
                                 </label>
                                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
                                     Tolerância (min)
-                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][tolerancia_minutos]" min="0" step="1" required
+                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][tolerancia_minutos]" min="0" step="1" required <?= $isEnabled ? '' : 'disabled' ?>
                                            value="<?= $escape($tariff['tolerancia_minutos'] ?? '0') ?>"
                                            class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base text-white outline-none focus:border-blue-500">
                                 </label>
                                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">
                                     Frequência (min)
-                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][frequencia_adicional]" min="1" step="1" required
+                                    <input type="number" name="tariffs[<?= $escape($vehicleType) ?>][frequencia_adicional]" min="1" step="1" required <?= $isEnabled ? '' : 'disabled' ?>
                                            value="<?= $escape($tariff['frequencia_adicional'] ?? '60') ?>"
                                            class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base text-white outline-none focus:border-blue-500">
                                 </label>
@@ -276,7 +305,9 @@ $isMonthly = (int) ($company['is_mensalista'] ?? 0) === 1;
                 </label>
                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">Veículo
                     <select name="vehicle_type" required class="mt-2 w-full rounded-xl border border-white/10 bg-[#131720] px-4 py-3 text-base normal-case tracking-normal text-white">
-                        <?php foreach ($vehicleTypes as $type => $metadata): ?><option value="<?= $escape($type) ?>"><?= $escape($metadata['label']) ?></option><?php endforeach; ?>
+                        <?php foreach ($vehicleTypes as $type => $metadata): ?>
+                            <?php if (in_array($type, $enabledVehicleTypes, true)): ?><option value="<?= $escape($type) ?>"><?= $escape($metadata['label']) ?></option><?php endif; ?>
+                        <?php endforeach; ?>
                     </select>
                 </label>
                 <label class="text-[10px] font-black uppercase tracking-widest text-slate-500">Mensalidade
@@ -357,6 +388,15 @@ document.querySelectorAll('[data-company-logo-input]').forEach((input) => {
             input.files = event.dataTransfer.files;
             input.dispatchEvent(new Event('change'));
         }
+    });
+});
+
+document.querySelectorAll('[data-vehicle-type-toggle]').forEach((toggle) => {
+    toggle.addEventListener('change', () => {
+        const card = document.querySelector(`[data-tariff-card="${toggle.dataset.vehicleTypeToggle}"]`);
+        if (!card) return;
+        card.classList.toggle('hidden', !toggle.checked);
+        card.querySelectorAll('input').forEach((input) => { input.disabled = !toggle.checked; });
     });
 });
 </script>

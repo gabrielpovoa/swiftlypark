@@ -42,10 +42,15 @@
                                    focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/[0.05] transition-all
                                    appearance-none cursor-pointer">
                         <option value="" class="bg-[#0b0e14]">Selecione um tipo...</option>
-                        <option value="carro" class="bg-[#0b0e14]">Carro</option>
-                        <option value="moto" class="bg-[#0b0e14]">Moto</option>
-                        <option value="caminhao" class="bg-[#0b0e14]">Caminhão</option>
-                        <option value="app" class="bg-[#0b0e14]">App (Uber/99)</option>
+                        <?php
+                        $typeLabels = ['carro' => 'Carro', 'moto' => 'Moto',
+                            'caminhao' => 'Caminhão', 'app' => 'App (Uber/99)'];
+                        foreach (($enabledVehicleTypes ?? []) as $enabledType):
+                        ?>
+                            <option value="<?= htmlspecialchars($enabledType, ENT_QUOTES, 'UTF-8') ?>" class="bg-[#0b0e14]">
+                                <?= htmlspecialchars($typeLabels[$enabledType] ?? $enabledType, ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
 
                     <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">

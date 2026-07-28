@@ -14,30 +14,34 @@
                         <i data-lucide="ban" class="w-12 h-12 md:w-16 md:h-16 text-white opacity-90"></i>
                     </div>
                     <span class="absolute -bottom-2 -right-2 bg-rose-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
-                    Lotação Máxima
+                    <?= !empty($message) ? 'Indisponível' : 'Lotação Máxima' ?>
                 </span>
                 </div>
 
                 <h1 class="text-4xl md:text-5xl font-black text-white tracking-tighter italic mb-6">
-                    Pátio <span class="text-blue-500 uppercase">Ocupado</span>
+                    <?= !empty($message) ? 'Tipo não oferecido' : 'Pátio <span class="text-blue-500 uppercase">Ocupado</span>' ?>
                 </h1>
 
                 <div class="space-y-4 mb-10">
                     <p class="text-slate-300 text-lg font-medium leading-relaxed">
+                        <?php if (!empty($message)): ?>
+                            <?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?>
+                        <?php else: ?>
                         No momento, todas as vagas para
                         <span class="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg font-bold italic">
                         <?= htmlspecialchars($type) ?>
                     </span>
                         estão em uso.
+                        <?php endif; ?>
                     </p>
 
-                    <div class="flex items-center justify-center gap-2 text-slate-500">
+                    <?php if (empty($message)): ?><div class="flex items-center justify-center gap-2 text-slate-500">
                     <span class="relative flex h-2 w-2">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                         <p class="text-[10px] font-black uppercase tracking-[0.2em]">Monitoramento em tempo real ativo</p>
-                    </div>
+                    </div><?php endif; ?>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

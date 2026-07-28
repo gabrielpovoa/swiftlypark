@@ -11,6 +11,7 @@
     use App\Exceptions\TenantNotSetException;
     use App\Billing\Infrastructure\PdoPricingRepository;
     use App\Billing\Infrastructure\MonthlyContractRepository;
+    use App\Companies\Infrastructure\PdoCompanyVehicleTypeRepository;
     use App\Billing\Application\PriceCalculator;
     use App\Repositories\AuditLogRepository;
     use App\Repositories\Decorators\TransactionalAuditDecorator;
@@ -67,8 +68,24 @@
             return $counts;
         }
 
+        public function enabledVehicleTypes(): array
+        {
+            return (new PdoCompanyVehicleTypeRepository($this->db))
+                ->enabledTypes($this->companyId());
+        }
+
+        public function isVehicleTypeEnabled(string $type): bool
+        {
+            return (new PdoCompanyVehicleTypeRepository($this->db))
+                ->isEnabled($this->companyId(), $type);
+        }
+
         public function getFreeVagaByCategory($categoria)
         {
+            $categoria = VehicleType::fromInput((string) $categoria)->value;
+            if (!$this->isVehicleTypeEnabled($categoria)) {
+                return false;
+            }
             $sql = "SELECT * FROM vagas_disponiveis 
                 WHERE categoria = :cat
                   AND status = 'livre'
@@ -145,6 +162,9 @@
             $plate = VehiclePlate::fromString($plate)->value();
             (new AuthorizationService(IdentityContext::current()))
                 ->check('vehicle.checkin');
+            if (!$this->isVehicleTypeEnabled($tipoVeiculo)) {
+                throw new \DomainException('Este tipo de vaga não é oferecido pela empresa.');
+            }
 
             return $this->transactions->run(function () use (
                 $idVaga,

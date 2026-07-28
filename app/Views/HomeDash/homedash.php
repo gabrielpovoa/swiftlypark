@@ -20,7 +20,10 @@
                         ['app', 'App/Uber', 'text-indigo-400', 'bg-indigo-400/10'],
                 ];
 
-                foreach ($quickActions as $action): ?>
+                $enabledVehicleTypes = $enabledVehicleTypes ?? ['carro', 'moto', 'caminhao', 'app'];
+                foreach ($quickActions as $action):
+                    if (!in_array($action[0], $enabledVehicleTypes, true)) continue;
+                ?>
                     <a href="/vacancy/apply?type=<?= $action[0] ?>"
                        class="group relative flex flex-col items-center justify-center bg-white/[0.03] border border-white/5 rounded-[2rem] p-4 xl:p-6 transition-all duration-500
                           hover:bg-white/[0.08] hover:border-blue-500/30 hover:-translate-y-1 hover:scale-[1.02] shadow-2xl overflow-visible">

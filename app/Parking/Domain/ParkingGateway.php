@@ -4,6 +4,8 @@ namespace App\Parking\Domain;
 interface ParkingGateway
 {
     public function getAvailableCounts();
+    public function enabledVehicleTypes(): array;
+    public function isVehicleTypeEnabled(string $type): bool;
     public function getFreeVagaByCategory(string $category);
     public function getVacancyByType(string $category);
     public function getVagaById(int $id);

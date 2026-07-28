@@ -8,6 +8,7 @@ use App\Context\IdentityContext;
 use App\Authorization\Services\CompanyAccessGuard;
 use App\Exceptions\ForbiddenException;
 use App\Billing\Infrastructure\MonthlyContractRepository;
+use App\Companies\Infrastructure\PdoCompanyVehicleTypeRepository;
 use App\Repositories\AuditLogRepository;
 use App\Security\InputSanitizer;
 use Config\Database;
@@ -28,6 +29,12 @@ final class AdminMonthlyContractController extends Controller
     {
         $this->handleRequest($companyId, function (PDO $connection) use ($companyId): void {
             $data = $this->contractPayload();
+            if (!(new PdoCompanyVehicleTypeRepository($connection))->isEnabled(
+                $companyId,
+                $data['vehicle_type']
+            )) {
+                throw new DomainException('Este tipo de veículo está desabilitado para a empresa.');
+            }
             $userId = IdentityContext::current()->userId();
             $end = (new DateTimeImmutable($data['starts_at']))->modify('+1 month -1 day');
 

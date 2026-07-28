@@ -5,6 +5,9 @@
     use App\Models\HomeDashModel;
     use App\Context\IdentityContext;
     use App\Services\AuthorizationService;
+    use App\Companies\Infrastructure\PdoCompanyVehicleTypeRepository;
+    use App\Context\TenantContext;
+    use Config\Database;
 
     class HomeController extends Controller {
         public function index()
@@ -31,6 +34,9 @@
                 'title' => 'Dashboard SwiftlyPark',
                 'monthlyIncome' => $monthlyIncome,
                 'logEntry' => $logEntry,
+                'enabledVehicleTypes' => (new PdoCompanyVehicleTypeRepository(
+                    (new Database())->connect()
+                ))->enabledTypes((int) TenantContext::instance()->getCompanyId()),
                 'canCheckin' => $authorization->can('vehicle.checkin'),
                 'canViewReports' => $authorization->can('report.view'),
             ]);

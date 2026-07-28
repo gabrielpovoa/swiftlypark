@@ -1,5 +1,3 @@
-<?php $this->partial('head', ['title' => $title]); ?>
-
     <section class="min-h-screen w-full bg-[#0b0e14] flex items-center justify-center p-6 relative overflow-hidden">
 
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full animate-pulse"></div>

@@ -15,8 +15,8 @@ $billing = file_get_contents(
 $parking = file_get_contents(
     $root . '/app/Parking/Infrastructure/PdoParkingGateway.php'
 );
-$companyView = file_get_contents($root . '/app/Views/Admin/company-pricing.php');
-$vacancyView = file_get_contents($root . '/app/Views/Vacancy/vacancy.php');
+$companyView = file_get_contents($root . '/app/Views/Admin/company-pricing.blade.php');
+$vacancyView = file_get_contents($root . '/app/Views/Vacancy/vacancy.blade.php');
 $dashboard = file_get_contents($root . '/app/Views/HomeDash/homedash.php');
 $contracts = file_get_contents(
     $root . '/app/Billing/Presentation/AdminMonthlyContractController.php'

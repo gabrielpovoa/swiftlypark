@@ -1,5 +1,3 @@
-<?php $this->partial('head', ['title' => $title]); ?>
-
 <?php
 $vehicleTypes = [
         'moto' => ['icon' => 'bike', 'title' => 'Moto', 'color' => 'text-amber-400', 'bg' => 'bg-amber-400/10'],

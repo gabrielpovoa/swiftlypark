@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$directory = file_get_contents($root . '/app/Views/Admin/companies.php');
-$company = file_get_contents($root . '/app/Views/Admin/company-pricing.php');
+$directory = file_get_contents($root . '/app/Views/Admin/companies.blade.php');
+$company = file_get_contents($root . '/app/Views/Admin/company-pricing.blade.php');
 $navigation = file_get_contents($root . '/app/Authorization/Services/NavigationService.php');
 $billing = file_get_contents(
     $root . '/app/Billing/Presentation/AdminCompanyBillingController.php'

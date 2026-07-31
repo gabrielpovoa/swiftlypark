@@ -46,6 +46,7 @@ nunca na raiz do projeto.
 38. [REFACTOR-038 — Blade nas views pesadas](REFACTOR-038-BLADE-HEAVY-VIEWS.md)
 39. [REFACTOR-039 — Blade nas pastas menores de views](REFACTOR-039-BLADE-SMALL-VIEW-FOLDERS.md)
 40. [REFACTOR-040 — Conclusão da migração das views para Blade](REFACTOR-040-BLADE-FINAL-VIEWS.md)
+45. [REFACTOR-045 — Migrations formais](REFACTOR-045-FORMAL-DATABASE-MIGRATIONS.md)
 
 ## Retomada rápida
 

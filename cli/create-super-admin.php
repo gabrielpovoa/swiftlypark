@@ -8,7 +8,6 @@ require_once __DIR__ . '/../config/env.php';
 loadEnv(__DIR__ . '/../.env');
 
 use App\Identity\Application\UserProvisioningService;
-use App\Infrastructure\Database\MigrationRunner;
 use Config\Database;
 
 $options = getopt('', [
@@ -32,10 +31,16 @@ if ($name === '' || $email === '') {
 }
 
 $connection = (new Database())->connect();
-(new MigrationRunner(
-    $connection,
-    dirname(__DIR__) . '/database/migrations'
-))->migrate();
+$phinxReady = $connection->query(
+    "SELECT COUNT(*)
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = 'phinxlog'"
+)->fetchColumn();
+
+if ((int) $phinxReady !== 1) {
+    fwrite(STDERR, "Execute `php cli/migrate.php migrate` antes do provisionamento.\n");
+    exit(1);
+}
 
 $activeSuperAdmin = $connection->query(
     "SELECT COUNT(DISTINCT u.id_usuario)

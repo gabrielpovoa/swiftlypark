@@ -249,23 +249,23 @@ php -l app/Controllers/AlgumController.php
 
 ## Migrations de banco
 
-Migrations nunca são executadas durante requisições HTTP. Antes de publicar uma
-nova versão, execute:
+Migrations são gerenciadas pelo Phinx e nunca são executadas durante requisições
+HTTP. Antes de publicar uma nova versão, execute:
 
 ```bash
-php cli/migrate.php status
-php cli/migrate.php migrate
+docker compose exec app php cli/migrate.php status
+docker compose exec app php cli/migrate.php migrate
 ```
 
-Para adotar o runner em uma instalação existente cujo schema já recebeu todas
-as migrations antigas, registre o estado uma única vez, sem reaplicar SQL:
+Para criar uma nova migration reversível:
 
 ```bash
-php cli/migrate.php baseline
+docker compose exec app php cli/migrate.php create AddExampleColumn
 ```
 
-Não execute `baseline` em banco vazio ou desatualizado. O comando apenas registra
-as migrations existentes; ele não cria nem corrige tabelas.
+O primeiro `migrate` cria uma instalação vazia ou adota com segurança um banco
+existente cujo schema já esteja completo. Bancos parciais são recusados. Veja o
+runbook completo em `docs/operations/database-migrations.md`.
 
 ## Comandos Úteis
 
